@@ -6,18 +6,18 @@ Watch a neural network learn to approximate any mathematical function in real-ti
 
 ## 🎯 Try It Now
 
-**[Launch LearnCurve →](https://rowenchris.github.io/LearnCurve/)**
-
-*(Update this link after deployment)*
+**[Launch LearnCurve →](https://rowenchris.github.io/MLdemo/)**
 
 ---
 
 ## What You'll See
 
-| Green Curve | Blue Curve |
-|-------------|------------|
-| Target function f(x) | Network's prediction ŷ(x) |
-| What we want to learn | What the network currently outputs |
+| Panel | Description |
+|-------|-------------|
+| **Network Design** | Animated diagram showing neurons, weights, and biases |
+| **Fit Plot** | Green target f(x) vs blue prediction ŷ(x) |
+| **Training Trace** | Loss curve with rolling average |
+| **Loss Landscape** | 2D heatmap showing optimization path |
 
 **Goal:** Make blue match green by training the network!
 
@@ -26,40 +26,54 @@ Watch a neural network learn to approximate any mathematical function in real-ti
 ## ✨ Features
 
 ### 🎮 Interactive Controls
-- **Target Function**: Type any math expression (`x*x`, `sin(x)`, `abs(x)`, etc.)
-- **Learning Rate**: Control step size (bigger = faster but unstable)
-- **Optimizer**: Compare Simple, Momentum, and Adam algorithms
+- **Target Function**: Type any math expression (`x*x`, `sin(x)`, `abs(x)`, `x^3-x`, etc.)
+- **Learning Rate**: Control step size (0.001 to 0.5)
+- **Optimizer**: Compare Simple (SGD) and Adam algorithms
 - **Noise**: Test robustness with noisy training data
+- **Activation**: Choose between ReLU and Sigmoid
 
 ### 🧠 Network Design
-- Adjust hidden layers (1-3) and neurons (2-10)
-- Switch activation functions (ReLU, Tanh, Sigmoid)
-- Watch weights update in real-time
+- Adjust hidden layers (1-4) and neurons per layer (2-16)
+- Drag handles for quick architecture changes
+- Watch weights and biases update in real-time
+- See total parameter count
 
 ### 📊 Visualization
-- **Fit Plot**: Prediction curve approaching target
-- **Training Trace**: Loss decreasing over time
-- **Equations**: The math behind forward pass & backpropagation
+- **Fit Plot**: Prediction curve approaching target with sample points
+- **Training Trace**: Loss over time with rolling average and ΔLoss indicator
+- **Loss Landscape**: 2D visualization of loss surface with optimization trail
+- **Equations Panel**: Forward pass and backpropagation math explained
 
 ### 🔬 Comparison Mode
-- Save two training runs with different settings
+- Save two training runs (A & B) with different settings
 - Compare learning curves side-by-side
 - Discover: Which configuration learns faster?
+
+### 📸 Capture
+- **Screenshot**: Download PNG of current state (works offline)
+- **Animated GIF**: Record training convergence (requires web server)
+
+### ⏸️ Smart Features
+- **Auto-pause**: Stops when training converges (loss stops decreasing)
+- **Zoom**: Drag handle to focus on early training steps
+- **Gradient clipping**: Prevents numerical instability
 
 ---
 
 ## 🎓 Who Is This For?
 
 Students learning machine learning who have:
-- ✅ Basic algebra
-- ✅ Familiarity with calculus (chain rule)
+- ✅ Basic algebra and function notation
+- ✅ Familiarity with calculus (derivatives, chain rule)
 - ✅ Curiosity about how AI learns!
 
 ### Concepts Demonstrated
-1. **Forward Pass** – How inputs flow through the network
-2. **Loss Function** – Measuring prediction error
+1. **Forward Pass** – How inputs flow through layers
+2. **Loss Function** – Measuring prediction error (MSE)
 3. **Backpropagation** – Computing gradients via chain rule
 4. **Gradient Descent** – Adjusting weights to minimize loss
+5. **Optimization** – How Adam outperforms simple SGD
+6. **Loss Landscape** – Visualizing the optimization surface
 
 ---
 
@@ -69,30 +83,50 @@ Students learning machine learning who have:
 |------------|-------------------|
 | Train on `x*x` | Basic quadratic fitting |
 | Try `sin(x)` | Networks can learn periodic functions |
+| Compare `x^3` vs `x^3-x` | Complexity affects learning |
 | Add noise (0.3) | Robustness to noisy data |
 | Compare Adam vs Simple | Why adaptive optimizers help |
-| 1 layer vs 3 layers | Depth vs training speed |
+| 1 layer vs 4 layers | Depth vs training speed trade-off |
+| 3 neurons vs 16 neurons | Width vs expressiveness |
+| Watch Loss Landscape | See gradient descent in action |
+
+---
+
+## 🚀 Running Locally
+
+### Quick Start (Screenshot only)
+Just open `index.html` in your browser!
+
+### Full Features (with GIF capture)
+```bash
+cd MLdemo
+python3 -m http.server 8000
+# Open http://localhost:8000
+```
 
 ---
 
 ## 🛠️ Technical Details
 
 - **Pure HTML/CSS/JavaScript** – zero dependencies
-- **No build step** – just open the file
-- **~3000 lines** of self-contained code
-- **Works on mobile** and desktop browsers
+- **No build step** – single self-contained file
+- **~4000 lines** of code
+- **Responsive design** – works on mobile and desktop
+- **Gradient clipping** – numerically stable training
 
 ---
 
 ## 🤝 Credits
 
-Built by **Chris Rowen** and **Claude 4.5 Opus** (Anthropic)
+Built by **Chris Rowen** and **Claude Opus 4** (Anthropic)
 
 ---
 
 ## 📄 License
 
-MIT License – Use, modify, and share freely!
+[MIT License](LICENSE) – Use, modify, and share freely!
+
+Copyright © 2025 Chris Rowen
 
 ---
 

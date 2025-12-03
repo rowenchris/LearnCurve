@@ -16,12 +16,15 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 0 auto;
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            padding: 16px 20px 24px 20px;
+            padding: 10px 14px 14px 14px;
+            min-height: calc(100vh - 20px);
+            display: flex;
+            flex-direction: column;
         }
 
         h1 {
@@ -37,23 +40,32 @@
 
         .grid {
             display: grid;
-            grid-template-columns: 1.1fr 1.1fr;
-            gap: 16px;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 10px;
+        }
+        
+        .controls-strip {
+            grid-column: 1 / -1;
+        }
+        
+        .viz-grid {
+            display: contents;
         }
 
         .panel {
             background: #fafafa;
             border-radius: 6px;
-            padding: 10px 12px 12px 12px;
+            padding: 8px 10px;
             border: 1px solid #e0e0e0;
         }
 
         .panel h2 {
-            font-size: 16px;
-            margin-bottom: 8px;
+            font-size: 14px;
+            margin-bottom: 6px;
             color: #444;
             border-bottom: 2px solid #007bff;
-            padding-bottom: 4px;
+            padding-bottom: 3px;
         }
 
         .panel h3 {
@@ -198,20 +210,25 @@
 
         .equations-panel {
             grid-column: 1 / -1;  /* Span all columns */
+            flex: 1;  /* Fill remaining height */
+            display: flex;
+            flex-direction: column;
         }
         
         .equations-panel h2 {
-            margin-bottom: 6px;
+            margin-bottom: 4px;
+            flex-shrink: 0;
         }
         
         .equations {
-            font-size: 13px;
-            line-height: 1.4;
-            max-height: 280px;
+            font-size: 11px;
+            line-height: 1.3;
+            flex: 1;
+            min-height: 150px;
             overflow-y: auto;
             display: grid;
             grid-template-columns: 1fr 1fr;  /* 2 columns: Forward Pass | Backward Pass */
-            gap: 16px;
+            gap: 12px;
         }
 
         .equation-block {
@@ -394,236 +411,180 @@
 </head>
 <body>
 <div class="container">
-    <h1>LearnCurve</h1>
-    <div class="subtitle">
-        <strong>Goal:</strong> Train a neural network to predict a target function. 
-        The <span style="color:#28a745">green curve</span> is the target f(x); 
-        the <span style="color:#007bff">blue curve</span> is the network's prediction ŷ(x). 
-        Watch them converge as training progresses!
-        <br><em style="font-size:11px; color:#888;">Built by Chris Rowen and Claude 4.5 Opus.</em>
-    </div>
+    <h1 style="margin-bottom:2px;">LearnCurve <span style="font-size:12px; font-weight:normal; color:#888;">— Neural Network Learning Demo</span></h1>
+    <p style="margin:0 0 8px 0; font-size:11px; color:#666;">An interactive tool for understanding how neural networks learn to approximate functions. © 2025 Chris Rowen — Available under <a href="https://opensource.org/licenses/MIT" style="color:#007bff; text-decoration:none;">MIT License</a></p>
 
     <div class="grid">
-        <!-- Left column: controls + network canvas -->
-        <div>
-            <div class="panel">
-                <h2 title="Set up your experiment: choose what function to learn and how to train the network.">Training Controls</h2>
-
-                <div class="control-row" style="align-items: flex-start;">
-                    <div class="control-group" style="min-width: 180px;">
-                        <label title="The function you want the network to learn. Start simple (x*x), then try harder ones!">Target f(x):</label>
-                        <input type="text" id="targetFuncInput" value="x*x" style="width: 155px;" title="Type any math expression: x*x, sin(x), abs(x), etc. The network will try to learn it!" />
-                    </div>
-                    <div style="font-size: 11px; color: #555; line-height: 1.4; flex: 1;">
-                        <code>x</code>=var, <code>+ - * / ^</code>=ops. <strong>Funcs:</strong> <code>sin cos tan sqrt abs exp log</code>. 
-                        <strong>Const:</strong> <code>PI E</code>. <strong>Ex:</strong> <code>x^2</code>, <code>sin(PI*x)</code>, <code>exp(-x^2)</code>
-                    </div>
+        <!-- CONTROLS STRIP - spans full width, two rows -->
+        <div class="panel controls-strip" style="padding:8px 12px;">
+            <!-- Row 1: Target function and training parameters -->
+            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:6px;">
+                <!-- Target function -->
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <label style="font-size:11px; font-weight:600;">Target f(x):</label>
+                    <input type="text" id="targetFuncInput" value="x*x" style="width:100px; font-size:11px; padding:3px 5px;" />
+                    <span style="font-size:9px; color:#777;">(x + - * / ^ sin cos exp log sqrt abs PI E)</span>
                 </div>
-
-                <!-- Hidden x-range inputs (controlled by fit plot handles) -->
-                <input type="range" id="xMin" min="-5" max="0" step="0.1" value="-2" style="display:none;">
-                <input type="range" id="xMax" min="0" max="5" step="0.1" value="2" style="display:none;">
-                <span id="xMinLabel" style="display:none;">-2</span>
-                <span id="xMaxLabel" style="display:none;">2</span>
-
-                <div class="control-row" style="gap:16px;">
-                    <div class="control-group" style="flex:1;">
-                        <label title="Add random 'jitter' to training data. Real-world data is noisy - can the network still learn?">Noise:</label>
-                        <input type="range" id="noise" min="0" max="1" step="0.05" value="0" style="width:100%;" title="0 = perfect data, higher = more randomness. Try adding noise to see how robust learning is!">
-                        <span class="value" id="noiseValue">0.00</span>
-                    </div>
-
-                    <div class="control-group" style="flex:1.5;">
-                        <label title="How big a step to take when adjusting weights. Like walking downhill: big steps are faster but might overshoot; small steps are safer but slower.">Learning Rate:</label>
-                        <input type="range" id="learningRate" min="-3" max="-0.3" step="0.01" value="-1" style="width:100%;" title="Higher = faster but unstable learning. Lower = slower but stable. Try different values!">
-                        <span class="value" id="learningRateValue">0.100</span>
-                    </div>
-
-                    <div class="control-group" style="flex:1;">
-                        <label title="Different strategies for adjusting weights. Like different ways to walk downhill in fog.">Optimizer:</label>
-                        <select id="optimizerSelect" style="width:100%;" title="Simple: basic steps. Momentum: builds up speed. Adam: smart adaptive steps (usually best).">
-                            <option value="sgd">Simple</option>
-                            <option value="momentum">Momentum</option>
-                            <option value="rmsprop">RMSProp</option>
-                            <option value="adam">Adam</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Old activation selector kept hidden for JS compatibility -->
-                    <div class="activation-selector" id="activationSelector" style="display:none;">
-                        <span class="activation-option selected" data-act="relu">ReLU</span>
-                        <span class="activation-option" data-act="tanh">tanh</span>
-                        <span class="activation-option" data-act="sigmoid">sigmoid</span>
-                    </div>
+                
+                <span style="color:#ddd;">|</span>
+                
+                <!-- Noise -->
+                <div style="display:flex; align-items:center; gap:3px;">
+                    <label style="font-size:10px; color:#555;">Noise:</label>
+                    <input type="range" id="noise" min="0" max="1" step="0.05" value="0" style="width:50px;">
+                    <span class="value" id="noiseValue" style="font-size:10px; min-width:28px;">0.00</span>
                 </div>
-
-                <!-- Network config sliders (hidden on desktop, visible on mobile) -->
-                <div class="mobile-sliders" style="display:none;">
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <label style="font-size:12px; color:#666;">Layers:</label>
-                        <input type="range" id="numLayers" min="1" max="3" step="1" value="1">
-                        <span id="numLayersValue" style="font-weight:bold; min-width:20px;">1</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <label style="font-size:12px; color:#666;">Width:</label>
-                        <input type="range" id="hiddenSize" min="2" max="10" step="1" value="3">
-                        <span id="hiddenSizeValue" style="font-weight:bold; min-width:20px;">3</span>
-                    </div>
+                
+                <!-- Learning Rate -->
+                <div style="display:flex; align-items:center; gap:3px;">
+                    <label style="font-size:10px; color:#555;">Learning Rate:</label>
+                    <input type="range" id="learningRate" min="-3" max="-0.3" step="0.01" value="-1" style="width:50px;">
+                    <span class="value" id="learningRateValue" style="font-size:10px; min-width:32px;">0.100</span>
                 </div>
-
-                <div class="control-row">
-                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <button id="stepBtn" title="Take ONE learning step: pick a random x, compute prediction, measure error, adjust weights. Click repeatedly to watch learning happen!">Step</button>
-                        <button id="runBtn" title="Run many steps automatically. Watch the blue curve approach the green curve!">Run</button>
-                        <button id="resetBtn" title="Start over with random weights. The network 'forgets' everything.">Reset</button>
-                        <button id="gifBtn" title="Record an animated GIF of training">Capture GIF</button>
-                    </div>
+                
+                <!-- Optimizer -->
+                <div id="optimizerButtons" style="display:flex; align-items:center; gap:3px;">
+                    <label style="font-size:10px; color:#555;">Optimizer:</label>
+                    <button class="opt-btn" data-opt="sgd" style="padding:2px 6px; font-size:10px; border:2px solid #007bff; background:#007bff; color:white; border-radius:3px; cursor:pointer;" title="Simple Gradient Descent&#10;&#10;w ← w − η · ∂L/∂w&#10;&#10;Each weight moves opposite to its gradient, proportional to learning rate η. Simple but can be slow or get stuck.">Simple</button>
+                    <button class="opt-btn" data-opt="adam" style="padding:2px 6px; font-size:10px; border:2px solid #ccc; background:#fff; color:#333; border-radius:3px; cursor:pointer;" title="Adam Optimizer&#10;&#10;Combines two ideas:&#10;• Momentum: smooth out noisy gradients&#10;• Adaptive rates: bigger steps for rare gradients&#10;&#10;Usually learns faster and more reliably than Simple.">Adam</button>
                 </div>
-
-                <div class="stats" style="align-items:center;">
-                    <div class="stat-item">
-                        <span class="stat-label">Step:</span>
-                        <span class="stat-value" id="stepCount">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Loss:</span>
-                        <span class="stat-value" id="lossValue">—</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Total ops:</span>
-                        <span class="stat-value"><span id="totalAdds">0</span>+ <span id="totalMuls">0</span>×</span>
-                    </div>
-                    <div class="stat-item" style="margin-left:auto;">
-                        <span style="font-size:10px; color:#666;">Speed:</span>
-                        <span style="font-weight:bold; color:#007bff; font-size:12px;" id="stepsPerSec">—</span>
-                        <span style="font-size:9px; color:#666;">/s</span>
-                    </div>
+                
+                <!-- Activation -->
+                <div id="activationButtons" style="display:flex; align-items:center; gap:3px;">
+                    <label style="font-size:10px; color:#555;">Activation:</label>
+                    <button class="act-btn" data-act="relu" style="padding:2px 6px; font-size:10px; border:2px solid #007bff; background:#007bff; color:white; border-radius:3px; cursor:pointer; display:flex; align-items:center; gap:2px;">
+                        <svg width="14" height="10" viewBox="0 0 20 14"><path d="M1 10 L10 10 L19 2" stroke="currentColor" stroke-width="2" fill="none"/></svg>ReLU
+                    </button>
+                    <button class="act-btn" data-act="sigmoid" style="padding:2px 6px; font-size:10px; border:2px solid #ccc; background:#fff; color:#333; border-radius:3px; cursor:pointer; display:flex; align-items:center; gap:2px;">
+                        <svg width="16" height="10" viewBox="0 0 24 14"><path d="M1 12 L4 12 Q8 12 12 7 Q16 2 20 2 L23 2" stroke="currentColor" stroke-width="2" fill="none"/></svg>Sigmoid
+                    </button>
                 </div>
-                <!-- Hidden elements for ops breakdown -->
-                <span id="opsLossAdd" style="display:none">0</span>
-                <span id="opsLossMul" style="display:none">0</span>
             </div>
-
-            <div class="panel">
-                <h2 title="The neural network structure. Each circle is a 'neuron' that computes a weighted sum and applies an activation function. More neurons = more flexible but slower to train.">Network Design</h2>
-                <div style="position:relative; display:inline-block;">
-                    <canvas id="networkCanvas" width="580" height="340"></canvas>
-                    <!-- Vertical handle for hidden layer size (right edge) -->
-                    <div id="sizeHandle" style="position:absolute; right:-22px; top:50%; transform:translateY(-50%); width:26px; height:75px; background:linear-gradient(to bottom, #007bff, #0056b3); border-radius:4px; cursor:ns-resize; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; transition: transform 0.15s ease-out; padding:2px;" title="Drag up/down to change hidden layer size">
-                        <span style="font-size:10px;">▲</span>
-                        <span style="writing-mode:vertical-rl; font-size:10px; font-weight:500;">Width</span>
-                        <span style="font-size:10px;">▼</span>
-                    </div>
-                    <!-- Horizontal handle for number of layers (bottom) -->
-                    <div id="layersHandle" style="position:absolute; bottom:-14px; left:50%; transform:translateX(-50%); height:24px; width:90px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:4px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:10px; gap:4px; transition: transform 0.15s ease-out;" title="Drag left/right to change number of hidden layers">
-                        <span>◀</span><span style="font-weight:500;">Layers</span><span>▶</span>
-                    </div>
-                </div>
-                <!-- Hidden displays for JS compatibility -->
-                <span id="networkLayersDisplay" style="display:none;">1</span>
-                <span id="networkSizeDisplay" style="display:none;">3</span>
-                <div style="display:flex; gap:12px; margin-top:8px; align-items:flex-start; font-size:11px;">
-                    <!-- Ops/Step table -->
-                    <div id="opsTableHtml" style="font-size:11px; background:#f8f9ff; border:1px solid #007bff; border-radius:4px; padding:6px 12px;">
-                        <table style="border-collapse:collapse; font-size:11px;">
-                            <tr><th colspan="3" style="color:#007bff; font-size:12px; padding-bottom:3px;">Ops/Step</th></tr>
-                            <tr style="color:#666;"><td></td><td style="padding:0 10px; text-align:center;">adds</td><td style="padding:0 10px; text-align:center;">muls</td></tr>
-                            <tr><td style="color:#28a745; font-weight:bold;">Fwd</td><td id="opsFwdAdds" style="text-align:center; padding:0 10px;">0</td><td id="opsFwdMuls" style="text-align:center; padding:0 10px;">0</td></tr>
-                            <tr><td style="color:#dc3545; font-weight:bold;">Back</td><td id="opsBackAdds" style="text-align:center; padding:0 10px;">0</td><td id="opsBackMuls" style="text-align:center; padding:0 10px;">0</td></tr>
-                            <tr style="border-top:1px solid #ccc;"><td style="color:#007bff; font-weight:bold;">Tot</td><td id="opsTotAdds" style="text-align:center; font-weight:bold; padding:0 10px;">0</td><td id="opsTotMuls" style="text-align:center; font-weight:bold; padding:0 10px;">0</td></tr>
-                        </table>
-                    </div>
-                    <div id="networkActivation" style="display:flex; flex-direction:column; gap:4px; margin-left:auto; align-items:center;">
-                        <span style="color:#666; font-size:12px;">Activation:</span>
-                        <div style="display:flex; gap:6px;">
-                            <button class="act-btn" data-act="relu" style="padding:5px 10px; font-size:12px; border:2px solid #007bff; background:#007bff; color:white; border-radius:4px; cursor:pointer; font-weight:600;" title="ReLU: Passes positive values through, blocks negative. Simple and fast - most popular choice!">ReLU</button>
-                            <button class="act-btn" data-act="tanh" style="padding:5px 10px; font-size:12px; border:2px solid #ccc; background:#fff; color:#333; border-radius:4px; cursor:pointer; font-weight:500;" title="Tanh: Squishes values to range -1 to +1. Smooth S-curve, centered at zero.">Tanh</button>
-                            <button class="act-btn" data-act="sigmoid" style="padding:5px 10px; font-size:12px; border:2px solid #ccc; background:#fff; color:#333; border-radius:4px; cursor:pointer; font-weight:500;" title="Sigmoid: Squishes values to range 0 to 1. Good for probabilities.">Sigmoid</button>
-                        </div>
-                    </div>
-                </div>
+            
+            <!-- Row 2: Action buttons, compare, and stats -->
+            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                <!-- Action buttons -->
+                <button id="stepBtn" style="padding:4px 10px; font-size:11px;">Step</button>
+                <button id="runBtn" style="padding:4px 10px; font-size:11px;">Run</button>
+                <button id="resetBtn" style="padding:4px 10px; font-size:11px;">Reset</button>
+                <button id="gifBtn" style="padding:4px 8px; font-size:10px;">Capture</button>
+                
+                <span style="color:#ddd;">|</span>
+                
+                <!-- Compare buttons -->
+                <button id="saveRunA" style="padding:4px 8px; font-size:10px; background:#6c757d;">Save Run A</button>
+                <button id="saveRunB" style="padding:4px 8px; font-size:10px; background:#6c757d;">Save Run B</button>
+                <button id="compareBtn" style="padding:4px 8px; font-size:10px; background:#6c757d;" disabled>Compare A vs B</button>
+                
+                <span style="color:#ddd;">|</span>
+                
+                <!-- Stats -->
+                <span style="font-size:11px; color:#555;">Step: <strong id="stepCount">0</strong></span>
+                <span style="font-size:11px; color:#555;">Loss: <strong id="lossValue">—</strong></span>
+                <span style="font-size:11px; color:#007bff;"><span id="stepsPerSec">—</span> steps/s</span>
+            </div>
+            
+            <!-- Hidden elements -->
+            <input type="range" id="xMin" min="-5" max="0" step="0.1" value="-2" style="display:none;">
+            <input type="range" id="xMax" min="0" max="5" step="0.1" value="2" style="display:none;">
+            <span id="xMinLabel" style="display:none;">-2</span>
+            <span id="xMaxLabel" style="display:none;">2</span>
+            <span id="runALabel" style="display:none;"></span>
+            <span id="runBLabel" style="display:none;"></span>
+            <span id="totalAdds" style="display:none;">0</span>
+            <span id="totalMuls" style="display:none;">0</span>
+            <span id="opsLossAdd" style="display:none">0</span>
+            <span id="opsLossMul" style="display:none">0</span>
+            <div class="activation-selector" id="activationSelector" style="display:none;">
+                <span class="activation-option selected" data-act="relu">ReLU</span>
+                <span class="activation-option" data-act="sigmoid">sigmoid</span>
+            </div>
+            <div class="mobile-sliders" style="display:none;">
+                <input type="range" id="numLayers" min="1" max="4" step="1" value="1">
+                <span id="numLayersValue">1</span>
+                <input type="range" id="hiddenSize" min="2" max="16" step="1" value="3">
+                <span id="hiddenSizeValue">3</span>
             </div>
         </div>
 
-        <!-- Right column: plots + equations -->
-        <div>
-            <div class="panel">
-                <h2 title="Green = target function we're trying to learn. Blue = network's current prediction. Success = blue matches green!">Fit Plot: Target vs Prediction</h2>
-                <div style="position:relative; width:100%;">
-                    <canvas id="fitCanvas" class="chart" width="580" height="260" style="width:100%;"></canvas>
-                    <!-- Left handle for x-min (below x-axis values) -->
-                    <div id="xMinHandle" style="position:absolute; left:45px; bottom:5px; width:28px; height:14px; background:linear-gradient(to right, #28a745, #1e7e34); border-radius:3px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:8px; font-weight:bold; transition: transform 0.15s ease-out;" title="Drag left/right to adjust x-min">◀▶</div>
-                    <!-- Right handle for x-max (below x-axis values) -->
-                    <div id="xMaxHandle" style="position:absolute; right:45px; bottom:5px; width:28px; height:14px; background:linear-gradient(to left, #28a745, #1e7e34); border-radius:3px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:8px; font-weight:bold; transition: transform 0.15s ease-out;" title="Drag left/right to adjust x-max">◀▶</div>
-                </div>
-                <!-- Hidden displays for JS compatibility -->
-                <span id="xMinDisplay" style="display:none;">-2.0</span>
-                <span id="xMaxDisplay" style="display:none;">2.0</span>
-                <!-- Mobile x-range controls -->
-                <div class="mobile-sliders" style="display:none; margin-top:8px;">
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <label style="font-size:12px; color:#666;">x-min:</label>
-                        <input type="range" id="xMinMobile" min="-5" max="0" step="0.5" value="-2" style="width:80px;">
-                        <span id="xMinMobileVal" style="font-size:12px; min-width:30px;">-2</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <label style="font-size:12px; color:#666;">x-max:</label>
-                        <input type="range" id="xMaxMobile" min="0" max="5" step="0.5" value="2" style="width:80px;">
-                        <span id="xMaxMobileVal" style="font-size:12px; min-width:30px;">2</span>
-                    </div>
+        <!-- 2x2 VISUALIZATION GRID -->
+        <!-- Top Left: Network Design -->
+        <div class="panel" style="padding:6px 6px 10px 6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:0;">
+                <h2 style="margin:0; font-size:13px; border:none; padding:0;">Network Design</h2>
+                <div id="opsTableHtml" style="font-size:9px; background:#f8f9ff; border:1px solid #007bff; border-radius:3px; padding:2px 6px;">
+                    <span style="color:#28a745;">Fwd:</span><span id="opsFwdAdds">0</span>+<span id="opsFwdMuls">0</span>×
+                    <span style="color:#dc3545; margin-left:4px;">Back:</span><span id="opsBackAdds">0</span>+<span id="opsBackMuls">0</span>×
                 </div>
             </div>
-
-            <div class="panel">
-                <h2 title="Loss measures 'how wrong' the network is. Watch it decrease as the network learns! Lower loss = better predictions.">Training Trace</h2>
-
-                <div class="chart-controls">
-                    <div class="checkbox-group" title="Rolling average of loss - smooths out noise to show trend">
-                        <input type="checkbox" id="traceAvgLoss" checked>
-                        <label for="traceAvgLoss"><strong>Avg Loss</strong></label>
-                        <span style="font-size:9px; color:#666; margin-left:6px;">Window:</span>
-                        <input type="range" id="avgWindowSlider" min="10" max="500" step="10" value="100" 
-                               style="width:60px; margin-left:2px;" title="Rolling average window size">
-                        <span id="avgWindowValue" style="font-size:10px; color:#007bff; min-width:30px;">100</span>
-                    </div>
-                    <div class="checkbox-group" title="Instantaneous loss at each training step - shows actual variance">
-                        <input type="checkbox" id="traceLoss" checked>
-                        <label for="traceLoss">Loss</label>
-                    </div>
-                    <div class="checkbox-group" title="Track individual weight values over training - see how each weight evolves">
-                        <input type="checkbox" id="traceWeights" checked>
-                        <label for="traceWeights">Weights</label>
-                    </div>
-                    <div class="checkbox-group" title="Use logarithmic scale for loss axis - useful when loss spans many orders of magnitude">
-                        <input type="checkbox" id="traceLogScale">
-                        <label for="traceLogScale">Loss on Log scale</label>
-                    </div>
-                </div>
-
-                <div class="chart-controls" style="margin-top:6px; flex-wrap:wrap;">
-                    <button id="saveRunA" style="font-size:11px; padding:4px 8px; margin-right:8px;" title="Save this training run. Try different settings and compare which learns better!">
-                        Save as Run A
-                    </button>
-                    <button id="saveRunB" style="font-size:11px; padding:4px 8px; margin-right:8px;" title="Save a second run with different settings to compare.">
-                        Save as Run B
-                    </button>
-                    <button id="compareBtn" style="font-size:11px; padding:4px 8px; margin-right:12px;" disabled title="See both runs side-by-side. Which configuration learned faster?">
-                        Compare A vs B
-                    </button>
-
-                    <span id="runALabel" class="run-label" style="font-size:11px; margin-right:12px;"></span>
-                    <span id="runBLabel" class="run-label" style="font-size:11px;"></span>
-                </div>
-
-                <canvas id="traceCanvas" class="chart" width="500" height="260"></canvas>
+            <div style="position:relative; display:inline-block;">
+                <canvas id="networkCanvas" width="520" height="300"></canvas>
+                <div id="sizeHandle" style="position:absolute; right:-18px; top:50%; transform:translateY(-50%); width:20px; height:60px; background:linear-gradient(to bottom, #007bff, #0056b3); border-radius:3px; cursor:ns-resize; display:flex; flex-direction:column; align-items:center; justify-content:space-evenly; color:white; font-size:8px; transition: transform 0.15s ease-out;" title="Drag: Width"><span>▲</span><span style="writing-mode:vertical-rl; text-orientation:mixed; font-size:8px;">Width</span><span>▼</span></div>
+                <div id="layersHandle" style="position:absolute; bottom:-12px; left:50%; transform:translateX(-50%); height:18px; width:70px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:8px; transition: transform 0.15s ease-out;" title="Drag: Layers">◀ Layers ▶</div>
             </div>
+            <span id="networkLayersDisplay" style="display:none;">1</span>
+            <span id="networkSizeDisplay" style="display:none;">3</span>
+            <div id="networkActivation" style="display:none;"></div>
+        </div>
 
+        <!-- Top Right: Fit Plot -->
+        <div class="panel" style="padding:6px;">
+            <h2 style="margin:0 0 4px 0; font-size:13px; border:none; padding:0;">Fit Plot: f(x) vs ŷ(x)</h2>
+            <div style="position:relative;">
+                <canvas id="fitCanvas" class="chart" width="520" height="340" style="width:100%;"></canvas>
+                <div id="xMinHandle" style="position:absolute; left:40px; bottom:2px; width:24px; height:12px; background:#007bff; border-radius:2px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:7px;" title="x-min">◀▶</div>
+                <div id="xMaxHandle" style="position:absolute; right:40px; bottom:2px; width:24px; height:12px; background:#007bff; border-radius:2px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:7px;" title="x-max">◀▶</div>
+            </div>
+            <span id="xMinDisplay" style="display:none;">-2.0</span>
+            <span id="xMaxDisplay" style="display:none;">2.0</span>
+            <div class="mobile-sliders" style="display:none;">
+                <input type="range" id="xMinMobile" min="-5" max="0" step="0.5" value="-2"><span id="xMinMobileVal">-2</span>
+                <input type="range" id="xMaxMobile" min="0" max="5" step="0.5" value="2"><span id="xMaxMobileVal">2</span>
+            </div>
+        </div>
+
+        <!-- Bottom Left: Training Trace -->
+        <div class="panel" style="padding:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
+                <h2 style="margin:0; font-size:13px; border:none; padding:0;">Training Trace</h2>
+                <div style="display:flex; gap:6px; font-size:9px; align-items:center;">
+                    <label style="display:flex; align-items:center; gap:1px;"><input type="checkbox" id="traceLoss" checked>Loss</label>
+                    <label style="display:flex; align-items:center; gap:1px;"><input type="checkbox" id="traceWeights" checked>Weights</label>
+                    <label style="display:flex; align-items:center; gap:1px;"><input type="checkbox" id="traceLogScale">Log Scale</label>
+                    <span style="color:#ccc;">|</span>
+                    <label style="display:flex; align-items:center; gap:1px;"><input type="checkbox" id="traceAvgLoss" checked>Avg Loss</label>
+                    <span>Window:</span><input type="range" id="avgWindowSlider" min="10" max="1000" step="10" value="100" style="width:40px;"><span id="avgWindowValue" style="color:#007bff;">100</span>
+                    <span style="color:#ccc;">|</span>
+                    <span>ΔLoss:<strong id="deltaLossValue" style="color:#28a745;">—</strong></span>
+                </div>
+            </div>
+            <div style="position:relative; width:520px; margin:0 auto;">
+                <canvas id="traceCanvas" class="chart" width="520" height="360"></canvas>
+                <div id="traceViewHandle" style="position:absolute; bottom:4px; left:260px; transform:translateX(-50%); width:60px; height:14px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; display:none; align-items:center; justify-content:center; color:white; font-size:8px; opacity:0.9; z-index:10;" title="Drag left/right to zoom into early training steps (when paused)">◀ Zoom ▶</div>
+            </div>
+        </div>
+
+        <!-- Bottom Right: Loss Landscape -->
+        <div class="panel" style="padding:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
+                <h2 style="margin:0; font-size:13px; border:none; padding:0;">Loss Landscape</h2>
+                <div style="display:flex; gap:3px; font-size:9px; align-items:center;">
+                    <span id="weightSelectContainer" style="display:flex; gap:2px; align-items:center; opacity:0.5;" title="Click to manually select weights">
+                        <select id="weightXSelect" style="font-size:8px; padding:1px; max-width:65px;"><option value="0">w₁</option></select>
+                        <span style="font-size:8px;">vs</span>
+                        <select id="weightYSelect" style="font-size:8px; padding:1px; max-width:65px;"><option value="1">w₂</option></select>
+                    </span>
+                    <button id="autoSelectBtn" style="font-size:9px; padding:1px 4px; background:#007bff; border:2px solid #007bff; color:white;" title="Auto-select interesting weights">Auto</button>
+                </div>
+            </div>
+            <canvas id="lossCanvas" class="chart" width="520" height="360"></canvas>
+            <div style="font-size:9px; color:#888; text-align:center;">🟢&nbsp;Start &nbsp;🔴&nbsp;Current • Blue=low, Red=high loss</div>
         </div>
     </div>
     
-    <!-- Equations panel spans full width -->
-    <div class="panel equations-panel">
-        <h2 title="The math behind learning: Forward pass computes predictions, then we use the chain rule (backpropagation) to find how to adjust each weight.">Equations & Backprop Sketch</h2>
+    <!-- EQUATIONS STRIP - spans full width -->
+    <div class="panel equations-panel" style="padding:6px 10px;">
+        <h2 style="margin:0 0 4px 0; font-size:13px; border:none; padding:0;">Equations & Backprop</h2>
         <div class="equations" id="equationsDiv"></div>
     </div>
 </div>
@@ -672,6 +633,9 @@
         stepsSinceLastUpdate: 0,
         recentSamples: []
     };
+    
+    // Training trace view control - null means show all, otherwise show steps 0 to this value
+    let traceViewEndStep = null;
 
     let gifCapture = {
         recording: false,
@@ -725,6 +689,19 @@
     };
 
     // --------------- Utility Functions ---------------
+    
+    // Fix fuzzy text on HiDPI displays
+    function setupHiDPICanvas(canvas) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+        return ctx;
+    }
 
     function gaussianNoise(mean=0, std=1) {
         let u = 0, v = 0;
@@ -732,6 +709,64 @@
         while (v === 0) v = Math.random();
         const n = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
         return mean + std * n;
+    }
+    
+    // Generate nice round tick values for axes
+    function getNiceTicks(min, max, targetCount = 5) {
+        const range = max - min;
+        if (range <= 0) return [min];
+        
+        // Find a nice step size
+        const roughStep = range / targetCount;
+        const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+        const normalized = roughStep / magnitude;
+        
+        let niceStep;
+        if (normalized <= 1) niceStep = magnitude;
+        else if (normalized <= 2) niceStep = 2 * magnitude;
+        else if (normalized <= 5) niceStep = 5 * magnitude;
+        else niceStep = 10 * magnitude;
+        
+        // Generate ticks
+        const ticks = [];
+        const start = Math.ceil(min / niceStep) * niceStep;
+        for (let tick = start; tick <= max; tick += niceStep) {
+            ticks.push(tick);
+        }
+        
+        // Ensure we have at least start and end
+        if (ticks.length === 0 || ticks[0] > min) ticks.unshift(Math.floor(min / niceStep) * niceStep);
+        if (ticks[ticks.length - 1] < max) ticks.push(Math.ceil(max / niceStep) * niceStep);
+        
+        return ticks;
+    }
+    
+    // Generate nice tick values for log scale (powers of 10)
+    function getLogTicks(logMin, logMax) {
+        const ticks = [];
+        const startPow = Math.floor(logMin);
+        const endPow = Math.ceil(logMax);
+        
+        for (let p = startPow; p <= endPow; p++) {
+            if (p >= logMin && p <= logMax) {
+                ticks.push(p);
+            }
+        }
+        
+        // If range is very small, add intermediate ticks
+        if (ticks.length < 3 && (logMax - logMin) < 2) {
+            const midTicks = [];
+            for (let p = startPow; p <= endPow; p++) {
+                midTicks.push(p);
+                // Add 0.5 log step (sqrt(10) ≈ 3.16x)
+                if (p + 0.5 <= logMax && p + 0.5 >= logMin) {
+                    midTicks.push(p + 0.5);
+                }
+            }
+            return midTicks.filter(t => t >= logMin && t <= logMax);
+        }
+        
+        return ticks;
     }
 
     function createCompositeCanvas() {
@@ -776,57 +811,321 @@
         return composite;
     }
     
-    function startGifCapture() {
-        if (gifCapture.recording) return;
-
-        trainingState.running = false;
-        
-        // Create composite to get dimensions
+    // Check if GIF capture with workers is available
+    function canUseGifWorkers() {
+        // Workers don't work from file:// protocol
+        return window.location.protocol !== 'file:';
+    }
+    
+    // Fallback: capture a single screenshot as PNG
+    function captureScreenshot() {
         const composite = createCompositeCanvas();
-
-        gifCapture.gif = new GIF({
-            workers: 2,
-            quality: 10,
-            width: composite.width,
-            height: composite.height,
-            workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
-        });
-
-        gifCapture.framesRemaining = 60;  // More frames for better animation
-        gifCapture.recording = true;
-
-        gifCapture.gif.on('finished', function (blob) {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        
+        composite.toBlob(function(blob) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            // Timestamp in filename
+            a.download = `learncurve_${timestamp}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 'image/png');
+    }
+    
+    // Adaptive GIF capture - scans training to find interesting convergence region
+    function startGifCapture() {
+        if (gifCapture.recording) return;
+        
+        // Check if we can use web workers (required for GIF.js)
+        if (!canUseGifWorkers()) {
+            const useScreenshot = confirm(
+                'Animated GIF capture requires running from a web server.\n\n' +
+                'Options:\n' +
+                '• Click OK to download a PNG screenshot instead\n' +
+                '• Click Cancel, then run: python3 -m http.server 8000\n' +
+                '  and open http://localhost:8000/index.html for GIF capture'
+            );
+            if (useScreenshot) {
+                captureScreenshot();
+            }
+            return;
+        }
+        
+        
+        trainingState.running = false;
+        document.getElementById('runBtn').textContent = 'Run';
+        
+        // Show status
+        const gifBtn = document.getElementById('gifBtn');
+        const originalText = gifBtn.textContent;
+        gifBtn.textContent = 'Scanning...';
+        gifBtn.disabled = true;
+        
+        // Phase 1: Scan training to find convergence
+        setTimeout(() => {
+            const scanResult = scanForConvergence();
+            gifBtn.textContent = 'Recording...';
+            
+            // Phase 2: Reset and record with adaptive keyframes
+            reset();
+            
+            setTimeout(() => {
+                startAdaptiveCapture(scanResult, () => {
+                    gifBtn.textContent = originalText;
+                    gifBtn.disabled = false;
+                });
+            }, 100);
+        }, 50);
+    }
+    
+    function scanForConvergence() {
+        // Save current state
+        const savedNetwork = JSON.parse(JSON.stringify(network));
+        const savedHistory = JSON.parse(JSON.stringify(history));
+        const savedTrainingState = JSON.parse(JSON.stringify(trainingState));
+        
+        // Reset for scan
+        reset();
+        
+        const losses = [];
+        const maxScanSteps = 500;
+        const targetFrames = 80;
+        
+        // Run silent training to collect loss data
+        for (let i = 0; i < maxScanSteps; i++) {
+            trainStep();
+            losses.push(history.loss[history.loss.length - 1]);
+            
+            // Check for early convergence
+            if (losses.length > 50) {
+                const recent = losses.slice(-30);
+                const variance = computeVariance(recent);
+                const mean = recent.reduce((a, b) => a + b, 0) / recent.length;
+                if (variance < 0.0001 * mean * mean) {
+                    break; // Converged early
+                }
+            }
+        }
+        
+        // Analyze loss curve to find interesting region
+        const L0 = losses[0];
+        const Lmin = Math.min(...losses);
+        const totalDrop = L0 - Lmin;
+        
+        // Find key milestones
+        let start5pct = 0, start50pct = 0, end90pct = losses.length - 1, convergencePoint = losses.length - 1;
+        
+        for (let i = 0; i < losses.length; i++) {
+            const drop = L0 - losses[i];
+            if (start5pct === 0 && drop >= 0.05 * totalDrop) start5pct = i;
+            if (start50pct === 0 && drop >= 0.50 * totalDrop) start50pct = i;
+            if (drop >= 0.90 * totalDrop) { end90pct = i; break; }
+        }
+        
+        // Detect convergence (low variance)
+        for (let i = 50; i < losses.length; i++) {
+            const window = losses.slice(i - 30, i);
+            const variance = computeVariance(window);
+            const mean = window.reduce((a, b) => a + b, 0) / window.length;
+            if (variance < 0.0001 * mean * mean) {
+                convergencePoint = i;
+                break;
+            }
+        }
+        
+        // Compute |dL/dt| for each step
+        const derivatives = losses.map((L, i) => 
+            i === 0 ? 0 : Math.abs(losses[i-1] - L)
+        );
+        
+        // Select keyframes adaptively
+        const keyframes = selectKeyframes(losses, derivatives, {
+            start5pct, start50pct, end90pct, convergencePoint
+        }, targetFrames);
+        
+        // Restore original state
+        network = savedNetwork;
+        history = savedHistory;
+        trainingState = savedTrainingState;
+        
+        return { losses, keyframes, convergencePoint };
+    }
+    
+    function computeVariance(arr) {
+        if (arr.length === 0) return 0;
+        const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+        return arr.reduce((sum, val) => sum + (val - mean) ** 2, 0) / arr.length;
+    }
+    
+    function selectKeyframes(losses, derivatives, milestones, targetFrames) {
+        const frames = new Set([0]); // Always include first
+        
+        // Always include milestone frames
+        frames.add(milestones.start5pct);
+        frames.add(milestones.start50pct);
+        frames.add(milestones.end90pct);
+        frames.add(Math.min(milestones.convergencePoint, losses.length - 1));
+        frames.add(losses.length - 1); // Always include last
+        
+        // Score each step by "interestingness" (derivative magnitude)
+        const maxDeriv = Math.max(...derivatives.slice(1)) || 1;
+        const scores = derivatives.map(d => d / maxDeriv);
+        
+        // Add frames based on derivative (more change = more frames)
+        const numSegments = 20;
+        const segmentSize = Math.ceil(losses.length / numSegments);
+        
+        for (let seg = 0; seg < numSegments; seg++) {
+            const segStart = seg * segmentSize;
+            const segEnd = Math.min((seg + 1) * segmentSize, losses.length);
+            
+            // Find max derivative in this segment
+            let maxIdx = segStart;
+            let maxScore = 0;
+            for (let i = segStart; i < segEnd; i++) {
+                if (scores[i] > maxScore) {
+                    maxScore = scores[i];
+                    maxIdx = i;
+                }
+            }
+            
+            // Add more frames for high-derivative segments
+            if (maxScore > 0.1) {
+                frames.add(maxIdx);
+                // Add extra frames around high-action areas
+                if (maxScore > 0.3 && seg < numSegments - 1) {
+                    frames.add(Math.min(maxIdx + 2, losses.length - 1));
+                }
+            } else {
+                // Low derivative - just sample the segment sparsely
+                frames.add(Math.floor((segStart + segEnd) / 2));
+            }
+        }
+        
+        // Convert to sorted array and limit to targetFrames
+        let result = [...frames].sort((a, b) => a - b);
+        
+        // If we have too many, subsample evenly
+        while (result.length > targetFrames) {
+            // Remove every other frame except first/last
+            const newResult = [result[0]];
+            for (let i = 2; i < result.length - 1; i += 2) {
+                newResult.push(result[i]);
+            }
+            newResult.push(result[result.length - 1]);
+            result = newResult;
+        }
+        
+        return result;
+    }
+    
+    function startAdaptiveCapture(scanResult, onComplete) {
+        const { keyframes } = scanResult;
+        
+        // Reset to fresh state with same random seed
+        reset();
+        
+        const composite = createCompositeCanvas();
+        
+        try {
+            gifCapture.gif = new GIF({
+                workers: 2,
+                quality: 10,
+                width: composite.width,
+                height: composite.height,
+                workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
+            });
+        } catch (e) {
+            console.error('Failed to create GIF:', e);
+            alert('GIF capture failed: ' + e.message);
+            if (onComplete) onComplete();
+            return;
+        }
+        
+        gifCapture.recording = true;
+        gifCapture.keyframes = keyframes;
+        gifCapture.keyframeIndex = 0;
+        gifCapture.currentStep = 0;
+        
+        gifCapture.gif.on('finished', function (blob) {
+            // Clear timeout since we finished normally
+            if (gifCapture.timeout) {
+                clearTimeout(gifCapture.timeout);
+                gifCapture.timeout = null;
+            }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-            a.download = `ai_training_${timestamp}.gif`;
+            a.download = `convergence_${timestamp}.gif`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             gifCapture.recording = false;
+            if (onComplete) onComplete();
         });
-
-        captureGifFrameLoop();
+        
+        // Timeout safety - force complete after 30 seconds
+        gifCapture.timeout = setTimeout(() => {
+            if (gifCapture.recording) {
+                console.warn('GIF capture timeout - forcing completion');
+                gifCapture.recording = false;
+                gifCapture.gif = null;
+                if (onComplete) onComplete();
+            }
+        }, 30000);
+        
+        adaptiveCaptureLoop();
     }
-
-    function captureGifFrameLoop() {
-        if (!gifCapture.recording || gifCapture.framesRemaining <= 0) {
-            gifCapture.gif.render();
+    
+    function adaptiveCaptureLoop() {
+        if (!gifCapture.recording || gifCapture.keyframeIndex >= gifCapture.keyframes.length) {
+            if (gifCapture.gif) {
+                gifCapture.gif.render();
+            }
             return;
         }
-
-        trainStep();
+        
+        const targetStep = gifCapture.keyframes[gifCapture.keyframeIndex];
+        
+        // Train until we reach the target step (with safety limit)
+        let safetyCounter = 0;
+        const maxIterations = 10000;
+        while (gifCapture.currentStep < targetStep && safetyCounter < maxIterations) {
+            const prevStep = trainingState.step;
+            trainStep();
+            gifCapture.currentStep++;
+            safetyCounter++;
+            
+            // If trainStep didn't actually train (NaN or other issue), break out
+            if (trainingState.step === prevStep || !Number.isFinite(history.loss[history.loss.length - 1])) {
+                console.warn('GIF capture: training issue detected, finishing early');
+                gifCapture.keyframeIndex = gifCapture.keyframes.length; // Force finish
+                break;
+            }
+        }
+        
         updateUI();
-
-        // Capture composite of all canvases
+        
+        // Calculate delay based on next keyframe distance (variable speed)
+        let delay = 100;
+        if (gifCapture.keyframeIndex < gifCapture.keyframes.length - 1) {
+            const gap = gifCapture.keyframes[gifCapture.keyframeIndex + 1] - targetStep;
+            // Bigger gaps = less action = shorter delay (faster playback)
+            delay = gap > 20 ? 50 : gap > 5 ? 100 : 150;
+        } else {
+            delay = 200; // Pause at end
+        }
+        
+        // Capture frame
         const composite = createCompositeCanvas();
-        gifCapture.gif.addFrame(composite, {copy: true, delay: 100});
-
-        gifCapture.framesRemaining -= 1;
-        setTimeout(captureGifFrameLoop, 100);
+        gifCapture.gif.addFrame(composite, {copy: true, delay});
+        
+        gifCapture.keyframeIndex++;
+        setTimeout(adaptiveCaptureLoop, 30);
     }
 
     function initializeOptimizerState() {
@@ -864,6 +1163,35 @@ function updateParameters() {
     const epsilon = 1e-8;
     const rho = 0.9;
     const momentumCoeff = 0.9;
+    const gradClip = 5.0;  // Gradient clipping threshold
+
+    // Clip gradients to prevent explosion
+    function clipGrad(g) {
+        if (!Number.isFinite(g)) return 0;
+        return Math.max(-gradClip, Math.min(gradClip, g));
+    }
+    
+    // Apply gradient clipping to all gradients
+    for (let l = 0; l < grads.weights.length; l++) {
+        const gw = grads.weights[l];
+        if (Array.isArray(gw[0])) {
+            for (let i = 0; i < gw.length; i++) {
+                for (let j = 0; j < gw[i].length; j++) {
+                    gw[i][j] = clipGrad(gw[i][j]);
+                }
+            }
+        } else {
+            for (let i = 0; i < gw.length; i++) {
+                gw[i] = clipGrad(gw[i]);
+            }
+        }
+    }
+    for (let l = 0; l < grads.biases.length; l++) {
+        const gb = grads.biases[l];
+        for (let i = 0; i < gb.length; i++) {
+            gb[i] = clipGrad(gb[i]);
+        }
+    }
 
     let idx = 0;
 
@@ -1036,7 +1364,10 @@ function updateParameters() {
                 hiddenSize: network.hiddenSize,
                 targetFuncStr: config.targetFuncStr,
                 optimizer: config.optimizer
-            }
+            },
+            // Save loss landscape trail for comparison visualization
+            lossSurfaceTrail: lossSurfaceTrail.slice(),
+            lossSurfaceWeightIndices: lossSurfaceWeightIndices.slice()
         };
 
         savedRuns[slot] = run;
@@ -1123,31 +1454,47 @@ function updateParameters() {
 
     function compileTargetFunc() {
         const input = document.getElementById('targetFuncInput');
-        let fStr = input.value.trim() || 'x*x';
+        let originalStr = input.value.trim() || 'x*x';
+        
+        // Make case-insensitive by converting to lowercase for function matching
+        let fStr = originalStr;
         
         // Allow ^ as power operator (convert to **)
         fStr = fStr.replace(/\^/g, '**');
         
-        // Convert shorthand functions to Math.* (order matters - longer names first)
-        fStr = fStr.replace(/\blog10\b/g, 'Math.log10');  // log base 10
-        fStr = fStr.replace(/\bsqrt\b/g, 'Math.sqrt');
-        fStr = fStr.replace(/\babs\b/g, 'Math.abs');
-        fStr = fStr.replace(/\bsin\b/g, 'Math.sin');
-        fStr = fStr.replace(/\bcos\b/g, 'Math.cos');
-        fStr = fStr.replace(/\btan\b/g, 'Math.tan');
-        fStr = fStr.replace(/\bexp\b/g, 'Math.exp');      // e^x (natural exponential)
-        fStr = fStr.replace(/\blog\b/g, 'Math.log');      // natural log (ln)
-        fStr = fStr.replace(/\bfloor\b/g, 'Math.floor');
-        fStr = fStr.replace(/\bceil\b/g, 'Math.ceil');
-        fStr = fStr.replace(/\bround\b/g, 'Math.round');
-        fStr = fStr.replace(/\bsign\b/g, 'Math.sign');
-        fStr = fStr.replace(/\bmin\b/g, 'Math.min');
-        fStr = fStr.replace(/\bmax\b/g, 'Math.max');
-        fStr = fStr.replace(/\bpow\b/g, 'Math.pow');
+        // Convert shorthand functions to Math.* (case-insensitive)
+        // Order matters - longer names first
+        fStr = fStr.replace(/\blog10\b/gi, 'Math.log10');  // log base 10
+        fStr = fStr.replace(/\bsqrt\b/gi, 'Math.sqrt');
+        fStr = fStr.replace(/\babs\b/gi, 'Math.abs');
+        fStr = fStr.replace(/\bsin\b/gi, 'Math.sin');
+        fStr = fStr.replace(/\bcos\b/gi, 'Math.cos');
+        fStr = fStr.replace(/\btan\b/gi, 'Math.tan');
+        fStr = fStr.replace(/\bexp\b/gi, 'Math.exp');      // e^x (natural exponential)
+        fStr = fStr.replace(/\blog\b/gi, 'Math.log');      // natural log (ln)
+        fStr = fStr.replace(/\bfloor\b/gi, 'Math.floor');
+        fStr = fStr.replace(/\bceil\b/gi, 'Math.ceil');
+        fStr = fStr.replace(/\bround\b/gi, 'Math.round');
+        fStr = fStr.replace(/\bsign\b/gi, 'Math.sign');
+        fStr = fStr.replace(/\bmin\b/gi, 'Math.min');
+        fStr = fStr.replace(/\bmax\b/gi, 'Math.max');
+        fStr = fStr.replace(/\bpow\b/gi, 'Math.pow');
         
-        // Convert constants (but not inside already-converted Math.*)
-        fStr = fStr.replace(/\bPI\b/g, 'Math.PI');        // π ≈ 3.14159
-        fStr = fStr.replace(/\bE\b/g, 'Math.E');          // e ≈ 2.71828
+        // Convert constants (case-insensitive)
+        fStr = fStr.replace(/\bPI\b/gi, 'Math.PI');        // π ≈ 3.14159
+        fStr = fStr.replace(/\bE\b/gi, 'Math.E');          // e ≈ 2.71828
+        
+        // Make x case-insensitive (X -> x)
+        fStr = fStr.replace(/\bX\b/g, 'x');
+
+        // Get or create error display elements
+        let errorSpan = document.getElementById('targetFuncError');
+        if (!errorSpan) {
+            errorSpan = document.createElement('span');
+            errorSpan.id = 'targetFuncError';
+            errorSpan.style.cssText = 'color:#dc3545; font-size:11px; margin-left:8px; display:block;';
+            input.parentNode.appendChild(errorSpan);
+        }
 
         try {
             const fn = new Function('x', 'return ' + fStr + ';');
@@ -1159,22 +1506,46 @@ function updateParameters() {
             config.targetFuncStr = fStr;
             input.style.borderColor = '#28a745';  // Green border for valid
             input.style.backgroundColor = '#fff';
-            // Clear any error message
-            const errorSpan = document.getElementById('targetFuncError');
-            if (errorSpan) errorSpan.textContent = '';
+            errorSpan.textContent = '';
+            errorSpan.innerHTML = '';
         } catch (e) {
             // Highlight input in red but DON'T revert - let user continue editing
             input.style.borderColor = '#dc3545';
             input.style.backgroundColor = '#fff0f0';
-            // Show inline error message
-            let errorSpan = document.getElementById('targetFuncError');
-            if (!errorSpan) {
-                errorSpan = document.createElement('span');
-                errorSpan.id = 'targetFuncError';
-                errorSpan.style.cssText = 'color:#dc3545; font-size:11px; margin-left:8px;';
-                input.parentNode.appendChild(errorSpan);
+            
+            // Try to extract position info from error message
+            const errorMsg = e.message;
+            let highlightedError = errorMsg;
+            
+            // Try to find problematic tokens
+            const unexpectedMatch = errorMsg.match(/Unexpected token '?([^']*)'?/i);
+            const identifierMatch = errorMsg.match(/(\w+) is not defined/i);
+            
+            if (unexpectedMatch && unexpectedMatch[1]) {
+                const badToken = unexpectedMatch[1];
+                const pos = originalStr.indexOf(badToken);
+                if (pos >= 0) {
+                    // Show the input with the bad part highlighted
+                    const before = originalStr.substring(0, pos);
+                    const bad = originalStr.substring(pos, pos + badToken.length);
+                    const after = originalStr.substring(pos + badToken.length);
+                    highlightedError = `Error at "<span style="background:#ffcccc;padding:0 2px;border-radius:2px;font-weight:bold;">${bad}</span>": ${errorMsg}`;
+                }
+            } else if (identifierMatch && identifierMatch[1]) {
+                const badId = identifierMatch[1];
+                // Find case-insensitive match in original
+                const regex = new RegExp('\\b' + badId + '\\b', 'i');
+                const match = originalStr.match(regex);
+                if (match) {
+                    const pos = originalStr.search(regex);
+                    const before = originalStr.substring(0, pos);
+                    const bad = match[0];
+                    const after = originalStr.substring(pos + bad.length);
+                    highlightedError = `Unknown: "<span style="background:#ffcccc;padding:0 2px;border-radius:2px;font-weight:bold;">${bad}</span>" - did you mean a function like sin, cos, exp?`;
+                }
             }
-            errorSpan.textContent = '⚠ ' + e.message;
+            
+            errorSpan.innerHTML = '⚠ ' + highlightedError;
             // Keep the previous valid function running - don't change config.targetFunc
         }
     }
@@ -1409,16 +1780,19 @@ function updateParameters() {
             }
             deltas[l] = delta;
 
-            const prev = activations[l];
+            // Get input to this layer: for l=0 it's x, otherwise it's activations[l-1]
             const gW = grads.weights[l];
             const gB = grads.biases[l];
 
             if (l === 0) {
+                // First layer: input is x (scalar)
                 for (let i = 0; i < H; i++) {
-                    gW[i] = delta[i] * prev[0];
+                    gW[i] = delta[i] * x;
                     gB[i] = delta[i];
                 }
             } else {
+                // Hidden layers: input is previous layer's activations
+                const prev = activations[l - 1];
                 for (let i = 0; i < H; i++) {
                     for (let j = 0; j < H; j++) {
                         gW[i][j] = delta[i] * prev[j];
@@ -1452,6 +1826,13 @@ function updateParameters() {
         const fwd = forward(sample.x);
         const loss = backward(sample.x, sample.y, fwd);
 
+        // Check for NaN - if detected, stop training and warn
+        if (!Number.isFinite(loss) || !Number.isFinite(fwd.yhat)) {
+            console.warn('NaN detected in training - stopping. Try reducing learning rate or resetting.');
+            trainingState.running = false;
+            return;
+        }
+
         updateParameters();
 
         history.steps.push(trainingState.step);
@@ -1474,8 +1855,13 @@ function updateParameters() {
         for (let i = history.loss.length - 1; i >= 0 && count < window; i--, count++) {
             sum += history.loss[i];
         }
-        const avg = sum / Math.max(1, count);
-        history.avgLoss.push(avg);
+        // Only show meaningful average after we have at least 3 data points
+        const minPointsForAvg = 3;
+        if (history.loss.length >= minPointsForAvg) {
+            history.avgLoss.push(sum / count);
+        } else {
+            history.avgLoss.push(null);  // Will be skipped when drawing
+        }
 
         const maxSamples = 500;
         trainingState.recentSamples.push(sample);
@@ -1487,6 +1873,24 @@ function updateParameters() {
         const ops = computeOpsPerStep();
         trainingState.totalAdds += ops.fwdAdds + ops.lossAdds + ops.backAdds;
         trainingState.totalMuls += ops.fwdMuls + ops.lossMuls + ops.backMuls;
+        
+        // Update loss surface trail - adaptive sampling for full history
+        // Record more frequently at start, less frequently as training progresses
+        const trailInterval = trainingState.step < 100 ? 2 : 
+                             trainingState.step < 1000 ? 5 : 
+                             trainingState.step < 5000 ? 10 : 20;
+        if (trainingState.step % trailInterval === 0 && lossSurfaceCache) {
+            const wx = getWeightByIndex(lossSurfaceWeightIndices[0]);
+            const wy = getWeightByIndex(lossSurfaceWeightIndices[1]);
+            lossSurfaceTrail.push({ x: wx, y: wy });
+            // No limit - keep full history for complete path visualization
+        }
+        
+        // Auto-refresh loss surface every N steps (if cache exists)
+        if (lossSurfaceAutoUpdate && lossSurfaceCache && trainingState.step % lossSurfaceUpdateInterval === 0) {
+            // Just redraw, don't recompute (too expensive)
+            drawLossSurface();
+        }
     }
 
     function runLoop() {
@@ -1508,6 +1912,14 @@ function updateParameters() {
 
         updateUI();
 
+        // Auto-pause if no improvement in last 1000 steps
+        if (shouldAutoPause()) {
+            trainingState.running = false;
+            document.getElementById('runBtn').textContent = 'Run';
+            console.log('Auto-paused: no improvement in last 1000 steps');
+            return;
+        }
+
         if (trainingState.running) {
             requestAnimationFrame(runLoop);
         }
@@ -1522,6 +1934,21 @@ function updateParameters() {
         trainingState.lastUpdateTime = performance.now();
         trainingState.stepsSinceLastUpdate = 0;
         trainingState.recentSamples = [];
+        
+        // Stop any ongoing GIF recording
+        if (gifCapture.recording || gifCapture.timeout) {
+            gifCapture.recording = false;
+            gifCapture.gif = null;
+            if (gifCapture.timeout) {
+                clearTimeout(gifCapture.timeout);
+                gifCapture.timeout = null;
+            }
+            const gifBtn = document.getElementById('gifBtn');
+            if (gifBtn) {
+                gifBtn.textContent = 'Capture GIF';
+                gifBtn.disabled = false;
+            }
+        }
 
         history.steps = [];
         history.loss = [];
@@ -1533,6 +1960,24 @@ function updateParameters() {
 
         compileTargetFunc();
         initializeNetwork();
+        
+        // Repopulate weight selectors and recompute loss surface
+        populateWeightSelectors();
+        lossSurfaceCache = null;
+        lossSurfaceTrail = [];  // Clear optimization trail
+        
+        // Recompute loss surface after reset
+        if (lossLandscapeAutoMode) {
+            autoSelectInterestingWeights();
+        }
+        computeLossSurface();
+        
+        // Record starting position for trail
+        lossSurfaceStartPosition = {
+            x: getWeightByIndex(lossSurfaceWeightIndices[0]),
+            y: getWeightByIndex(lossSurfaceWeightIndices[1])
+        };
+        lossSurfaceTrail = [lossSurfaceStartPosition];
 
         const sample = sampleTrainingPoint();
         const fwd = forward(sample.x);
@@ -1574,8 +2019,8 @@ function updateParameters() {
         const animLayer = animState?.layer;
         
         // Layout calculations - input/output gaps are 50% of hidden layer spacing
-        const marginLeft = 35;
-        const marginRight = 70;  // Larger to fit y-hat node
+        const marginLeft = 50;   // Increased for weight labels
+        const marginRight = 80;  // Larger to fit y-hat node and weight labels
         const usableWidth = w - marginLeft - marginRight;
         
         // Calculate spacing: input-to-hidden and hidden-to-output are 0.5x the hidden-to-hidden spacing
@@ -1587,7 +2032,7 @@ function updateParameters() {
         const hiddenLayerSpacing = usableWidth / totalSegments;
         const inputOutputGap = hiddenLayerSpacing * 0.5;  // 50% of hidden layer spacing
         
-        const nodeRadius = 24;
+        const nodeRadius = 20;
         const fontSize = 13;
         const smallFont = 10;
         const weightFont = 9;  // Smaller font for weights
@@ -1603,7 +2048,7 @@ function updateParameters() {
         for (let l = 0; l < numLayers; l++) {
             const x = hiddenStartX + hiddenLayerSpacing * l;
             const nodes = [];
-            const spacing = Math.min(55, (h - 100) / (hiddenSize - 1 || 1));
+            const spacing = Math.min(70, (h - 80) / (hiddenSize - 1 || 1));
             const startY = h/2 - (hiddenSize - 1) * spacing / 2;
             for (let i = 0; i < hiddenSize; i++) {
                 nodes.push({y: startY + i * spacing});
@@ -1618,6 +2063,25 @@ function updateParameters() {
         ctx.font = `${weightFont}px sans-serif`;
         ctx.textAlign = 'center';
         
+        // Helper to compute flat weight index for loss landscape highlighting
+        function getWeightFlatIndex(layerIdx, fromIdx, toIdx) {
+            let idx = 0;
+            const H = hiddenSize;
+            // Input to first hidden
+            if (layerIdx === 0) return toIdx;
+            idx += H;
+            // Hidden to hidden
+            for (let l = 1; l < layerIdx; l++) {
+                idx += H * H;
+            }
+            if (layerIdx < numLayers) {
+                return idx + fromIdx * H + toIdx;
+            }
+            idx += (numLayers - 1) * H * H;
+            // Output layer
+            return idx + fromIdx;
+        }
+        
         for (let l = 0; l < layers.length - 1; l++) {
             const fromLayer = layers[l];
             const toLayer = layers[l + 1];
@@ -1629,10 +2093,26 @@ function updateParameters() {
             const totalConnections = fromLayer.nodes.length * toLayer.nodes.length;
             let connectionIdx = 0;
             
+            // Check for backward pass highlighting
+            const shouldHighlightBack = isAnimating && animPhase === 'backward' && animLayer === l + 1;
+            
             fromLayer.nodes.forEach((fromNode, fromIdx) => {
                 toLayer.nodes.forEach((toNode, toIdx) => {
-                    ctx.strokeStyle = shouldHighlight ? '#90EE90' : '#007bff';
-                    ctx.lineWidth = shouldHighlight ? 2 : 1;
+                    // Check if this weight is selected for loss landscape
+                    const flatIdx = getWeightFlatIndex(l, fromIdx, toIdx);
+                    const isLossLandscapeWeight = (flatIdx === lossSurfaceWeightIndices[0] || flatIdx === lossSurfaceWeightIndices[1]);
+                    
+                    // Use green for forward pass, red for backward pass (matches Ops/Step table)
+                    if (shouldHighlight) {
+                        ctx.strokeStyle = '#28a745';  // Green for forward
+                        ctx.lineWidth = 3;
+                    } else if (shouldHighlightBack) {
+                        ctx.strokeStyle = '#dc3545';  // Red for backward
+                        ctx.lineWidth = 3;
+                    } else {
+                        ctx.strokeStyle = '#007bff';
+                        ctx.lineWidth = 1;
+                    }
                     ctx.beginPath();
                     ctx.moveTo(fromLayer.x, fromNode.y);
                     ctx.lineTo(toLayer.x, toNode.y);
@@ -1640,9 +2120,15 @@ function updateParameters() {
                     
                     // Draw weight value on connection with horizontal offset to prevent overlap
                     // Offset based on connection index, spreading weights along the line
-                    const t = totalConnections > 1 ? 0.3 + 0.4 * (connectionIdx / (totalConnections - 1)) : 0.5;
-                    const labelX = fromLayer.x + (toLayer.x - fromLayer.x) * t;
-                    const labelY = fromNode.y + (toNode.y - fromNode.y) * t;
+                    // Use narrower range (0.35-0.65) to keep weights away from edges
+                    const t = totalConnections > 1 ? 0.35 + 0.3 * (connectionIdx / (totalConnections - 1)) : 0.5;
+                    let labelX = fromLayer.x + (toLayer.x - fromLayer.x) * t;
+                    let labelY = fromNode.y + (toNode.y - fromNode.y) * t;
+                    
+                    // Clamp to canvas bounds with padding
+                    const textPadding = 20;
+                    labelX = Math.max(textPadding, Math.min(w - textPadding, labelX));
+                    labelY = Math.max(12, Math.min(h - 12, labelY));
                     
                     let weight;
                     if (l === 0) {
@@ -1655,11 +2141,18 @@ function updateParameters() {
                     
                     if (weight !== undefined) {
                         // Draw small background for readability
-                        ctx.fillStyle = 'rgba(255,255,255,0.8)';
                         const textWidth = ctx.measureText(weight.toFixed(2)).width;
-                        ctx.fillRect(labelX - textWidth/2 - 1, labelY - 8, textWidth + 2, 10);
+                        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                        ctx.fillRect(labelX - textWidth/2 - 2, labelY - 8, textWidth + 4, 11);
                         ctx.fillStyle = '#007bff';
-                        ctx.fillText(weight.toFixed(2), labelX, labelY - 1);
+                        ctx.fillText(weight.toFixed(2), labelX, labelY);
+                        
+                        // Subtle blue box for loss landscape weights
+                        if (isLossLandscapeWeight) {
+                            ctx.strokeStyle = '#007bff';
+                            ctx.lineWidth = 1.5;
+                            ctx.strokeRect(labelX - textWidth/2 - 3, labelY - 9, textWidth + 6, 13);
+                        }
                     }
                     connectionIdx++;
                 });
@@ -1667,12 +2160,11 @@ function updateParameters() {
         }
         
         // Draw nodes
-        const actSymbol = config.activation === 'relu' ? 'ReLU' : 
-                          config.activation === 'tanh' ? 'tanh' : 'σ';
+        const actSymbol = config.activation === 'relu' ? 'ReLU' : 'σ';
         
         // Determine if we can show full equations (small networks only)
         const canShowFullEq = numLayers <= 2 && hiddenSize <= 4;
-        const wideRadius = canShowFullEq ? nodeRadius * 2.5 : nodeRadius * 1.2;
+        const wideRadius = canShowFullEq ? nodeRadius * 2.2 : nodeRadius * 1.15;
         
         // Helper to format weight with sign
         const fmtW = (w) => {
@@ -1803,6 +2295,32 @@ function updateParameters() {
             });
         });
         
+        // Draw bias values for all non-input nodes
+        ctx.font = '8px sans-serif';
+        ctx.textAlign = 'center';
+        layers.forEach((layer, layerIdx) => {
+            if (layerIdx === 0) return;  // Skip input layer
+            
+            layer.nodes.forEach((node, nodeIdx) => {
+                let bias = 0;
+                if (layerIdx < layers.length - 1) {
+                    // Hidden layer bias
+                    bias = network.biases[layerIdx - 1] ? network.biases[layerIdx - 1][nodeIdx] : 0;
+                } else {
+                    // Output layer bias
+                    bias = network.biases[network.biases.length - 1] ? network.biases[network.biases.length - 1][0] : 0;
+                }
+                
+                // Draw bias value below node (closer to bubble)
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                const biasText = `b=${bias.toFixed(1)}`;
+                const textW = ctx.measureText(biasText).width;
+                ctx.fillRect(layer.x - textW/2 - 1, node.y + nodeRadius - 1, textW + 2, 10);
+                ctx.fillStyle = '#e67e22';
+                ctx.fillText(biasText, layer.x, node.y + nodeRadius + 7);
+            });
+        });
+        
         // Input label - larger and bolder
         ctx.fillStyle = '#333';
         ctx.font = 'bold 18px sans-serif';
@@ -1832,21 +2350,32 @@ function updateParameters() {
             }
         }
         
-        // Bottom: architecture info
-        ctx.fillStyle = '#666';
-        ctx.font = '9px sans-serif';
+        // Bottom: architecture info - larger font for readability
+        ctx.fillStyle = '#333';
+        ctx.font = 'bold 12px sans-serif';
         ctx.textAlign = 'center';
-        const optName = config.optimizer === 'sgd' ? 'Simple' : config.optimizer;
-        ctx.fillText(`L=${numLayers} layers, H=${hiddenSize} units, σ=${actSymbol}, opt=${optName}`, w/2, h - 6);
+        const optName = config.optimizer === 'sgd' ? 'Simple' : 'Adam';
+        // Count total weights: first layer (H) + hidden layers ((L-1)*H*H) + output layer (H)
+        const totalWeights = hiddenSize + (numLayers - 1) * hiddenSize * hiddenSize + hiddenSize;
+        const totalBiases = numLayers * hiddenSize + 1;
+        const totalParams = totalWeights + totalBiases;
+        ctx.fillText(`${numLayers} hidden layer${numLayers > 1 ? 's' : ''} × ${hiddenSize} neurons  •  ${totalParams} params  •  ${actSymbol}  •  ${optName}`, w/2, h - 6);
         
-        // Update HTML Ops/Step table
+        // Update HTML Ops/Step table (check elements exist first)
         const ops = computeOpsPerStep();
-        document.getElementById('opsFwdAdds').textContent = ops.fwdAdds;
-        document.getElementById('opsFwdMuls').textContent = ops.fwdMuls;
-        document.getElementById('opsBackAdds').textContent = ops.backAdds;
-        document.getElementById('opsBackMuls').textContent = ops.backMuls;
-        document.getElementById('opsTotAdds').textContent = ops.fwdAdds + ops.backAdds;
-        document.getElementById('opsTotMuls').textContent = ops.fwdMuls + ops.backMuls;
+        const opsFwdAdds = document.getElementById('opsFwdAdds');
+        const opsFwdMuls = document.getElementById('opsFwdMuls');
+        const opsBackAdds = document.getElementById('opsBackAdds');
+        const opsBackMuls = document.getElementById('opsBackMuls');
+        const opsTotAdds = document.getElementById('opsTotAdds');
+        const opsTotMuls = document.getElementById('opsTotMuls');
+        
+        if (opsFwdAdds) opsFwdAdds.textContent = ops.fwdAdds;
+        if (opsFwdMuls) opsFwdMuls.textContent = ops.fwdMuls;
+        if (opsBackAdds) opsBackAdds.textContent = ops.backAdds;
+        if (opsBackMuls) opsBackMuls.textContent = ops.backMuls;
+        if (opsTotAdds) opsTotAdds.textContent = ops.fwdAdds + ops.backAdds;
+        if (opsTotMuls) opsTotMuls.textContent = ops.fwdMuls + ops.backMuls;
     }
     
     // Animated step function
@@ -1935,16 +2464,15 @@ function updateParameters() {
         const L = network.numLayers;
         const H = network.hiddenSize;
         const act = config.activation;
-        const actName = act === 'relu' ? 'ReLU' : (act === 'tanh' ? 'tanh' : 'sigmoid');
+        const actName = act === 'relu' ? 'ReLU' : 'Sigmoid';
         
         // Subscript numbers for cleaner notation
-        const sub = (n) => ['₀','₁','₂','₃'][n] || n;
+        const sub = (n) => ['₀','₁','₂','₃','₄'][n] || n;
         
         // Activation derivative in calculus terms
         const actDeriv = {
-            'relu': "f'(z) = 1 if z > 0, else 0",
-            'tanh': "f'(z) = 1 − tanh²(z)",
-            'sigmoid': "f'(z) = f(z) · (1 − f(z))"
+            'relu': "f'(z) = 1 if z > 0, else 0  <em style='color:#888'>(no saturation!)</em>",
+            'sigmoid': "f'(z) = f(z) · (1 − f(z))  <em style='color:#888'>(can vanish near 0 or 1)</em>"
         };
         
         let forwardHtml = `
@@ -1980,6 +2508,18 @@ function updateParameters() {
         
         backwardHtml += `<br><strong>Activation derivative:</strong><br>${actDeriv[act]}`;
         
+        // Optimizer explanation
+        const optName = config.optimizer === 'sgd' ? 'Simple (SGD)' : 'Adam';
+        const optExplain = config.optimizer === 'sgd' 
+            ? `<strong>Weight Update:</strong><br>
+               w ← w − η · ∂L/∂w<br>
+               <em style="color:#888">Each weight changes proportionally to its gradient.</em>`
+            : `<strong>Weight Update:</strong><br>
+               m ← 0.9·m + 0.1·∇L <em style="color:#888">(momentum)</em><br>
+               v ← 0.999·v + 0.001·(∇L)² <em style="color:#888">(adapt)</em><br>
+               w ← w − η · m / √v<br>
+               <em style="color:#888">Momentum smooths updates; adaptive rates help rare gradients.</em>`;
+        
         const html = `
             <div class="equation-block">
                 <div class="equation-title">Forward Pass</div>
@@ -1988,6 +2528,9 @@ function updateParameters() {
             <div class="equation-block">
                 <div class="equation-title">Backward Pass (Gradients)</div>
                 <div class="math">${backwardHtml}</div>
+                <br>
+                <div class="equation-title" style="margin-top:8px;">Optimizer: ${optName}</div>
+                <div class="math">${optExplain}</div>
             </div>
         `;
         
@@ -2000,7 +2543,11 @@ function updateParameters() {
         const ctx = canvas.getContext('2d');
         const w = canvas.width;
         const h = canvas.height;
-        const padding = 50;
+        const paddingLeft = 50;
+        const paddingRight = 50;
+        const paddingTop = 30;  // Reduced from 50 to move graph up
+        const paddingBottom = 38;  // Reduced to bring axis labels closer to handles
+        const padding = 50;  // Keep for backward compatibility where uniform padding used
 
         ctx.clearRect(0, 0, w, h);
 
@@ -2057,12 +2604,14 @@ function updateParameters() {
         }
         const yRange = yMax - yMin || 1;
 
-        const toCanvasX = (x) => padding + (x - xMin) / xRange * (w - 2 * padding);
-        const toCanvasY = (y) => h - padding - (y - yMin) / yRange * (h - 2 * padding);
+        const plotWidth = w - paddingLeft - paddingRight;
+        const plotHeight = h - paddingTop - paddingBottom;
+        const toCanvasX = (x) => paddingLeft + (x - xMin) / xRange * plotWidth;
+        const toCanvasY = (y) => h - paddingBottom - (y - yMin) / yRange * plotHeight;
 
         ctx.strokeStyle = '#ccc';
         ctx.lineWidth = 1;
-        ctx.strokeRect(padding, padding, w - 2 * padding, h - 2 * padding);
+        ctx.strokeRect(paddingLeft, paddingTop, plotWidth, plotHeight);
 
         // Draw X axis tick marks and labels
         ctx.fillStyle = '#666';
@@ -2075,11 +2624,11 @@ function updateParameters() {
             // Tick mark
             ctx.strokeStyle = '#ccc';
             ctx.beginPath();
-            ctx.moveTo(cx, h - padding);
-            ctx.lineTo(cx, h - padding + 5);
+            ctx.moveTo(cx, h - paddingBottom);
+            ctx.lineTo(cx, h - paddingBottom + 5);
             ctx.stroke();
             // Label
-            ctx.fillText(xVal.toFixed(1), cx, h - padding + 16);
+            ctx.fillText(xVal.toFixed(1), cx, h - paddingBottom + 16);
         }
 
         // Draw Y axis tick marks and labels
@@ -2091,11 +2640,11 @@ function updateParameters() {
             // Tick mark
             ctx.strokeStyle = '#ccc';
             ctx.beginPath();
-            ctx.moveTo(padding - 5, cy);
-            ctx.lineTo(padding, cy);
+            ctx.moveTo(paddingLeft - 5, cy);
+            ctx.lineTo(paddingLeft, cy);
             ctx.stroke();
             // Label
-            ctx.fillText(yVal.toFixed(2), padding - 8, cy + 3);
+            ctx.fillText(yVal.toFixed(2), paddingLeft - 8, cy + 3);
         }
 
         ctx.strokeStyle = '#28a745';
@@ -2163,71 +2712,51 @@ function updateParameters() {
         ctx.fillText('y', 0, 0);
         ctx.restore();
 
-        ctx.font = '13px sans-serif';
+        // Single row legend at top
+        ctx.font = '11px sans-serif';
         ctx.textAlign = 'left';
+        const legendY = 14;
+        let legendX = w - 280;
 
+        // f(x) truth - green line
         ctx.strokeStyle = '#28a745';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(w - 150, 20);
-        ctx.lineTo(w - 130, 20);
+        ctx.moveTo(legendX, legendY);
+        ctx.lineTo(legendX + 16, legendY);
         ctx.stroke();
         ctx.fillStyle = '#333';
-        ctx.fillText('f(x) truth', w - 120, 24);
+        ctx.fillText('f(x)', legendX + 20, legendY + 4);
+        legendX += 50;
+
+        // ŷ(x) model - blue line
+        ctx.strokeStyle = '#007bff';
+        ctx.beginPath();
+        ctx.moveTo(legendX, legendY);
+        ctx.lineTo(legendX + 16, legendY);
+        ctx.stroke();
+        ctx.fillStyle = '#333';
+        ctx.fillText('ŷ(x)', legendX + 20, legendY + 4);
+        legendX += 50;
+
+        // samples - red dot
+        ctx.fillStyle = 'rgba(220, 53, 69, 0.5)';
+        ctx.beginPath();
+        ctx.arc(legendX + 4, legendY, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#333';
+        ctx.fillText('samples', legendX + 12, legendY + 4);
 
         if (comparisonMode) {
-            // 2-column legend layout for comparison mode
-            const col1X = w - 150;
-            const col2X = w - 80;
-            const row1Y = 40;
-            const row2Y = 56;
-            
-            // Row 1, Col 1: ŷ_A(x)
-            ctx.strokeStyle = '#007bff';
-            ctx.beginPath();
-            ctx.moveTo(col1X, row1Y);
-            ctx.lineTo(col1X + 20, row1Y);
-            ctx.stroke();
-            ctx.fillStyle = '#333';
-            ctx.fillText('ŷ_A(x)', col1X + 24, row1Y + 4);
-            
-            // Row 1, Col 2: ŷ_B(x)
+            // Add A/B labels for comparison mode
+            legendX += 60;
             ctx.strokeStyle = '#ff9800';
             ctx.beginPath();
-            ctx.moveTo(col2X, row1Y);
-            ctx.lineTo(col2X + 20, row1Y);
-            ctx.stroke();
-            ctx.fillText('ŷ_B(x)', col2X + 24, row1Y + 4);
-            
-            // Row 2, Col 1: samples
-            ctx.fillStyle = 'rgba(220, 53, 69, 0.5)';
-            ctx.beginPath();
-            ctx.arc(col1X + 10, row2Y, 3, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.fillStyle = '#333';
-            ctx.fillText('samples', col1X + 24, row2Y + 4);
-        } else {
-            // 2-column layout: put ŷ(x) model and samples on same row as f(x) truth
-            const row1Y = 20;  // f(x) truth already drawn at this row
-            const row2Y = 36;
-            const col2X = w - 80;
-            
-            // Row 1, Col 2: ŷ(x) model (f(x) truth is already at col 1)
-            ctx.strokeStyle = '#007bff';
-            ctx.beginPath();
-            ctx.moveTo(col2X, row1Y);
-            ctx.lineTo(col2X + 20, row1Y);
+            ctx.moveTo(legendX, legendY);
+            ctx.lineTo(legendX + 16, legendY);
             ctx.stroke();
             ctx.fillStyle = '#333';
-            ctx.fillText('ŷ(x) model', col2X + 24, row1Y + 4);
-            
-            // Row 2, Col 1: samples
-            ctx.fillStyle = 'rgba(220, 53, 69, 0.5)';
-            ctx.beginPath();
-            ctx.arc(w - 140, row2Y, 3, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.fillStyle = '#333';
-            ctx.fillText('samples', w - 120, row2Y + 4);
+            ctx.fillText('ŷ_B', legendX + 20, legendY + 4);
         }
     }
 
@@ -2235,8 +2764,31 @@ function updateParameters() {
                                      paddingLeft, paddingRight,
                                      paddingTop, paddingBottom,
                                      runA, runB,
-                                     showLoss, showAvgLoss, useLogScale = false) {
+                                     showLoss, showAvgLoss, useLogScale = false,
+                                     viewEndStep = null) {
     if (!runA || !runB) return;
+
+    // Apply view filtering if specified
+    let filteredRunA = runA;
+    let filteredRunB = runB;
+    if (viewEndStep !== null) {
+        // Find index where step exceeds viewEndStep
+        const idxA = runA.steps.findIndex(s => s > viewEndStep);
+        const endIdxA = idxA === -1 ? runA.steps.length : idxA;
+        filteredRunA = {
+            steps: runA.steps.slice(0, endIdxA),
+            loss: runA.loss.slice(0, endIdxA),
+            avgLoss: runA.avgLoss.slice(0, endIdxA)
+        };
+        
+        const idxB = runB.steps.findIndex(s => s > viewEndStep);
+        const endIdxB = idxB === -1 ? runB.steps.length : idxB;
+        filteredRunB = {
+            steps: runB.steps.slice(0, endIdxB),
+            loss: runB.loss.slice(0, endIdxB),
+            avgLoss: runB.avgLoss.slice(0, endIdxB)
+        };
+    }
 
     const series = [];
 
@@ -2332,13 +2884,13 @@ function updateParameters() {
     ctx.closePath();
     ctx.stroke();
 
-    // X ticks
+    // X ticks - use nice round values
     ctx.fillStyle = '#666';
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'center';
-    const numXTicks = 5;
-    for (let i = 0; i <= numXTicks; i++) {
-        const s = stepMin + (i / numXTicks) * stepRange;
+    const xTicksComp = getNiceTicks(stepMin, stepMax, 5);
+    xTicksComp.forEach(s => {
+        if (s < stepMin || s > stepMax) return;
         const x = toX(s);
         ctx.strokeStyle = '#e0e0e0';
         ctx.beginPath();
@@ -2347,13 +2899,13 @@ function updateParameters() {
         ctx.stroke();
         ctx.fillStyle = '#666';
         ctx.fillText(Math.round(s).toString(), x, h - paddingBottom + 13);
-    }
+    });
 
-    // Y ticks
+    // Y ticks - use nice round values
     ctx.textAlign = 'right';
-    const numYTicks = 5;
-    for (let i = 0; i <= numYTicks; i++) {
-        const val = yMin + (i / numYTicks) * yRange;
+    const yTicksComp = getNiceTicks(yMin, yMax, 5);
+    yTicksComp.forEach(val => {
+        if (val < yMin || val > yMax) return;
         const y = toY(val);
         ctx.strokeStyle = '#e0e0e0';
         ctx.beginPath();
@@ -2362,7 +2914,7 @@ function updateParameters() {
         ctx.stroke();
         ctx.fillStyle = '#dc3545';
         ctx.fillText(val.toPrecision(3), paddingLeft - 4, y + 3);
-    }
+    });
 
     // Axis labels - moved further left to avoid overlap with tick labels
     ctx.save();
@@ -2376,8 +2928,8 @@ function updateParameters() {
 
     ctx.fillStyle = '#333';
     ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Training Step', w / 2, h - 8);
+    ctx.textAlign = 'right';
+    ctx.fillText('Training Step', w - paddingRight, h - 8);
 
     // Series
     series.forEach(s => {
@@ -2435,26 +2987,75 @@ function drawTrainingTrace() {
     const hasRunB = !!savedRuns.B;
     const comparisonMode = hasRunA && hasRunB && comparisonModeActive;
 
+    // Determine max steps for zoom handle (works for both normal and comparison modes)
+    let maxSteps;
+    if (comparisonMode) {
+        maxSteps = Math.max(
+            savedRuns.A.steps.length > 0 ? savedRuns.A.steps[savedRuns.A.steps.length - 1] : 0,
+            savedRuns.B.steps.length > 0 ? savedRuns.B.steps[savedRuns.B.steps.length - 1] : 0
+        );
+    } else {
+        maxSteps = history.steps.length > 0 ? history.steps[history.steps.length - 1] : 0;
+    }
+    
+    // Show view handle when paused and have enough data to zoom
+    const viewHandle = document.getElementById('traceViewHandle');
+    const hasEnoughData = comparisonMode ? maxSteps > 50 : history.steps.length > 50;
+    if (viewHandle) {
+        const canZoom = !trainingState.running && hasEnoughData;
+        if (canZoom) {
+            viewHandle.style.display = 'flex';
+            viewHandle.style.opacity = '0.9';
+        } else if (hasEnoughData) {
+            // Show but grayed out when running
+            viewHandle.style.display = 'flex';
+            viewHandle.style.opacity = '0.3';
+        } else {
+            viewHandle.style.display = 'none';
+        }
+        
+        // Reset view when running
+        if (trainingState.running) {
+            traceViewEndStep = null;
+        }
+    }
+
     if (comparisonMode) {
         drawTrainingTraceComparison(
             ctx, w, h,
             paddingLeft, paddingRight,
             paddingTop, paddingBottom,
             savedRuns.A, savedRuns.B,
-            showLoss, showAvgLoss, useLogScale
+            showLoss, showAvgLoss, useLogScale,
+            traceViewEndStep  // Pass the view end step
         );
         return;
     }
 
-    if (!history.steps.length) return;
-
+    // Draw axes even when no data yet
+    const hasData = history.steps.length > 0;
+    
+    // Calculate view window: always start from 0, end based on traceViewEndStep (when paused)
+    let viewStartIdx = 0;
+    let viewEndIdx = history.steps.length;
+    
+    // If we have a view end step set, use it
+    if (traceViewEndStep !== null && traceViewEndStep < history.steps.length) {
+        viewEndIdx = Math.max(10, traceViewEndStep);
+    }
+    
+    // Get sliced data for the view
+    const viewSteps = hasData ? history.steps.slice(viewStartIdx, viewEndIdx) : [];
+    const viewLoss = hasData ? history.loss.slice(viewStartIdx, viewEndIdx) : [];
+    const viewAvgLoss = hasData ? history.avgLoss.slice(viewStartIdx, viewEndIdx) : [];
+    
     const series = [];
 
     if (showLoss) {
         series.push({
             name: 'Loss',
-            steps: history.steps,
-            data: history.loss,
+            steps: viewSteps,
+            data: viewLoss,
             color: '#dc3545',
             lineWidth: 2
         });
@@ -2463,22 +3064,20 @@ function drawTrainingTrace() {
     if (showAvgLoss) {
         series.push({
             name: 'Avg Loss (100)',
-            steps: history.steps,
-            data: history.avgLoss,
+            steps: viewSteps,
+            data: viewAvgLoss,
             color: '#007bff',
             lineWidth: 3
         });
     }
 
-    if (series.length === 0 && !showWeights) return;
-
     const plotWidth  = w - paddingLeft - paddingRight;
     const plotHeight = h - paddingTop - paddingBottom;
 
-    // X axis range
-    const stepMin = history.steps[0];
-    const stepMax = history.steps[history.steps.length - 1];
-    const stepRange = stepMax - stepMin || 1;
+    // X axis range (use defaults if no data)
+    const stepMin = viewSteps.length > 0 ? viewSteps[0] : 0;
+    const stepMax = viewSteps.length > 0 ? viewSteps[viewSteps.length - 1] : 100;
+    const stepRange = stepMax - stepMin || 100;
 
     // Y axis range for loss (supports log scale) - ALWAYS starts from 0 in linear mode
     let yMin = 0;  // Loss always starts from 0
@@ -2512,11 +3111,14 @@ function drawTrainingTrace() {
     }
     const yRange = yMax - yMin || 1;
     
+    // Get sliced weights for the view
+    const viewWeights = hasData ? history.weights.slice(viewStartIdx, viewEndIdx) : [];
+    
     // Y axis range for weights (separate right axis)
     let wMin = Infinity;
     let wMax = -Infinity;
-    if (showWeights && history.weights.length > 0) {
-        history.weights.forEach(wArr => {
+    if (showWeights && viewWeights.length > 0) {
+        viewWeights.forEach(wArr => {
             wArr.forEach(v => {
                 if (Number.isFinite(v)) {
                     wMin = Math.min(wMin, v);
@@ -2557,13 +3159,13 @@ function drawTrainingTrace() {
     ctx.closePath();
     ctx.stroke();
 
-    // X ticks
+    // X ticks - use nice round values
     ctx.fillStyle = '#666';
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'center';
-    const numXTicks = 5;
-    for (let i = 0; i <= numXTicks; i++) {
-        const s = stepMin + (i / numXTicks) * stepRange;
+    const xTicks = getNiceTicks(stepMin, stepMax, 5);
+    xTicks.forEach(s => {
+        if (s < stepMin || s > stepMax) return;
         const x = toX(s);
         ctx.strokeStyle = '#e0e0e0';
         ctx.beginPath();
@@ -2572,14 +3174,14 @@ function drawTrainingTrace() {
         ctx.stroke();
         ctx.fillStyle = '#666';
         ctx.fillText(Math.round(s).toString(), x, h - paddingBottom + 13);
-    }
+    });
 
-    // Y ticks
+    // Y ticks - use nice round values (log scale uses powers of 10)
     ctx.textAlign = 'right';
-    const numYTicks = 5;
-    for (let i = 0; i <= numYTicks; i++) {
-        const yVal = yMin + (i / numYTicks) * yRange;
-        const y = h - paddingBottom - (i / numYTicks) * plotHeight;
+    const yTicks = useLogScale ? getLogTicks(yMin, yMax) : getNiceTicks(yMin, yMax, 5);
+    yTicks.forEach(yVal => {
+        if (yVal < yMin || yVal > yMax) return;
+        const y = h - paddingBottom - ((yVal - yMin) / yRange) * plotHeight;
         ctx.strokeStyle = '#e0e0e0';
         ctx.beginPath();
         ctx.moveTo(paddingLeft, y);
@@ -2588,11 +3190,16 @@ function drawTrainingTrace() {
         ctx.fillStyle = '#dc3545';
         if (useLogScale) {
             const realVal = Math.pow(10, yVal);
-            ctx.fillText(realVal.toExponential(0), paddingLeft - 4, y + 3);
+            // Format as power of 10: 10^-2 shows as "0.01", 10^-3 as "0.001" etc.
+            if (Number.isInteger(yVal)) {
+                ctx.fillText(realVal.toExponential(0), paddingLeft - 4, y + 3);
+            } else {
+                ctx.fillText(realVal.toPrecision(2), paddingLeft - 4, y + 3);
+            }
         } else {
             ctx.fillText(yVal.toPrecision(3), paddingLeft - 4, y + 3);
         }
-    }
+    });
 
     // Axis labels
     ctx.save();
@@ -2606,8 +3213,8 @@ function drawTrainingTrace() {
 
     ctx.fillStyle = '#333';
     ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Training Step', w / 2, h - 8);
+    ctx.textAlign = 'right';
+    ctx.fillText('Training Step', w - paddingRight, h - 8);
 
     // Draw loss series
     series.forEach(s => {
@@ -2627,19 +3234,20 @@ function drawTrainingTrace() {
     });
 
     // Draw weight traces (on right Y axis)
-    if (showWeights && history.weights && history.weights.length > 0) {
-        const numWeights = history.weights[0].length;
+    if (showWeights && viewWeights && viewWeights.length > 0) {
+        const numWeights = viewWeights[0].length;
         const weightColors = ['#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#ff7f0e', '#2ca02c'];
         
         // Use pre-calculated weight range from earlier
         const toWY = (val) => h - paddingBottom - ((val - wMin) / wRange) * plotHeight;
         
-        // Draw right axis tick marks and labels for weights
+        // Draw right axis tick marks and labels for weights - use nice values
         ctx.textAlign = 'left';
         ctx.font = '9px sans-serif';
-        for (let i = 0; i <= numYTicks; i++) {
-            const wVal = wMin + (i / numYTicks) * wRange;
-            const y = h - paddingBottom - (i / numYTicks) * plotHeight;
+        const wTicks = getNiceTicks(wMin, wMax, 5);
+        wTicks.forEach(wVal => {
+            if (wVal < wMin || wVal > wMax) return;
+            const y = h - paddingBottom - ((wVal - wMin) / wRange) * plotHeight;
             // Tick mark
             ctx.strokeStyle = '#9467bd';
             ctx.beginPath();
@@ -2649,7 +3257,7 @@ function drawTrainingTrace() {
             // Label
             ctx.fillStyle = '#9467bd';
             ctx.fillText(wVal.toFixed(1), w - paddingRight + 8, y + 3);
-        }
+        });
         
         // Draw weight lines
         for (let wi = 0; wi < Math.min(numWeights, 8); wi++) {
@@ -2657,9 +3265,9 @@ function drawTrainingTrace() {
             ctx.lineWidth = 1;
             ctx.globalAlpha = 0.6;
             ctx.beginPath();
-            for (let i = 0; i < history.weights.length; i++) {
-                const x = toX(history.steps[i]);
-                const y = toWY(history.weights[i][wi]);
+            for (let i = 0; i < viewWeights.length; i++) {
+                const x = toX(viewSteps[i]);
+                const y = toWY(viewWeights[i][wi]);
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
@@ -2679,20 +3287,575 @@ function drawTrainingTrace() {
     }
 }
 
+    // Loss surface visualization
+    let lossSurfaceCache = null;
+    let lossSurfaceWeightIndices = [0, 1];
+    let lossSurfaceTrail = [];  // Trail of weight positions during training
+    let lossSurfaceStartPosition = null;  // Store starting position separately
+    let lossSurfaceAutoUpdate = true;  // Auto-update every N steps
+    let lossSurfaceUpdateInterval = 50;  // Update every 50 steps
+    let lossLandscapeAutoMode = true;  // Auto-select weights by default
+    
+    function populateWeightSelectors() {
+        const selectX = document.getElementById('weightXSelect');
+        const selectY = document.getElementById('weightYSelect');
+        if (!selectX || !selectY) return;
+        
+        // Build list of all weights with descriptive names and categories
+        const weightNames = [];
+        let idx = 0;
+        
+        // First layer: input -> hidden (category: 'input')
+        for (let i = 0; i < network.hiddenSize; i++) {
+            weightNames.push({ idx: idx++, name: `w(x→h₁${i+1})`, category: 'input', neuron: i });
+        }
+        
+        // Hidden -> hidden layers (category: 'hidden')
+        for (let l = 1; l < network.numLayers; l++) {
+            for (let i = 0; i < network.hiddenSize; i++) {
+                for (let j = 0; j < network.hiddenSize; j++) {
+                    weightNames.push({ idx: idx++, name: `w(h${l}${j+1}→h${l+1}${i+1})`, category: 'hidden', layer: l });
+                }
+            }
+        }
+        
+        // Output layer (category: 'output')
+        for (let i = 0; i < network.hiddenSize; i++) {
+            weightNames.push({ idx: idx++, name: `v(h${network.numLayers}${i+1}→ŷ)`, category: 'output', neuron: i });
+        }
+        
+        // Populate selectors
+        selectX.innerHTML = '';
+        selectY.innerHTML = '';
+        
+        weightNames.forEach(w => {
+            const optX = document.createElement('option');
+            optX.value = w.idx;
+            optX.textContent = w.name;
+            selectX.appendChild(optX);
+            
+            const optY = document.createElement('option');
+            optY.value = w.idx;
+            optY.textContent = w.name;
+            selectY.appendChild(optY);
+        });
+        
+        // Auto-select interesting weights:
+        // Pick one from input layer and one from output layer for maximum independence
+        const inputWeights = weightNames.filter(w => w.category === 'input');
+        const outputWeights = weightNames.filter(w => w.category === 'output');
+        
+        let bestPair = [0, 1];
+        
+        if (inputWeights.length > 0 && outputWeights.length > 0) {
+            // Pick first input weight and first output weight (different layers = more interesting)
+            bestPair = [inputWeights[0].idx, outputWeights[0].idx];
+        } else if (weightNames.length >= 2) {
+            // Fallback: pick weights from different neurons
+            bestPair = [0, Math.min(1, weightNames.length - 1)];
+        }
+        
+        selectX.value = bestPair[0].toString();
+        selectY.value = bestPair[1].toString();
+        lossSurfaceWeightIndices = bestPair;
+    }
+    
+    // Find the most "interesting" pair of weights by sampling loss variance
+    function autoSelectInterestingWeights() {
+        try {
+            const selectX = document.getElementById('weightXSelect');
+            const selectY = document.getElementById('weightYSelect');
+            if (!selectX || !selectY) {
+                console.log('Weight selectors not found');
+                return;
+            }
+            
+            const numWeights = selectX.options.length;
+            if (numWeights < 2) {
+                console.log('Not enough weights:', numWeights);
+                // Just use first two weights as default
+                lossSurfaceWeightIndices = [0, Math.min(1, numWeights - 1)];
+                return;
+            }
+            
+            // Simple approach: just pick first input weight and first output weight
+            // This is more robust for different network sizes
+            const H = network.hiddenSize;
+            const L = network.numLayers;
+            
+            // First weight (input to first hidden)
+            const idx1 = 0;
+            // Last weight (last hidden to output) - approximate
+            const idx2 = Math.min(numWeights - 1, H);
+            
+            if (idx1 !== idx2 && idx2 < numWeights) {
+                lossSurfaceWeightIndices = [idx1, idx2];
+            } else {
+                lossSurfaceWeightIndices = [0, Math.min(1, numWeights - 1)];
+            }
+            
+            selectX.value = lossSurfaceWeightIndices[0].toString();
+            selectY.value = lossSurfaceWeightIndices[1].toString();
+            lossSurfaceCache = null;
+            lossSurfaceTrail = [];
+            console.log('Auto-selected weights:', lossSurfaceWeightIndices);
+        } catch(e) {
+            console.error('autoSelectInterestingWeights error:', e);
+            // Fallback to default
+            lossSurfaceWeightIndices = [0, 1];
+        }
+    }
+    
+    function getWeightByIndex(idx) {
+        let currentIdx = 0;
+        
+        // First layer
+        if (idx < network.hiddenSize) {
+            return network.weights[0][idx];
+        }
+        currentIdx += network.hiddenSize;
+        
+        // Hidden -> hidden
+        for (let l = 1; l < network.numLayers; l++) {
+            const layerSize = network.hiddenSize * network.hiddenSize;
+            if (idx < currentIdx + layerSize) {
+                const localIdx = idx - currentIdx;
+                const i = Math.floor(localIdx / network.hiddenSize);
+                const j = localIdx % network.hiddenSize;
+                return network.weights[l][i][j];
+            }
+            currentIdx += layerSize;
+        }
+        
+        // Output layer
+        const outIdx = idx - currentIdx;
+        if (outIdx < network.hiddenSize) {
+            return network.weights[network.weights.length - 1][outIdx];
+        }
+        
+        return 0;
+    }
+    
+    function setWeightByIndex(idx, value) {
+        let currentIdx = 0;
+        
+        // First layer
+        if (idx < network.hiddenSize) {
+            network.weights[0][idx] = value;
+            return;
+        }
+        currentIdx += network.hiddenSize;
+        
+        // Hidden -> hidden
+        for (let l = 1; l < network.numLayers; l++) {
+            const layerSize = network.hiddenSize * network.hiddenSize;
+            if (idx < currentIdx + layerSize) {
+                const localIdx = idx - currentIdx;
+                const i = Math.floor(localIdx / network.hiddenSize);
+                const j = localIdx % network.hiddenSize;
+                network.weights[l][i][j] = value;
+                return;
+            }
+            currentIdx += layerSize;
+        }
+        
+        // Output layer
+        const outIdx = idx - currentIdx;
+        if (outIdx < network.hiddenSize) {
+            network.weights[network.weights.length - 1][outIdx] = value;
+        }
+    }
+    
+    function computeLossSurface() {
+        const resolution = 40;  // 40x40 grid
+        const idxX = lossSurfaceWeightIndices[0];
+        const idxY = lossSurfaceWeightIndices[1];
+        
+        // Save current weights
+        const savedWX = getWeightByIndex(idxX);
+        const savedWY = getWeightByIndex(idxY);
+        
+        // Determine range centered on current values
+        const range = 3;  // +/- 3 from current
+        const minX = savedWX - range;
+        const maxX = savedWX + range;
+        const minY = savedWY - range;
+        const maxY = savedWY + range;
+        
+        // Sample training points for loss calculation
+        const numSamples = 20;
+        const samples = [];
+        for (let i = 0; i < numSamples; i++) {
+            const x = config.xMin + Math.random() * (config.xMax - config.xMin);
+            let y;
+            try { y = config.targetFunc(x); } catch { y = 0; }
+            samples.push({ x, y });
+        }
+        
+        // Compute loss grid
+        const grid = [];
+        let minLoss = Infinity, maxLoss = -Infinity;
+        
+        for (let iy = 0; iy < resolution; iy++) {
+            const row = [];
+            const wy = minY + (iy / (resolution - 1)) * (maxY - minY);
+            
+            for (let ix = 0; ix < resolution; ix++) {
+                const wx = minX + (ix / (resolution - 1)) * (maxX - minX);
+                
+                // Set weights
+                setWeightByIndex(idxX, wx);
+                setWeightByIndex(idxY, wy);
+                
+                // Compute average loss over samples
+                let totalLoss = 0;
+                for (const sample of samples) {
+                    const fwd = forward(sample.x);
+                    const error = fwd.yhat - sample.y;
+                    totalLoss += 0.5 * error * error;
+                }
+                const avgLoss = totalLoss / numSamples;
+                
+                row.push(avgLoss);
+                if (avgLoss < minLoss) minLoss = avgLoss;
+                if (avgLoss > maxLoss) maxLoss = avgLoss;
+            }
+            grid.push(row);
+        }
+        
+        // Restore weights
+        setWeightByIndex(idxX, savedWX);
+        setWeightByIndex(idxY, savedWY);
+        
+        lossSurfaceCache = {
+            grid, minLoss, maxLoss, minX, maxX, minY, maxY, resolution,
+            currentX: savedWX, currentY: savedWY
+        };
+    }
+    
+    function drawLossSurface() {
+        const canvas = document.getElementById('lossCanvas');
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        const paddingLeft = 45;
+        const paddingRight = 35;
+        const paddingTop = 20;
+        const paddingBottom = 25;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const plotW = w - paddingLeft - paddingRight;
+        const plotH = h - paddingTop - paddingBottom;
+        
+        if (!lossSurfaceCache) {
+            // Draw placeholder axes and message
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, paddingTop);
+            ctx.lineTo(paddingLeft, h - paddingBottom);
+            ctx.lineTo(w - paddingRight, h - paddingBottom);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#888';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Computing...', w/2, h/2);
+            return;
+        }
+        
+        const { grid, minLoss, maxLoss, minX, maxX, minY, maxY, resolution } = lossSurfaceCache;
+        const cellW = plotW / resolution;
+        const cellH = plotH / resolution;
+        
+        // Draw heatmap with enhanced color range
+        const lossRange = maxLoss - minLoss || 1;
+        
+        for (let iy = 0; iy < resolution; iy++) {
+            for (let ix = 0; ix < resolution; ix++) {
+                const loss = grid[iy][ix];
+                // Use sqrt for better low-end contrast
+                const normLoss = Math.sqrt((loss - minLoss) / lossRange);
+                
+                // Enhanced color gradient: dark blue -> cyan -> green -> yellow -> red
+                let r, g, b;
+                if (normLoss < 0.25) {
+                    // Dark blue to cyan
+                    const t = normLoss * 4;
+                    r = Math.round(20);
+                    g = Math.round(50 + t * 150);
+                    b = Math.round(120 + t * 80);
+                } else if (normLoss < 0.5) {
+                    // Cyan to green
+                    const t = (normLoss - 0.25) * 4;
+                    r = Math.round(20 + t * 30);
+                    g = Math.round(200 - t * 50);
+                    b = Math.round(200 - t * 150);
+                } else if (normLoss < 0.75) {
+                    // Green to yellow
+                    const t = (normLoss - 0.5) * 4;
+                    r = Math.round(50 + t * 205);
+                    g = Math.round(150 + t * 55);
+                    b = Math.round(50);
+                } else {
+                    // Yellow to red
+                    const t = (normLoss - 0.75) * 4;
+                    r = 255;
+                    g = Math.round(205 - t * 205);
+                    b = Math.round(50 - t * 50);
+                }
+                
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                const px = paddingLeft + ix * cellW;
+                const py = paddingTop + (resolution - 1 - iy) * cellH;
+                ctx.fillRect(px, py, cellW + 1, cellH + 1);
+            }
+        }
+        
+        // Draw border
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(paddingLeft, paddingTop, plotW, plotH);
+        
+        // Helper to convert weight values to canvas coordinates
+        const toCanvasX = (wx) => paddingLeft + ((wx - minX) / (maxX - minX)) * plotW;
+        const toCanvasY = (wy) => paddingTop + (1 - (wy - minY) / (maxY - minY)) * plotH;
+        
+        // Check for comparison mode - only valid if network architecture, activation, and target are the same
+        // (comparing optimizer or learning rate differences makes sense, but different architectures don't share a loss landscape)
+        function canCompareLossLandscapes() {
+            if (!comparisonModeActive || !savedRuns.A || !savedRuns.B) return false;
+            const cfgA = savedRuns.A.config;
+            const cfgB = savedRuns.B.config;
+            
+            // Must have same architecture
+            if (cfgA.numLayers !== cfgB.numLayers) return false;
+            if (cfgA.hiddenSize !== cfgB.hiddenSize) return false;
+            
+            // Must have same activation (changes landscape shape)
+            if (cfgA.activation !== cfgB.activation) return false;
+            
+            // Must have same target function
+            if (cfgA.targetFuncStr !== cfgB.targetFuncStr) return false;
+            
+            // Must have saved trails with same weight indices
+            if (!savedRuns.A.lossSurfaceTrail || !savedRuns.B.lossSurfaceTrail) return false;
+            if (!savedRuns.A.lossSurfaceWeightIndices || !savedRuns.B.lossSurfaceWeightIndices) return false;
+            if (savedRuns.A.lossSurfaceWeightIndices[0] !== savedRuns.B.lossSurfaceWeightIndices[0]) return false;
+            if (savedRuns.A.lossSurfaceWeightIndices[1] !== savedRuns.B.lossSurfaceWeightIndices[1]) return false;
+            
+            return true;
+        }
+        
+        const inComparisonMode = canCompareLossLandscapes();
+        
+        // Helper to draw a trail
+        function drawTrail(trail, color, alpha = 0.85) {
+            if (!trail || trail.length < 2) return;
+            ctx.strokeStyle = color.replace(')', `,${alpha})`).replace('rgb', 'rgba');
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(trail[0].x), toCanvasY(trail[0].y));
+            for (let i = 1; i < trail.length; i++) {
+                ctx.lineTo(toCanvasX(trail[i].x), toCanvasY(trail[i].y));
+            }
+            ctx.stroke();
+        }
+        
+        if (inComparisonMode) {
+            // Draw Run A trail (red/orange)
+            if (savedRuns.A.lossSurfaceTrail) {
+                drawTrail(savedRuns.A.lossSurfaceTrail, 'rgb(220, 53, 69)', 0.9);
+                // Start marker for A
+                if (savedRuns.A.lossSurfaceTrail.length > 0) {
+                    const startA = savedRuns.A.lossSurfaceTrail[0];
+                    ctx.fillStyle = '#dc3545';
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(toCanvasX(startA.x), toCanvasY(startA.y), 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                // End marker for A
+                if (savedRuns.A.lossSurfaceTrail.length > 0) {
+                    const endA = savedRuns.A.lossSurfaceTrail[savedRuns.A.lossSurfaceTrail.length - 1];
+                    ctx.fillStyle = '#dc3545';
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(toCanvasX(endA.x), toCanvasY(endA.y), 6, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            }
+            
+            // Draw Run B trail (cyan/teal)
+            if (savedRuns.B.lossSurfaceTrail) {
+                drawTrail(savedRuns.B.lossSurfaceTrail, 'rgb(0, 188, 212)', 0.9);
+                // Start marker for B
+                if (savedRuns.B.lossSurfaceTrail.length > 0) {
+                    const startB = savedRuns.B.lossSurfaceTrail[0];
+                    ctx.fillStyle = '#00bcd4';
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(toCanvasX(startB.x), toCanvasY(startB.y), 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                // End marker for B
+                if (savedRuns.B.lossSurfaceTrail.length > 0) {
+                    const endB = savedRuns.B.lossSurfaceTrail[savedRuns.B.lossSurfaceTrail.length - 1];
+                    ctx.fillStyle = '#00bcd4';
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(toCanvasX(endB.x), toCanvasY(endB.y), 6, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            }
+        } else {
+            // Normal mode - single trail
+            if (lossSurfaceTrail.length > 1) {
+                // Draw white trail with slight transparency
+                ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+                ctx.lineWidth = 2;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                const first = lossSurfaceTrail[0];
+                ctx.moveTo(toCanvasX(first.x), toCanvasY(first.y));
+                for (let i = 1; i < lossSurfaceTrail.length; i++) {
+                    const pt = lossSurfaceTrail[i];
+                    ctx.lineTo(toCanvasX(pt.x), toCanvasY(pt.y));
+                }
+                ctx.stroke();
+            }
+            
+            // Always draw start point if we have a starting position
+            if (lossSurfaceStartPosition) {
+                ctx.fillStyle = '#00ff00';
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(toCanvasX(lossSurfaceStartPosition.x), toCanvasY(lossSurfaceStartPosition.y), 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+            }
+            
+            // Draw current position
+            const currentWX = getWeightByIndex(lossSurfaceWeightIndices[0]);
+            const currentWY = getWeightByIndex(lossSurfaceWeightIndices[1]);
+            const posX = toCanvasX(currentWX);
+            const posY = toCanvasY(currentWY);
+            
+            // Draw current marker
+            ctx.fillStyle = '#dc3545';
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(posX, posY, 6, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        }
+        
+        // Axis labels
+        ctx.fillStyle = '#333';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        
+        // X axis labels - just below the plot area
+        const xLabelY = h - paddingBottom + 15;
+        ctx.fillText(minX.toFixed(1), paddingLeft, xLabelY);
+        ctx.fillText(maxX.toFixed(1), w - paddingRight, xLabelY);
+        ctx.fillText('w₁', (paddingLeft + w - paddingRight) / 2, xLabelY);
+        
+        // Y axis labels - just left of the plot area
+        ctx.textAlign = 'right';
+        ctx.fillText(minY.toFixed(1), paddingLeft - 4, h - paddingBottom + 3);
+        ctx.fillText(maxY.toFixed(1), paddingLeft - 4, paddingTop + 3);
+        
+        // Y axis title
+        ctx.save();
+        ctx.translate(12, (paddingTop + h - paddingBottom) / 2);
+        ctx.rotate(-Math.PI/2);
+        ctx.textAlign = 'center';
+        ctx.fillText('w₂', 0, 0);
+        ctx.restore();
+    }
    
     function updateUI() {
-        document.getElementById('stepCount').textContent = trainingState.step;
-        const lastLoss = history.loss[history.loss.length - 1];
-        document.getElementById('lossValue').textContent =
-            Number.isFinite(lastLoss) ? lastLoss.toExponential(2) : '—';
+        try {
+            document.getElementById('stepCount').textContent = trainingState.step;
+            const lastLoss = history.loss[history.loss.length - 1];
+            document.getElementById('lossValue').textContent =
+                Number.isFinite(lastLoss) ? lastLoss.toExponential(2) : '—';
 
-        document.getElementById('totalAdds').textContent = trainingState.totalAdds.toLocaleString();
-        document.getElementById('totalMuls').textContent = trainingState.totalMuls.toLocaleString();
+            document.getElementById('totalAdds').textContent = trainingState.totalAdds.toLocaleString();
+            document.getElementById('totalMuls').textContent = trainingState.totalMuls.toLocaleString();
+            
+            // Calculate delta-loss (change in rolling average over last window)
+            const deltaLossEl = document.getElementById('deltaLossValue');
+            if (deltaLossEl && history.avgLoss.length >= 2) {
+                const windowSize = Math.min(config.avgWindow, history.avgLoss.length);
+                const currentAvg = history.avgLoss[history.avgLoss.length - 1];
+                const prevAvg = history.avgLoss[Math.max(0, history.avgLoss.length - windowSize)];
+                const deltaLoss = currentAvg - prevAvg;
+                
+                if (Number.isFinite(deltaLoss)) {
+                    const sign = deltaLoss > 0 ? '+' : '';
+                    deltaLossEl.textContent = sign + deltaLoss.toExponential(2);
+                    // Green if decreasing (good), red if increasing (bad)
+                    deltaLossEl.style.color = deltaLoss <= 0 ? '#28a745' : '#dc3545';
+                } else {
+                    deltaLossEl.textContent = '—';
+                    deltaLossEl.style.color = '#666';
+                }
+            }
 
-        drawNetwork();
-        drawFitPlot();
-        drawTrainingTrace();
-        updateEquations();
+            try { drawNetwork(); } catch(e) { console.error('drawNetwork error:', e); }
+            try { drawFitPlot(); } catch(e) { console.error('drawFitPlot error:', e); }
+            try { drawTrainingTrace(); } catch(e) { console.error('drawTrainingTrace error:', e); }
+            try { drawLossSurface(); } catch(e) { console.error('drawLossSurface error:', e); }
+            try { updateEquations(); } catch(e) { console.error('updateEquations error:', e); }
+        } catch(e) {
+            console.error('updateUI error:', e);
+        }
+    }
+    
+    // Track when we last auto-paused to allow continued training
+    let lastAutoPauseStep = -2000;
+    
+    // Check if training should auto-pause (no improvement in last 1000 steps)
+    function shouldAutoPause() {
+        // Need at least 2000 steps before first check
+        if (history.loss.length < 2000) return false;
+        
+        // Must run at least 1000 steps since last auto-pause before checking again
+        if (trainingState.step - lastAutoPauseStep < 1000) return false;
+        
+        // Compute 1000-step rolling average for current window
+        const windowSize = 1000;
+        const currentWindow = history.loss.slice(-windowSize);
+        const currentAvg = currentWindow.reduce((a, b) => a + b, 0) / windowSize;
+        
+        // Compute 1000-step rolling average for previous window (1000 steps ago)
+        const prevWindow = history.loss.slice(-2000, -1000);
+        const prevAvg = prevWindow.reduce((a, b) => a + b, 0) / windowSize;
+        
+        // Pause if current 1000-step average hasn't improved over previous 1000-step average
+        if (currentAvg >= prevAvg) {
+            lastAutoPauseStep = trainingState.step;
+            return true;
+        }
+        return false;
     }
 
     // --------------- Wiring Controls ----------------
@@ -2810,13 +3973,32 @@ function drawTrainingTrace() {
             updateUI();
         });
 
-        const optimizerSelectEl = document.getElementById('optimizerSelect');
-        optimizerSelectEl.addEventListener('change', (e) => {
-            config.optimizer = e.target.value;
-            initializeOptimizerState();
+        // Optimizer buttons
+        document.querySelectorAll('#optimizerButtons .opt-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update button styling
+                document.querySelectorAll('#optimizerButtons .opt-btn').forEach(b => {
+                    b.style.border = '2px solid #ccc';
+                    b.style.background = '#fff';
+                    b.style.color = '#333';
+                });
+                btn.style.border = '2px solid #007bff';
+                btn.style.background = '#007bff';
+                btn.style.color = 'white';
+                
+                // Update config
+                config.optimizer = btn.dataset.opt;
+                initializeOptimizerState();
+                updateUI();
+            });
         });
 
         const gifBtnEl = document.getElementById('gifBtn');
+        // Set button label based on whether GIF capture is available
+        gifBtnEl.textContent = canUseGifWorkers() ? 'Capture GIF' : 'Screenshot';
+        gifBtnEl.title = canUseGifWorkers() 
+            ? 'Record an animated GIF of training convergence' 
+            : 'Save a PNG screenshot (run from web server for animated GIF)';
         gifBtnEl.addEventListener('click', () => {
             startGifCapture();
         });
@@ -2871,6 +4053,54 @@ function drawTrainingTrace() {
         document.getElementById('traceWeights').addEventListener('change', updateUI);
         document.getElementById('traceLogScale').addEventListener('change', updateUI);
         
+        // Loss surface controls
+        const weightXSelect = document.getElementById('weightXSelect');
+        const weightYSelect = document.getElementById('weightYSelect');
+        
+        // Auto mode for loss landscape (uses global lossLandscapeAutoMode)
+        const weightSelectContainer = document.getElementById('weightSelectContainer');
+        
+        function setAutoMode(enabled) {
+            lossLandscapeAutoMode = enabled;
+            if (weightSelectContainer) weightSelectContainer.style.opacity = enabled ? '0.5' : '1';
+            if (autoSelectBtn) {
+                autoSelectBtn.style.background = enabled ? '#007bff' : '#6c757d';
+                autoSelectBtn.style.borderColor = enabled ? '#007bff' : '#6c757d';
+            }
+        }
+        
+        if (weightXSelect && weightYSelect) {
+            weightXSelect.addEventListener('change', () => {
+                setAutoMode(false);  // Exit auto mode on manual selection
+                lossSurfaceWeightIndices[0] = parseInt(weightXSelect.value);
+                lossSurfaceCache = null;  // Invalidate cache
+                drawLossSurface();
+                drawNetwork();  // Update highlight boxes
+            });
+            weightYSelect.addEventListener('change', () => {
+                setAutoMode(false);  // Exit auto mode on manual selection
+                lossSurfaceWeightIndices[1] = parseInt(weightYSelect.value);
+                lossSurfaceCache = null;
+                drawLossSurface();
+                drawNetwork();  // Update highlight boxes
+            });
+        }
+        
+        const autoSelectBtn = document.getElementById('autoSelectBtn');
+        if (autoSelectBtn) {
+            autoSelectBtn.addEventListener('click', () => {
+                setAutoMode(true);  // Re-enter auto mode
+                autoSelectBtn.textContent = '...';
+                setTimeout(() => {
+                    autoSelectInterestingWeights();
+                    computeLossSurface();
+                    drawLossSurface();
+                    drawNetwork();  // Update highlight boxes
+                    autoSelectBtn.textContent = 'Auto';
+                }, 10);
+            });
+        }
+        
         // Rolling average window slider
         const avgWindowSlider = document.getElementById('avgWindowSlider');
         const avgWindowValue = document.getElementById('avgWindowValue');
@@ -2890,11 +4120,11 @@ function drawTrainingTrace() {
         });
         document.getElementById('traceWeights').addEventListener('change', updateUI);
         
-        // Network Design panel - activation buttons
-        document.querySelectorAll('#networkActivation .act-btn').forEach(btn => {
+        // Activation buttons in header
+        document.querySelectorAll('#activationButtons .act-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 // Update button styling
-                document.querySelectorAll('#networkActivation .act-btn').forEach(b => {
+                document.querySelectorAll('#activationButtons .act-btn').forEach(b => {
                     b.style.border = '2px solid #ccc';
                     b.style.background = '#fff';
                     b.style.color = '#333';
@@ -2919,9 +4149,10 @@ function drawTrainingTrace() {
         
         // Drag handles for layers (horizontal) and size (vertical)
         // Time-based: each tick changes value by 1
+        // getLimits returns { canDecrease, canIncrease } to block movement at extremes
         setupDragHandle('layersHandle', 'horizontal', (delta) => {
             const change = delta > 0 ? 1 : -1;
-            const newVal = Math.max(1, Math.min(3, network.numLayers + change));
+            const newVal = Math.max(1, Math.min(4, network.numLayers + change));
             if (newVal !== network.numLayers) {
                 network.numLayers = newVal;
                 document.getElementById('numLayers').value = newVal;
@@ -2929,12 +4160,15 @@ function drawTrainingTrace() {
                 document.getElementById('networkLayersDisplay').textContent = newVal;
                 reset();
             }
-        });
+        }, () => ({
+            canDecrease: network.numLayers > 1,  // Can't go below 1 layer
+            canIncrease: network.numLayers < 4   // Can't go above 4 layers
+        }));
         
         setupDragHandle('sizeHandle', 'vertical', (delta) => {
             // Vertical: negative delta (drag up) = increase size
             const change = delta > 0 ? -1 : 1;
-            const newVal = Math.max(2, Math.min(10, network.hiddenSize + change));
+            const newVal = Math.max(2, Math.min(16, network.hiddenSize + change));
             if (newVal !== network.hiddenSize) {
                 network.hiddenSize = newVal;
                 document.getElementById('hiddenSize').value = newVal;
@@ -2942,7 +4176,10 @@ function drawTrainingTrace() {
                 document.getElementById('networkSizeDisplay').textContent = newVal;
                 reset();
             }
-        });
+        }, () => ({
+            canDecrease: network.hiddenSize > 2,   // Can't go below 2 neurons
+            canIncrease: network.hiddenSize < 16   // Can't go above 16 neurons
+        }));
         
         // Drag handles for x-range
         // Time-based: each tick changes value by 0.2
@@ -2955,7 +4192,10 @@ function drawTrainingTrace() {
             document.getElementById('xMinLabel').textContent = config.xMin.toFixed(1);
             document.getElementById('xMinDisplay').textContent = config.xMin.toFixed(1);
             drawFitPlot();
-        });
+        }, () => ({
+            canDecrease: config.xMin > -5,              // Can't go below -5
+            canIncrease: config.xMin < config.xMax - 0.5 // Can't overlap with xMax
+        }));
         
         setupDragHandle('xMaxHandle', 'horizontal', (delta) => {
             const change = delta > 0 ? 0.2 : -0.2;
@@ -2966,6 +4206,52 @@ function drawTrainingTrace() {
             document.getElementById('xMaxLabel').textContent = config.xMax.toFixed(1);
             document.getElementById('xMaxDisplay').textContent = config.xMax.toFixed(1);
             drawFitPlot();
+        }, () => ({
+            canDecrease: config.xMax > config.xMin + 0.5, // Can't overlap with xMin
+            canIncrease: config.xMax < 5                   // Can't go above 5
+        }));
+        
+        // Training Trace view handle - controls how much of the history to show
+        setupDragHandle('traceViewHandle', 'horizontal', (delta) => {
+            // Get total steps - works for both normal and comparison modes
+            let totalSteps;
+            const inCompMode = comparisonModeActive && savedRuns.A && savedRuns.B;
+            if (inCompMode) {
+                totalSteps = Math.max(
+                    savedRuns.A.steps.length > 0 ? savedRuns.A.steps[savedRuns.A.steps.length - 1] : 0,
+                    savedRuns.B.steps.length > 0 ? savedRuns.B.steps[savedRuns.B.steps.length - 1] : 0
+                );
+            } else {
+                totalSteps = history.steps.length > 0 ? history.steps[history.steps.length - 1] : 0;
+            }
+            if (totalSteps < 10) return;
+            
+            // Each tick changes by ~5% of total steps
+            const stepChange = Math.max(10, Math.floor(totalSteps * 0.05));
+            const change = delta > 0 ? stepChange : -stepChange;
+            
+            if (traceViewEndStep === null) {
+                traceViewEndStep = totalSteps;
+            }
+            
+            traceViewEndStep = Math.max(100, Math.min(totalSteps, traceViewEndStep + change));
+            drawTrainingTrace();
+        }, () => {
+            // Get total steps for bounds check
+            let totalSteps;
+            const inCompMode = comparisonModeActive && savedRuns.A && savedRuns.B;
+            if (inCompMode) {
+                totalSteps = Math.max(
+                    savedRuns.A.steps.length > 0 ? savedRuns.A.steps[savedRuns.A.steps.length - 1] : 0,
+                    savedRuns.B.steps.length > 0 ? savedRuns.B.steps[savedRuns.B.steps.length - 1] : 0
+                );
+            } else {
+                totalSteps = history.steps.length > 0 ? history.steps[history.steps.length - 1] : 0;
+            }
+            return {
+                canDecrease: traceViewEndStep === null || traceViewEndStep > 100,
+                canIncrease: traceViewEndStep === null || traceViewEndStep < totalSteps
+            };
         });
         
         // Update displays on init
@@ -2975,24 +4261,32 @@ function drawTrainingTrace() {
         document.getElementById('xMaxDisplay').textContent = config.xMax.toFixed(1);
     }
     
-    function setupDragHandle(elementId, direction, onDrag) {
+    function setupDragHandle(elementId, direction, onDrag, getLimits) {
         const handle = document.getElementById(elementId);
         if (!handle) return;
         
         let startX, startY;
         let currentOffset = 0;
         let intervalId = null;
-        const DEAD_ZONE = 8;  // pixels before triggering
-        const INTERVAL_MS = 80;  // how often to increment (faster = smoother)
+        const DEAD_ZONE = 10;  // pixels before triggering
+        const INTERVAL_MS = 200;  // slower rate - 5 changes per second max
         const INCREMENT_PER_TICK = 15;  // pixels worth of change per tick
         
         const startInterval = () => {
             if (intervalId) return;
             intervalId = setInterval(() => {
                 if (Math.abs(currentOffset) > DEAD_ZONE) {
-                    // Direction based on offset sign
-                    const sign = currentOffset > 0 ? 1 : -1;
-                    onDrag(sign * INCREMENT_PER_TICK);
+                    // Check if we can move in this direction
+                    const limits = getLimits ? getLimits() : { canDecrease: true, canIncrease: true };
+                    const wantsIncrease = currentOffset > 0;
+                    
+                    // For vertical handles, up (negative offset) = increase
+                    const effectiveIncrease = direction === 'vertical' ? !wantsIncrease : wantsIncrease;
+                    
+                    if ((effectiveIncrease && limits.canIncrease) || (!effectiveIncrease && limits.canDecrease)) {
+                        const sign = currentOffset > 0 ? 1 : -1;
+                        onDrag(sign * INCREMENT_PER_TICK);
+                    }
                 }
             }, INTERVAL_MS);
         };
@@ -3014,7 +4308,21 @@ function drawTrainingTrace() {
             handle.style.transition = 'none';
             
             const onMouseMove = (e) => {
-                currentOffset = direction === 'horizontal' ? (e.clientX - startX) : (e.clientY - startY);
+                const rawOffset = direction === 'horizontal' ? (e.clientX - startX) : (e.clientY - startY);
+                
+                // Check limits and prevent visual displacement in blocked direction
+                const limits = getLimits ? getLimits() : { canDecrease: true, canIncrease: true };
+                const wantsIncrease = rawOffset > 0;
+                const effectiveIncrease = direction === 'vertical' ? !wantsIncrease : wantsIncrease;
+                
+                // Block displacement if at limit
+                if (effectiveIncrease && !limits.canIncrease) {
+                    currentOffset = direction === 'vertical' ? Math.max(0, rawOffset) : Math.min(0, rawOffset);
+                } else if (!effectiveIncrease && !limits.canDecrease) {
+                    currentOffset = direction === 'vertical' ? Math.min(0, rawOffset) : Math.max(0, rawOffset);
+                } else {
+                    currentOffset = rawOffset;
+                }
                 
                 // Clamp visual offset to reasonable range (±20px)
                 const clampedOffset = Math.max(-20, Math.min(20, currentOffset));
@@ -3068,13 +4376,47 @@ function drawTrainingTrace() {
     // --------------- Init ----------------------------
 
     function init() {
-        compileTargetFunc();
-        initializeNetwork();
-        setupControls();
-        reset();
+        try {
+            console.log('LearnCurve: initializing...');
+            compileTargetFunc();
+            initializeNetwork();
+            setupControls();
+            populateWeightSelectors();
+            reset();
+            console.log('LearnCurve: reset complete, drawing UI...');
+            
+            // Force initial draw of all UI components after reset
+            requestAnimationFrame(() => {
+                try {
+                    drawNetwork();
+                    drawFitPlot();
+                    drawTrainingTrace();
+                    updateEquations();
+                    console.log('LearnCurve: initial draw complete');
+                    
+                    // Auto-compute loss surface
+                    requestAnimationFrame(() => {
+                        try {
+                            autoSelectInterestingWeights();
+                            computeLossSurface();
+                            drawLossSurface();
+                            console.log('LearnCurve: loss surface computed');
+                        } catch(e) {
+                            console.error('Loss surface error:', e);
+                        }
+                    });
+                } catch(e) {
+                    console.error('Initial draw error:', e);
+                }
+            });
+        } catch(e) {
+            console.error('Init error:', e);
+        }
     }
 
-    window.addEventListener('load', init);
+    // Run init immediately since script is at end of body
+    console.log('LearnCurve: starting init...');
+    init();
 </script>
 </body>
 </html>
