@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Interactive visualization of neural network learning. Watch a network learn to approximate any function in real-time.">
+    <meta name="keywords" content="neural network, machine learning, deep learning, education, visualization, gradient descent">
     <title>LearnCurve - Interactive Neural Network Demo</title>
     <style>
         body {
@@ -127,6 +130,11 @@
             display: block;
             width: 100%;
             height: auto;
+            touch-action: manipulation;  /* Better touch handling on mobile */
+        }
+        
+        canvas {
+            touch-action: manipulation;
         }
 
         .stats {
@@ -236,23 +244,32 @@
             margin-bottom: 2px;
         }
 
+        /* Tablet and smaller - single column layout */
         @media (max-width: 900px) {
             body {
                 padding: 10px;
             }
             .container {
                 padding: 10px;
+                max-width: 100%;
             }
             .grid {
                 grid-template-columns: 1fr;
                 gap: 12px;
             }
             h1 {
-                font-size: 18px;
+                font-size: 20px;
                 margin-bottom: 10px;
             }
             .panel h2 {
-                font-size: 14px;
+                font-size: 15px;
+            }
+            #networkCanvas {
+                max-width: 100%;
+                height: auto;
+            }
+            canvas.chart {
+                max-width: 100%;
             }
             .control-row {
                 flex-direction: column;
@@ -279,18 +296,22 @@
             }
             .container {
                 padding: 8px;
+                max-width: 100%;
+                overflow-x: hidden;
             }
             h1 {
-                font-size: 16px;
+                font-size: 18px;
             }
             .subtitle {
                 font-size: 11px;
+                line-height: 1.4;
             }
             .panel {
                 padding: 8px;
+                overflow-x: auto;
             }
             .panel h2 {
-                font-size: 13px;
+                font-size: 14px;
             }
             #networkCanvas {
                 max-width: 100%;
@@ -300,21 +321,71 @@
                 max-width: 100%;
                 height: auto;
             }
+            .control-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .control-group {
+                width: 100%;
+            }
             .control-group input[type="range"] {
-                width: 100px;
+                width: 100%;
+            }
+            .control-group select {
+                width: 100%;
             }
             .stats {
                 flex-direction: column;
                 gap: 4px;
+                align-items: flex-start;
             }
             button {
-                padding: 6px 8px;
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            .chart-controls {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .checkbox-group {
                 font-size: 12px;
             }
             .equations {
                 grid-template-columns: 1fr;  /* Single column on small screens */
                 font-size: 11px;
-                max-height: 200px;
+                max-height: 250px;
+            }
+            /* Hide drag handles on mobile - they don't work well with touch */
+            #sizeHandle, #layersHandle, #xMinHandle, #xMaxHandle {
+                display: none;
+            }
+            /* Show hidden sliders on mobile for layer/size control */
+            #numLayers, #hiddenSize {
+                display: inline-block !important;
+                width: 80px;
+                margin: 0 5px;
+            }
+            #numLayersValue, #hiddenSizeValue {
+                display: inline !important;
+            }
+            /* Add mobile-only slider container */
+            .mobile-sliders {
+                display: flex !important;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 10px;
+                padding: 8px;
+                background: #f0f4f8;
+                border-radius: 4px;
+            }
+            /* Make activation buttons stack */
+            #networkActivation {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            #networkActivation > div {
+                flex-wrap: wrap;
             }
         }
     </style>
@@ -386,11 +457,19 @@
                     </div>
                 </div>
 
-                <!-- Hidden inputs for sliders (used by JS) -->
-                <input type="range" id="numLayers" min="1" max="3" step="1" value="1" style="display:none;">
-                <input type="range" id="hiddenSize" min="2" max="10" step="1" value="3" style="display:none;">
-                <span id="numLayersValue" style="display:none;">1</span>
-                <span id="hiddenSizeValue" style="display:none;">3</span>
+                <!-- Network config sliders (hidden on desktop, visible on mobile) -->
+                <div class="mobile-sliders" style="display:none;">
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <label style="font-size:12px; color:#666;">Layers:</label>
+                        <input type="range" id="numLayers" min="1" max="3" step="1" value="1">
+                        <span id="numLayersValue" style="font-weight:bold; min-width:20px;">1</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <label style="font-size:12px; color:#666;">Width:</label>
+                        <input type="range" id="hiddenSize" min="2" max="10" step="1" value="3">
+                        <span id="hiddenSizeValue" style="font-weight:bold; min-width:20px;">3</span>
+                    </div>
+                </div>
 
                 <div class="control-row">
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -480,6 +559,19 @@
                 <!-- Hidden displays for JS compatibility -->
                 <span id="xMinDisplay" style="display:none;">-2.0</span>
                 <span id="xMaxDisplay" style="display:none;">2.0</span>
+                <!-- Mobile x-range controls -->
+                <div class="mobile-sliders" style="display:none; margin-top:8px;">
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <label style="font-size:12px; color:#666;">x-min:</label>
+                        <input type="range" id="xMinMobile" min="-5" max="0" step="0.5" value="-2" style="width:80px;">
+                        <span id="xMinMobileVal" style="font-size:12px; min-width:30px;">-2</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <label style="font-size:12px; color:#666;">x-max:</label>
+                        <input type="range" id="xMaxMobile" min="0" max="5" step="0.5" value="2" style="width:80px;">
+                        <span id="xMaxMobileVal" style="font-size:12px; min-width:30px;">2</span>
+                    </div>
+                </div>
             </div>
 
             <div class="panel">
@@ -2675,6 +2767,26 @@ function drawTrainingTrace() {
         xMaxSlider.addEventListener('input', syncXRange);
         config.xMin = parseFloat(xMinSlider.value);
         config.xMax = parseFloat(xMaxSlider.value);
+
+        // Mobile x-range sliders
+        const xMinMobile = document.getElementById('xMinMobile');
+        const xMaxMobile = document.getElementById('xMaxMobile');
+        const xMinMobileVal = document.getElementById('xMinMobileVal');
+        const xMaxMobileVal = document.getElementById('xMaxMobileVal');
+        if (xMinMobile && xMaxMobile) {
+            xMinMobile.addEventListener('input', () => {
+                config.xMin = parseFloat(xMinMobile.value);
+                xMinMobileVal.textContent = config.xMin.toFixed(1);
+                xMinSlider.value = config.xMin;
+                drawFitPlot();
+            });
+            xMaxMobile.addEventListener('input', () => {
+                config.xMax = parseFloat(xMaxMobile.value);
+                xMaxMobileVal.textContent = config.xMax.toFixed(1);
+                xMaxSlider.value = config.xMax;
+                drawFitPlot();
+            });
+        }
 
         const targetFuncInput = document.getElementById('targetFuncInput');
         targetFuncInput.addEventListener('change', () => {

@@ -6,7 +6,7 @@ Watch a neural network learn to approximate any mathematical function in real-ti
 
 ## 🎯 Try It Now
 
-**[Launch LearnCurve →](https://YOUR_USERNAME.github.io/LearnCurve/)**
+**[Launch LearnCurve →](https://rowenchris.github.io/LearnCurve/)**
 
 *(Update this link after deployment)*
 
