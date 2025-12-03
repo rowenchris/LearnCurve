@@ -411,8 +411,8 @@
 </head>
 <body>
 <div class="container">
-    <h1 style="margin-bottom:2px;">LearnCurve <span style="font-size:12px; font-weight:normal; color:#888;">— Neural Network Learning Demo</span></h1>
-    <p style="margin:0 0 8px 0; font-size:11px; color:#666;">An interactive tool for understanding how neural networks learn to approximate functions. © 2025 Chris Rowen — Available under <a href="https://opensource.org/licenses/MIT" style="color:#007bff; text-decoration:none;">MIT License</a></p>
+    <h1 style="margin-bottom:2px;">LearnCurve</h1>
+    <p style="margin:0 0 8px 0; font-size:11px; color:#666;">An interactive visualization tool for understanding how neural networks learn to approximate mathematical functions in real-time. © 2025 Chris Rowen — Available under <a href="https://opensource.org/licenses/MIT" style="color:#007bff; text-decoration:none;">MIT License</a></p>
 
     <div class="grid">
         <!-- CONTROLS STRIP - spans full width, two rows -->
@@ -445,8 +445,8 @@
                 <!-- Optimizer -->
                 <div id="optimizerButtons" style="display:flex; align-items:center; gap:3px;">
                     <label style="font-size:10px; color:#555;">Optimizer:</label>
-                    <button class="opt-btn" data-opt="sgd" style="padding:2px 6px; font-size:10px; border:2px solid #007bff; background:#007bff; color:white; border-radius:3px; cursor:pointer;" title="Simple Gradient Descent&#10;&#10;w ← w − η · ∂L/∂w&#10;&#10;Each weight moves opposite to its gradient, proportional to learning rate η. Simple but can be slow or get stuck.">Simple</button>
-                    <button class="opt-btn" data-opt="adam" style="padding:2px 6px; font-size:10px; border:2px solid #ccc; background:#fff; color:#333; border-radius:3px; cursor:pointer;" title="Adam Optimizer&#10;&#10;Combines two ideas:&#10;• Momentum: smooth out noisy gradients&#10;• Adaptive rates: bigger steps for rare gradients&#10;&#10;Usually learns faster and more reliably than Simple.">Adam</button>
+                    <button class="opt-btn" data-opt="sgd" style="padding:2px 6px; font-size:10px; border:2px solid #007bff; background:#007bff; color:white; border-radius:3px; cursor:pointer;" title="Simple Gradient Descent&#10;&#10;w ← w − η · ∂L/∂w&#10;&#10;Each weight moves opposite to its gradient, proportional to learning rate η.&#10;&#10;Recommended learning rate: 0.05-0.2&#10;Simple but can be slow or oscillate.">Simple</button>
+                    <button class="opt-btn" data-opt="adam" style="padding:2px 6px; font-size:10px; border:2px solid #ccc; background:#fff; color:#333; border-radius:3px; cursor:pointer;" title="Adam Optimizer&#10;&#10;Combines two ideas:&#10;• Momentum: smooth out noisy gradients&#10;• Adaptive rates: bigger steps for rare gradients&#10;&#10;Recommended learning rate: 0.001-0.02&#10;(Lower than Simple because Adam amplifies updates)&#10;&#10;Usually learns faster and more reliably.">Adam</button>
                 </div>
                 
                 <!-- Activation -->
@@ -560,7 +560,7 @@
             </div>
             <div style="position:relative; width:520px; margin:0 auto;">
                 <canvas id="traceCanvas" class="chart" width="520" height="360"></canvas>
-                <div id="traceViewHandle" style="position:absolute; bottom:4px; left:260px; transform:translateX(-50%); width:60px; height:14px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; display:none; align-items:center; justify-content:center; color:white; font-size:8px; opacity:0.9; z-index:10;" title="Drag left/right to zoom into early training steps (when paused)">◀ Zoom ▶</div>
+                <div id="traceViewHandle" style="position:absolute; bottom:4px; left:230px; width:60px; height:14px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; display:none; align-items:center; justify-content:center; color:white; font-size:8px; opacity:0.9; z-index:10;" title="Drag left/right to zoom into early training steps (when paused)">◀ Zoom ▶</div>
             </div>
         </div>
 
@@ -578,7 +578,7 @@
                 </div>
             </div>
             <canvas id="lossCanvas" class="chart" width="520" height="360"></canvas>
-            <div style="font-size:9px; color:#888; text-align:center;">🟢&nbsp;Start &nbsp;🔴&nbsp;Current • Blue=low, Red=high loss</div>
+            <div style="font-size:9px; color:#888; text-align:center;">🟢&nbsp;Start &nbsp;🔴&nbsp;Current • <span style="color:#00f;">■</span>≤0.001 <span style="color:#0aa;">■</span>0.01 <span style="color:#0a0;">■</span>0.1 <span style="color:#aa0;">■</span>1.0 <span style="color:#f00;">■</span>≥10</div>
         </div>
     </div>
     
@@ -1855,8 +1855,8 @@ function updateParameters() {
         for (let i = history.loss.length - 1; i >= 0 && count < window; i--, count++) {
             sum += history.loss[i];
         }
-        // Only show meaningful average after we have at least 3 data points
-        const minPointsForAvg = 3;
+        // Only show meaningful average after we have at least 10 data points
+        const minPointsForAvg = 10;
         if (history.loss.length >= minPointsForAvg) {
             history.avgLoss.push(sum / count);
         } else {
@@ -1888,7 +1888,19 @@ function updateParameters() {
         
         // Auto-refresh loss surface every N steps (if cache exists)
         if (lossSurfaceAutoUpdate && lossSurfaceCache && trainingState.step % lossSurfaceUpdateInterval === 0) {
-            // Just redraw, don't recompute (too expensive)
+            // Check if current weights are outside the view - if so, recompute with expanded bounds
+            const wx = getWeightByIndex(lossSurfaceWeightIndices[0]);
+            const wy = getWeightByIndex(lossSurfaceWeightIndices[1]);
+            const { minX, maxX, minY, maxY } = lossSurfaceCache;
+            const margin = 0.1;  // 10% margin before triggering recompute
+            const rangeX = maxX - minX;
+            const rangeY = maxY - minY;
+            
+            if (wx < minX + rangeX * margin || wx > maxX - rangeX * margin ||
+                wy < minY + rangeY * margin || wy > maxY - rangeY * margin) {
+                // Weights near edge or outside - recompute with expanded view
+                computeLossSurface();
+            }
             drawLossSurface();
         }
     }
@@ -1984,7 +1996,7 @@ function updateParameters() {
         const loss = backward(sample.x, sample.y, fwd);
         history.steps.push(0);
         history.loss.push(loss);
-        history.avgLoss.push(loss);
+        history.avgLoss.push(null);  // Don't show average until we have 10 points
         
         // Record initial weights
         const flatWeights = [];
@@ -2795,15 +2807,15 @@ function updateParameters() {
     if (showLoss) {
         series.push({
             name: 'Loss A',
-            steps: runA.steps,
-            data: runA.loss,
+            steps: filteredRunA.steps,
+            data: filteredRunA.loss,
             color: '#dc3545',
             lineWidth: 2
         });
         series.push({
             name: 'Loss B',
-            steps: runB.steps,
-            data: runB.loss,
+            steps: filteredRunB.steps,
+            data: filteredRunB.loss,
             color: '#ff9800',
             lineWidth: 2
         });
@@ -2812,15 +2824,15 @@ function updateParameters() {
     if (showAvgLoss) {
         series.push({
             name: 'Avg Loss A',
-            steps: runA.steps,
-            data: runA.avgLoss,
+            steps: filteredRunA.steps,
+            data: filteredRunA.avgLoss,
             color: '#007bff',
             lineWidth: 3
         });
         series.push({
             name: 'Avg Loss B',
-            steps: runB.steps,
-            data: runB.avgLoss,
+            steps: filteredRunB.steps,
+            data: filteredRunB.avgLoss,
             color: '#00bcd4',
             lineWidth: 3
         });
@@ -3467,7 +3479,7 @@ function drawTrainingTrace() {
     }
     
     function computeLossSurface() {
-        const resolution = 40;  // 40x40 grid
+        const resolution = 60;  // 60x60 grid for finer detail
         const idxX = lossSurfaceWeightIndices[0];
         const idxY = lossSurfaceWeightIndices[1];
         
@@ -3475,12 +3487,35 @@ function drawTrainingTrace() {
         const savedWX = getWeightByIndex(idxX);
         const savedWY = getWeightByIndex(idxY);
         
-        // Determine range centered on current values
-        const range = 3;  // +/- 3 from current
-        const minX = savedWX - range;
-        const maxX = savedWX + range;
-        const minY = savedWY - range;
-        const maxY = savedWY + range;
+        // Determine range - include all trail points plus current position with padding
+        let minX = savedWX, maxX = savedWX;
+        let minY = savedWY, maxY = savedWY;
+        
+        // Include start position
+        if (lossSurfaceStartPosition) {
+            minX = Math.min(minX, lossSurfaceStartPosition.x);
+            maxX = Math.max(maxX, lossSurfaceStartPosition.x);
+            minY = Math.min(minY, lossSurfaceStartPosition.y);
+            maxY = Math.max(maxY, lossSurfaceStartPosition.y);
+        }
+        
+        // Include all trail points
+        for (const pt of lossSurfaceTrail) {
+            minX = Math.min(minX, pt.x);
+            maxX = Math.max(maxX, pt.x);
+            minY = Math.min(minY, pt.y);
+            maxY = Math.max(maxY, pt.y);
+        }
+        
+        // Add padding (20% on each side, minimum ±2 range)
+        const rangeX = maxX - minX;
+        const rangeY = maxY - minY;
+        const padX = Math.max(2, rangeX * 0.2);
+        const padY = Math.max(2, rangeY * 0.2);
+        minX -= padX;
+        maxX += padX;
+        minY -= padY;
+        maxY += padY;
         
         // Sample training points for loss calculation
         const numSamples = 20;
@@ -3571,44 +3606,28 @@ function drawTrainingTrace() {
         const cellW = plotW / resolution;
         const cellH = plotH / resolution;
         
-        // Draw heatmap with enhanced color range
-        const lossRange = maxLoss - minLoss || 1;
+        // Fixed logarithmic color scale for consistent comparisons
+        // Maps loss 0.001 (deep blue) to 10.0 (deep red)
+        const fixedMinLog = Math.log10(0.001);  // -3
+        const fixedMaxLog = Math.log10(10);      // 1
+        const fixedLogRange = fixedMaxLog - fixedMinLog;  // 4 decades
         
         for (let iy = 0; iy < resolution; iy++) {
             for (let ix = 0; ix < resolution; ix++) {
                 const loss = grid[iy][ix];
-                // Use sqrt for better low-end contrast
-                const normLoss = Math.sqrt((loss - minLoss) / lossRange);
                 
-                // Enhanced color gradient: dark blue -> cyan -> green -> yellow -> red
-                let r, g, b;
-                if (normLoss < 0.25) {
-                    // Dark blue to cyan
-                    const t = normLoss * 4;
-                    r = Math.round(20);
-                    g = Math.round(50 + t * 150);
-                    b = Math.round(120 + t * 80);
-                } else if (normLoss < 0.5) {
-                    // Cyan to green
-                    const t = (normLoss - 0.25) * 4;
-                    r = Math.round(20 + t * 30);
-                    g = Math.round(200 - t * 50);
-                    b = Math.round(200 - t * 150);
-                } else if (normLoss < 0.75) {
-                    // Green to yellow
-                    const t = (normLoss - 0.5) * 4;
-                    r = Math.round(50 + t * 205);
-                    g = Math.round(150 + t * 55);
-                    b = Math.round(50);
-                } else {
-                    // Yellow to red
-                    const t = (normLoss - 0.75) * 4;
-                    r = 255;
-                    g = Math.round(205 - t * 205);
-                    b = Math.round(50 - t * 50);
-                }
+                // Fixed log scale normalization (0 = loss 0.001, 1 = loss 10)
+                const clampedLoss = Math.max(0.001, Math.min(10, loss));
+                const logLoss = Math.log10(clampedLoss);
+                const normLoss = (logLoss - fixedMinLog) / fixedLogRange;
                 
-                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                // Smooth HSL-based gradient with more color resolution
+                // Hue: 240 (blue) → 180 (cyan) → 120 (green) → 60 (yellow) → 0 (red)
+                const hue = 240 * (1 - normLoss);  // Blue to red
+                const sat = 85 + 15 * Math.sin(normLoss * Math.PI);  // Slight saturation boost in middle
+                const light = 35 + 25 * (1 - Math.abs(normLoss - 0.5) * 2);  // Brighter in middle
+                
+                ctx.fillStyle = `hsl(${hue}, ${sat}%, ${light}%)`;
                 const px = paddingLeft + ix * cellW;
                 const py = paddingTop + (resolution - 1 - iy) * cellH;
                 ctx.fillRect(px, py, cellW + 1, cellH + 1);
@@ -3988,6 +4007,24 @@ function drawTrainingTrace() {
                 
                 // Update config
                 config.optimizer = btn.dataset.opt;
+                
+                // Auto-adjust learning rate for optimizer
+                // Adam works best with lower learning rates (0.001-0.01)
+                // Simple SGD works with higher rates (0.01-0.1)
+                const lrSlider = document.getElementById('learningRate');
+                const lrValue = document.getElementById('learningRateValue');
+                if (btn.dataset.opt === 'adam' && config.learningRate > 0.02) {
+                    // Lower the learning rate for Adam
+                    config.learningRate = 0.01;
+                    lrSlider.value = Math.log10(0.01);
+                    lrValue.textContent = '0.010';
+                } else if (btn.dataset.opt === 'sgd' && config.learningRate < 0.05) {
+                    // Raise the learning rate for SGD
+                    config.learningRate = 0.1;
+                    lrSlider.value = Math.log10(0.1);
+                    lrValue.textContent = '0.100';
+                }
+                
                 initializeOptimizerState();
                 updateUI();
             });
@@ -4109,12 +4146,17 @@ function drawTrainingTrace() {
             avgWindowValue.textContent = config.avgWindow;
             // Recalculate all rolling averages with new window size
             history.avgLoss = [];
+            const minPointsForAvg = 10;
             for (let i = 0; i < history.loss.length; i++) {
-                let sum = 0, count = 0;
-                for (let j = i; j >= 0 && count < config.avgWindow; j--, count++) {
-                    sum += history.loss[j];
+                if (i + 1 < minPointsForAvg) {
+                    history.avgLoss.push(null);  // Not enough points yet
+                } else {
+                    let sum = 0, count = 0;
+                    for (let j = i; j >= 0 && count < config.avgWindow; j--, count++) {
+                        sum += history.loss[j];
+                    }
+                    history.avgLoss.push(sum / Math.max(1, count));
                 }
-                history.avgLoss.push(sum / Math.max(1, count));
             }
             updateUI();
         });
