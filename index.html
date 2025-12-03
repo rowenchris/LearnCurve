@@ -1,0 +1,2968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LearnCurve - Interactive Neural Network Demo</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 16px;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 16px 20px 24px 20px;
+        }
+
+        h1 {
+            font-size: 22px;
+            margin: 0 0 8px 0;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1.1fr;
+            gap: 16px;
+        }
+
+        .panel {
+            background: #fafafa;
+            border-radius: 6px;
+            padding: 10px 12px 12px 12px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .panel h2 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #444;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 4px;
+        }
+
+        .panel h3 {
+            font-size: 14px;
+            margin: 6px 0;
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            font-size: 12px;
+            min-width: 150px;
+        }
+
+        .control-group label {
+            margin-bottom: 2px;
+            font-weight: 500;
+        }
+
+        .control-group input[type="range"] {
+            width: 160px;
+        }
+
+        .control-group select,
+        .control-group input[type="text"] {
+            font-size: 13px;
+            padding: 2px 4px;
+        }
+
+        .value {
+            font-size: 11px;
+            color: #777;
+        }
+
+        button {
+            padding: 6px 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        #networkCanvas {
+            border: 1px solid #ddd;
+            background: white;
+            display: block;
+            margin: 10px auto;
+            max-width: 100%;
+            height: auto;
+        }
+
+        canvas.chart {
+            border: 1px solid #ddd;
+            background: white;
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .stat-value {
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .activation-selector {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .activation-option {
+            font-size: 11px;
+            padding: 3px 7px;
+            border-radius: 999px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .activation-option.selected {
+            background: #007bff;
+            color: #fff;
+            border-color: #007bff;
+        }
+
+        .chart-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+        }
+
+        .equations-panel {
+            grid-column: 1 / -1;  /* Span all columns */
+        }
+        
+        .equations-panel h2 {
+            margin-bottom: 6px;
+        }
+        
+        .equations {
+            font-size: 13px;
+            line-height: 1.4;
+            max-height: 280px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;  /* 2 columns: Forward Pass | Backward Pass */
+            gap: 16px;
+        }
+
+        .equation-block {
+            padding: 4px 6px;
+        }
+
+        .equation-title {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .math {
+            font-family: "Courier New", monospace;
+            color: #333;
+            font-size: 13px;
+        }
+
+        .slider-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #777;
+            margin-bottom: 2px;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 10px;
+            }
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            h1 {
+                font-size: 18px;
+                margin-bottom: 10px;
+            }
+            .panel h2 {
+                font-size: 14px;
+            }
+            .control-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .control-group {
+                flex-wrap: wrap;
+            }
+            .equations-panel {
+                grid-column: 1;  /* Single column on mobile */
+            }
+            .equations {
+                grid-template-columns: 1fr 1fr;  /* 2 columns on tablet */
+                font-size: 12px;
+                max-height: 220px;
+            }
+        }
+        
+        /* iPhone and small mobile */
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            .container {
+                padding: 8px;
+            }
+            h1 {
+                font-size: 16px;
+            }
+            .subtitle {
+                font-size: 11px;
+            }
+            .panel {
+                padding: 8px;
+            }
+            .panel h2 {
+                font-size: 13px;
+            }
+            #networkCanvas {
+                max-width: 100%;
+                height: auto;
+            }
+            canvas.chart {
+                max-width: 100%;
+                height: auto;
+            }
+            .control-group input[type="range"] {
+                width: 100px;
+            }
+            .stats {
+                flex-direction: column;
+                gap: 4px;
+            }
+            button {
+                padding: 6px 8px;
+                font-size: 12px;
+            }
+            .equations {
+                grid-template-columns: 1fr;  /* Single column on small screens */
+                font-size: 11px;
+                max-height: 200px;
+            }
+        }
+    </style>
+    <!-- GIF library for capture -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>LearnCurve</h1>
+    <div class="subtitle">
+        <strong>Goal:</strong> Train a neural network to predict a target function. 
+        The <span style="color:#28a745">green curve</span> is the target f(x); 
+        the <span style="color:#007bff">blue curve</span> is the network's prediction ŷ(x). 
+        Watch them converge as training progresses!
+        <br><em style="font-size:11px; color:#888;">Built by Chris Rowen and Claude 4.5 Opus.</em>
+    </div>
+
+    <div class="grid">
+        <!-- Left column: controls + network canvas -->
+        <div>
+            <div class="panel">
+                <h2 title="Set up your experiment: choose what function to learn and how to train the network.">Training Controls</h2>
+
+                <div class="control-row" style="align-items: flex-start;">
+                    <div class="control-group" style="min-width: 180px;">
+                        <label title="The function you want the network to learn. Start simple (x*x), then try harder ones!">Target f(x):</label>
+                        <input type="text" id="targetFuncInput" value="x*x" style="width: 155px;" title="Type any math expression: x*x, sin(x), abs(x), etc. The network will try to learn it!" />
+                    </div>
+                    <div style="font-size: 11px; color: #555; line-height: 1.4; flex: 1;">
+                        <code>x</code>=var, <code>+ - * / ^</code>=ops. <strong>Funcs:</strong> <code>sin cos tan sqrt abs exp log</code>. 
+                        <strong>Const:</strong> <code>PI E</code>. <strong>Ex:</strong> <code>x^2</code>, <code>sin(PI*x)</code>, <code>exp(-x^2)</code>
+                    </div>
+                </div>
+
+                <!-- Hidden x-range inputs (controlled by fit plot handles) -->
+                <input type="range" id="xMin" min="-5" max="0" step="0.1" value="-2" style="display:none;">
+                <input type="range" id="xMax" min="0" max="5" step="0.1" value="2" style="display:none;">
+                <span id="xMinLabel" style="display:none;">-2</span>
+                <span id="xMaxLabel" style="display:none;">2</span>
+
+                <div class="control-row" style="gap:16px;">
+                    <div class="control-group" style="flex:1;">
+                        <label title="Add random 'jitter' to training data. Real-world data is noisy - can the network still learn?">Noise:</label>
+                        <input type="range" id="noise" min="0" max="1" step="0.05" value="0" style="width:100%;" title="0 = perfect data, higher = more randomness. Try adding noise to see how robust learning is!">
+                        <span class="value" id="noiseValue">0.00</span>
+                    </div>
+
+                    <div class="control-group" style="flex:1.5;">
+                        <label title="How big a step to take when adjusting weights. Like walking downhill: big steps are faster but might overshoot; small steps are safer but slower.">Learning Rate:</label>
+                        <input type="range" id="learningRate" min="-3" max="-0.3" step="0.01" value="-1" style="width:100%;" title="Higher = faster but unstable learning. Lower = slower but stable. Try different values!">
+                        <span class="value" id="learningRateValue">0.100</span>
+                    </div>
+
+                    <div class="control-group" style="flex:1;">
+                        <label title="Different strategies for adjusting weights. Like different ways to walk downhill in fog.">Optimizer:</label>
+                        <select id="optimizerSelect" style="width:100%;" title="Simple: basic steps. Momentum: builds up speed. Adam: smart adaptive steps (usually best).">
+                            <option value="sgd">Simple</option>
+                            <option value="momentum">Momentum</option>
+                            <option value="rmsprop">RMSProp</option>
+                            <option value="adam">Adam</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Old activation selector kept hidden for JS compatibility -->
+                    <div class="activation-selector" id="activationSelector" style="display:none;">
+                        <span class="activation-option selected" data-act="relu">ReLU</span>
+                        <span class="activation-option" data-act="tanh">tanh</span>
+                        <span class="activation-option" data-act="sigmoid">sigmoid</span>
+                    </div>
+                </div>
+
+                <!-- Hidden inputs for sliders (used by JS) -->
+                <input type="range" id="numLayers" min="1" max="3" step="1" value="1" style="display:none;">
+                <input type="range" id="hiddenSize" min="2" max="10" step="1" value="3" style="display:none;">
+                <span id="numLayersValue" style="display:none;">1</span>
+                <span id="hiddenSizeValue" style="display:none;">3</span>
+
+                <div class="control-row">
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <button id="stepBtn" title="Take ONE learning step: pick a random x, compute prediction, measure error, adjust weights. Click repeatedly to watch learning happen!">Step</button>
+                        <button id="runBtn" title="Run many steps automatically. Watch the blue curve approach the green curve!">Run</button>
+                        <button id="resetBtn" title="Start over with random weights. The network 'forgets' everything.">Reset</button>
+                        <button id="gifBtn" title="Record an animated GIF of training">Capture GIF</button>
+                    </div>
+                </div>
+
+                <div class="stats" style="align-items:center;">
+                    <div class="stat-item">
+                        <span class="stat-label">Step:</span>
+                        <span class="stat-value" id="stepCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Loss:</span>
+                        <span class="stat-value" id="lossValue">—</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total ops:</span>
+                        <span class="stat-value"><span id="totalAdds">0</span>+ <span id="totalMuls">0</span>×</span>
+                    </div>
+                    <div class="stat-item" style="margin-left:auto;">
+                        <span style="font-size:10px; color:#666;">Speed:</span>
+                        <span style="font-weight:bold; color:#007bff; font-size:12px;" id="stepsPerSec">—</span>
+                        <span style="font-size:9px; color:#666;">/s</span>
+                    </div>
+                </div>
+                <!-- Hidden elements for ops breakdown -->
+                <span id="opsLossAdd" style="display:none">0</span>
+                <span id="opsLossMul" style="display:none">0</span>
+            </div>
+
+            <div class="panel">
+                <h2 title="The neural network structure. Each circle is a 'neuron' that computes a weighted sum and applies an activation function. More neurons = more flexible but slower to train.">Network Design</h2>
+                <div style="position:relative; display:inline-block;">
+                    <canvas id="networkCanvas" width="580" height="340"></canvas>
+                    <!-- Vertical handle for hidden layer size (right edge) -->
+                    <div id="sizeHandle" style="position:absolute; right:-22px; top:50%; transform:translateY(-50%); width:26px; height:75px; background:linear-gradient(to bottom, #007bff, #0056b3); border-radius:4px; cursor:ns-resize; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; transition: transform 0.15s ease-out; padding:2px;" title="Drag up/down to change hidden layer size">
+                        <span style="font-size:10px;">▲</span>
+                        <span style="writing-mode:vertical-rl; font-size:10px; font-weight:500;">Width</span>
+                        <span style="font-size:10px;">▼</span>
+                    </div>
+                    <!-- Horizontal handle for number of layers (bottom) -->
+                    <div id="layersHandle" style="position:absolute; bottom:-14px; left:50%; transform:translateX(-50%); height:24px; width:90px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:4px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:10px; gap:4px; transition: transform 0.15s ease-out;" title="Drag left/right to change number of hidden layers">
+                        <span>◀</span><span style="font-weight:500;">Layers</span><span>▶</span>
+                    </div>
+                </div>
+                <!-- Hidden displays for JS compatibility -->
+                <span id="networkLayersDisplay" style="display:none;">1</span>
+                <span id="networkSizeDisplay" style="display:none;">3</span>
+                <div style="display:flex; gap:12px; margin-top:8px; align-items:flex-start; font-size:11px;">
+                    <!-- Ops/Step table -->
+                    <div id="opsTableHtml" style="font-size:11px; background:#f8f9ff; border:1px solid #007bff; border-radius:4px; padding:6px 12px;">
+                        <table style="border-collapse:collapse; font-size:11px;">
+                            <tr><th colspan="3" style="color:#007bff; font-size:12px; padding-bottom:3px;">Ops/Step</th></tr>
+                            <tr style="color:#666;"><td></td><td style="padding:0 10px; text-align:center;">adds</td><td style="padding:0 10px; text-align:center;">muls</td></tr>
+                            <tr><td style="color:#28a745; font-weight:bold;">Fwd</td><td id="opsFwdAdds" style="text-align:center; padding:0 10px;">0</td><td id="opsFwdMuls" style="text-align:center; padding:0 10px;">0</td></tr>
+                            <tr><td style="color:#dc3545; font-weight:bold;">Back</td><td id="opsBackAdds" style="text-align:center; padding:0 10px;">0</td><td id="opsBackMuls" style="text-align:center; padding:0 10px;">0</td></tr>
+                            <tr style="border-top:1px solid #ccc;"><td style="color:#007bff; font-weight:bold;">Tot</td><td id="opsTotAdds" style="text-align:center; font-weight:bold; padding:0 10px;">0</td><td id="opsTotMuls" style="text-align:center; font-weight:bold; padding:0 10px;">0</td></tr>
+                        </table>
+                    </div>
+                    <div id="networkActivation" style="display:flex; flex-direction:column; gap:4px; margin-left:auto; align-items:center;">
+                        <span style="color:#666; font-size:12px;">Activation:</span>
+                        <div style="display:flex; gap:6px;">
+                            <button class="act-btn" data-act="relu" style="padding:5px 10px; font-size:12px; border:2px solid #007bff; background:#007bff; color:white; border-radius:4px; cursor:pointer; font-weight:600;" title="ReLU: Passes positive values through, blocks negative. Simple and fast - most popular choice!">ReLU</button>
+                            <button class="act-btn" data-act="tanh" style="padding:5px 10px; font-size:12px; border:2px solid #ccc; background:#fff; color:#333; border-radius:4px; cursor:pointer; font-weight:500;" title="Tanh: Squishes values to range -1 to +1. Smooth S-curve, centered at zero.">Tanh</button>
+                            <button class="act-btn" data-act="sigmoid" style="padding:5px 10px; font-size:12px; border:2px solid #ccc; background:#fff; color:#333; border-radius:4px; cursor:pointer; font-weight:500;" title="Sigmoid: Squishes values to range 0 to 1. Good for probabilities.">Sigmoid</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right column: plots + equations -->
+        <div>
+            <div class="panel">
+                <h2 title="Green = target function we're trying to learn. Blue = network's current prediction. Success = blue matches green!">Fit Plot: Target vs Prediction</h2>
+                <div style="position:relative; width:100%;">
+                    <canvas id="fitCanvas" class="chart" width="580" height="260" style="width:100%;"></canvas>
+                    <!-- Left handle for x-min (below x-axis values) -->
+                    <div id="xMinHandle" style="position:absolute; left:45px; bottom:5px; width:28px; height:14px; background:linear-gradient(to right, #28a745, #1e7e34); border-radius:3px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:8px; font-weight:bold; transition: transform 0.15s ease-out;" title="Drag left/right to adjust x-min">◀▶</div>
+                    <!-- Right handle for x-max (below x-axis values) -->
+                    <div id="xMaxHandle" style="position:absolute; right:45px; bottom:5px; width:28px; height:14px; background:linear-gradient(to left, #28a745, #1e7e34); border-radius:3px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:8px; font-weight:bold; transition: transform 0.15s ease-out;" title="Drag left/right to adjust x-max">◀▶</div>
+                </div>
+                <!-- Hidden displays for JS compatibility -->
+                <span id="xMinDisplay" style="display:none;">-2.0</span>
+                <span id="xMaxDisplay" style="display:none;">2.0</span>
+            </div>
+
+            <div class="panel">
+                <h2 title="Loss measures 'how wrong' the network is. Watch it decrease as the network learns! Lower loss = better predictions.">Training Trace</h2>
+
+                <div class="chart-controls">
+                    <div class="checkbox-group" title="Rolling average of loss - smooths out noise to show trend">
+                        <input type="checkbox" id="traceAvgLoss" checked>
+                        <label for="traceAvgLoss"><strong>Avg Loss</strong></label>
+                        <span style="font-size:9px; color:#666; margin-left:6px;">Window:</span>
+                        <input type="range" id="avgWindowSlider" min="10" max="500" step="10" value="100" 
+                               style="width:60px; margin-left:2px;" title="Rolling average window size">
+                        <span id="avgWindowValue" style="font-size:10px; color:#007bff; min-width:30px;">100</span>
+                    </div>
+                    <div class="checkbox-group" title="Instantaneous loss at each training step - shows actual variance">
+                        <input type="checkbox" id="traceLoss" checked>
+                        <label for="traceLoss">Loss</label>
+                    </div>
+                    <div class="checkbox-group" title="Track individual weight values over training - see how each weight evolves">
+                        <input type="checkbox" id="traceWeights" checked>
+                        <label for="traceWeights">Weights</label>
+                    </div>
+                    <div class="checkbox-group" title="Use logarithmic scale for loss axis - useful when loss spans many orders of magnitude">
+                        <input type="checkbox" id="traceLogScale">
+                        <label for="traceLogScale">Loss on Log scale</label>
+                    </div>
+                </div>
+
+                <div class="chart-controls" style="margin-top:6px; flex-wrap:wrap;">
+                    <button id="saveRunA" style="font-size:11px; padding:4px 8px; margin-right:8px;" title="Save this training run. Try different settings and compare which learns better!">
+                        Save as Run A
+                    </button>
+                    <button id="saveRunB" style="font-size:11px; padding:4px 8px; margin-right:8px;" title="Save a second run with different settings to compare.">
+                        Save as Run B
+                    </button>
+                    <button id="compareBtn" style="font-size:11px; padding:4px 8px; margin-right:12px;" disabled title="See both runs side-by-side. Which configuration learned faster?">
+                        Compare A vs B
+                    </button>
+
+                    <span id="runALabel" class="run-label" style="font-size:11px; margin-right:12px;"></span>
+                    <span id="runBLabel" class="run-label" style="font-size:11px;"></span>
+                </div>
+
+                <canvas id="traceCanvas" class="chart" width="500" height="260"></canvas>
+            </div>
+
+        </div>
+    </div>
+    
+    <!-- Equations panel spans full width -->
+    <div class="panel equations-panel">
+        <h2 title="The math behind learning: Forward pass computes predictions, then we use the chain rule (backpropagation) to find how to adjust each weight.">Equations & Backprop Sketch</h2>
+        <div class="equations" id="equationsDiv"></div>
+    </div>
+</div>
+
+<script>
+    // ---------------- Config & State ----------------
+
+    let config = {
+        learningRate: 0.1,
+        activation: 'relu',
+        xMin: -2,
+        xMax: 2,
+        noise: 0,
+        targetFunc: null,
+        targetFuncStr: 'x^2',
+        optimizer: 'sgd',
+        avgWindow: 100
+    };
+
+    let network = {
+        numLayers: 1,
+        hiddenSize: 3,
+        weights: [],
+        biases: []
+    };
+
+    let grads = {
+        weights: [],
+        biases: []
+    };
+
+    let history = {
+        steps: [],
+        loss: [],
+        avgLoss: [],
+        weights: []
+    };
+
+    let trainingState = {
+        running: false,
+        animating: false,
+        step: 0,
+        totalAdds: 0,
+        totalMuls: 0,
+        lastUpdateTime: performance.now(),
+        stepsSinceLastUpdate: 0,
+        recentSamples: []
+    };
+
+    let gifCapture = {
+        recording: false,
+        gif: null,
+        framesRemaining: 0
+    };
+
+    let optimizerState = {
+        m: [],
+        v: [],
+        r: [],
+        t: 0
+    };
+
+    let savedRuns = {
+        A: null,
+        B: null
+    };
+
+    let comparisonModeActive = false;
+
+    function exitComparisonMode() {
+        if (!comparisonModeActive) return;
+        comparisonModeActive = false;
+        const compareBtn = document.getElementById('compareBtn');
+        if (compareBtn && savedRuns.A && savedRuns.B) {
+            compareBtn.style.cssText = 'font-size:11px; padding:4px 8px; margin-right:12px; background-color:#007bff; color:white; border:1px solid #007bff; cursor:pointer;';
+            compareBtn.textContent = 'Compare A vs B';
+        }
+    }
+
+    const activationFns = {
+        relu: {
+            fn: (z) => Math.max(0, z),
+            dfn: (z) => z > 0 ? 1 : 0
+        },
+        tanh: {
+            fn: (z) => Math.tanh(z),
+            dfn: (z) => {
+                const t = Math.tanh(z);
+                return 1 - t * t;
+            }
+        },
+        sigmoid: {
+            fn: (z) => 1 / (1 + Math.exp(-z)),
+            dfn: (z) => {
+                const s = 1 / (1 + Math.exp(-z));
+                return s * (1 - s);
+            }
+        }
+    };
+
+    // --------------- Utility Functions ---------------
+
+    function gaussianNoise(mean=0, std=1) {
+        let u = 0, v = 0;
+        while (u === 0) u = Math.random();
+        while (v === 0) v = Math.random();
+        const n = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        return mean + std * n;
+    }
+
+    function createCompositeCanvas() {
+        // Get all three canvases
+        const networkCanvas = document.getElementById('networkCanvas');
+        const fitCanvas = document.getElementById('fitCanvas');
+        const traceCanvas = document.getElementById('traceCanvas');
+        
+        // Create composite canvas: network on left, fit and trace stacked on right
+        const padding = 10;
+        const leftWidth = networkCanvas.width;
+        const rightWidth = Math.max(fitCanvas.width, traceCanvas.width);
+        const totalWidth = leftWidth + rightWidth + padding * 3;
+        const totalHeight = Math.max(networkCanvas.height, fitCanvas.height + traceCanvas.height + padding) + padding * 2;
+        
+        const composite = document.createElement('canvas');
+        composite.width = totalWidth;
+        composite.height = totalHeight;
+        const ctx = composite.getContext('2d');
+        
+        // White background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, totalWidth, totalHeight);
+        
+        // Draw network canvas (left side)
+        ctx.drawImage(networkCanvas, padding, padding);
+        
+        // Draw fit canvas (top right)
+        ctx.drawImage(fitCanvas, leftWidth + padding * 2, padding);
+        
+        // Draw trace canvas (bottom right)
+        ctx.drawImage(traceCanvas, leftWidth + padding * 2, fitCanvas.height + padding * 2);
+        
+        // Add title
+        ctx.fillStyle = '#333';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('Network', padding, padding - 2);
+        ctx.fillText('Fit: f(x) vs ŷ(x)', leftWidth + padding * 2, padding - 2);
+        ctx.fillText('Training Trace', leftWidth + padding * 2, fitCanvas.height + padding * 2 - 2);
+        
+        return composite;
+    }
+    
+    function startGifCapture() {
+        if (gifCapture.recording) return;
+
+        trainingState.running = false;
+        
+        // Create composite to get dimensions
+        const composite = createCompositeCanvas();
+
+        gifCapture.gif = new GIF({
+            workers: 2,
+            quality: 10,
+            width: composite.width,
+            height: composite.height,
+            workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
+        });
+
+        gifCapture.framesRemaining = 60;  // More frames for better animation
+        gifCapture.recording = true;
+
+        gifCapture.gif.on('finished', function (blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            // Timestamp in filename
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            a.download = `ai_training_${timestamp}.gif`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            gifCapture.recording = false;
+        });
+
+        captureGifFrameLoop();
+    }
+
+    function captureGifFrameLoop() {
+        if (!gifCapture.recording || gifCapture.framesRemaining <= 0) {
+            gifCapture.gif.render();
+            return;
+        }
+
+        trainStep();
+        updateUI();
+
+        // Capture composite of all canvases
+        const composite = createCompositeCanvas();
+        gifCapture.gif.addFrame(composite, {copy: true, delay: 100});
+
+        gifCapture.framesRemaining -= 1;
+        setTimeout(captureGifFrameLoop, 100);
+    }
+
+    function initializeOptimizerState() {
+        optimizerState.m = [];
+        optimizerState.v = [];
+        optimizerState.r = [];
+        optimizerState.t = 0;
+
+        // For each weight matrix/vector
+        for (let l = 0; l < network.weights.length; l++) {
+            const w = network.weights[l];
+            if (Array.isArray(w[0])) {
+                optimizerState.m.push(w.map(row => row.map(() => 0)));
+                optimizerState.v.push(w.map(row => row.map(() => 0)));
+                optimizerState.r.push(w.map(row => row.map(() => 0)));
+            } else {
+                optimizerState.m.push(w.map(() => 0));
+                optimizerState.v.push(w.map(() => 0));
+                optimizerState.r.push(w.map(() => 0));
+            }
+        }
+
+        // Biases
+        for (let l = 0; l < network.biases.length; l++) {
+            const b = network.biases[l];
+            optimizerState.m.push(b.map(() => 0));
+            optimizerState.v.push(b.map(() => 0));
+            optimizerState.r.push(b.map(() => 0));
+        }
+    }
+function updateParameters() {
+    const lr = config.learningRate;
+    const beta1 = 0.9;
+    const beta2 = 0.999;
+    const epsilon = 1e-8;
+    const rho = 0.9;
+    const momentumCoeff = 0.9;
+
+    let idx = 0;
+
+    // Plain SGD
+    if (config.optimizer === 'sgd') {
+        for (let l = 0; l < network.weights.length; l++) {
+            const w = network.weights[l];
+            const gw = grads.weights[l];
+            if (Array.isArray(w[0])) {
+                // matrix
+                for (let i = 0; i < w.length; i++) {
+                    for (let j = 0; j < w[i].length; j++) {
+                        w[i][j] -= lr * gw[i][j];
+                    }
+                }
+            } else {
+                // vector
+                for (let i = 0; i < w.length; i++) {
+                    w[i] -= lr * gw[i];
+                }
+            }
+        }
+        for (let l = 0; l < network.biases.length; l++) {
+            const b = network.biases[l];
+            const gb = grads.biases[l];
+            for (let i = 0; i < b.length; i++) {
+                b[i] -= lr * gb[i];
+            }
+        }
+        return;
+    }
+
+    // Momentum / RMSProp / Adam
+    optimizerState.t += 1;
+
+    // Weights
+    for (let l = 0; l < network.weights.length; l++) {
+        const w = network.weights[l];
+        const gw = grads.weights[l];
+        let m = optimizerState.m[idx];
+        let v = optimizerState.v[idx];
+        let r = optimizerState.r[idx];
+
+        if (config.optimizer === 'momentum') {
+            const vCoeff = momentumCoeff;
+            const oneMinus = 1 - vCoeff;
+
+            if (Array.isArray(w[0])) {
+                for (let i = 0; i < w.length; i++) {
+                    for (let j = 0; j < w[i].length; j++) {
+                        v[i][j] = vCoeff * v[i][j] + oneMinus * gw[i][j];
+                        w[i][j] -= lr * v[i][j];
+                    }
+                }
+            } else {
+                for (let i = 0; i < w.length; i++) {
+                    v[i] = vCoeff * v[i] + oneMinus * gw[i];
+                    w[i] -= lr * v[i];
+                }
+            }
+        } else if (config.optimizer === 'rmsprop') {
+            const oneMinusRho = 1 - rho;
+            if (Array.isArray(w[0])) {
+                for (let i = 0; i < w.length; i++) {
+                    for (let j = 0; j < w[i].length; j++) {
+                        r[i][j] = rho * r[i][j] + oneMinusRho * gw[i][j] * gw[i][j];
+                        const step = lr / Math.sqrt(r[i][j] + epsilon);
+                        w[i][j] -= step * gw[i][j];
+                    }
+                }
+            } else {
+                for (let i = 0; i < w.length; i++) {
+                    r[i] = rho * r[i] + oneMinusRho * gw[i] * gw[i];
+                    const step = lr / Math.sqrt(r[i] + epsilon);
+                    w[i] -= step * gw[i];
+                }
+            }
+        } else if (config.optimizer === 'adam') {
+            if (Array.isArray(w[0])) {
+                for (let i = 0; i < w.length; i++) {
+                    for (let j = 0; j < w[i].length; j++) {
+                        m[i][j] = beta1 * m[i][j] + (1 - beta1) * gw[i][j];
+                        v[i][j] = beta2 * v[i][j] + (1 - beta2) * gw[i][j] * gw[i][j];
+                        const mHat = m[i][j] / (1 - Math.pow(beta1, optimizerState.t));
+                        const vHat = v[i][j] / (1 - Math.pow(beta2, optimizerState.t));
+                        w[i][j] -= lr * mHat / (Math.sqrt(vHat) + epsilon);
+                    }
+                }
+            } else {
+                for (let i = 0; i < w.length; i++) {
+                    m[i] = beta1 * m[i] + (1 - beta1) * gw[i];
+                    v[i] = beta2 * v[i] + (1 - beta2) * gw[i] * gw[i];
+                    const mHat = m[i] / (1 - Math.pow(beta1, optimizerState.t));
+                    const vHat = v[i] / (1 - Math.pow(beta2, optimizerState.t));
+                    w[i] -= lr * mHat / (Math.sqrt(vHat) + epsilon);
+                }
+            }
+        }
+
+        optimizerState.m[idx] = m;
+        optimizerState.v[idx] = v;
+        optimizerState.r[idx] = r;
+        idx++;
+    }
+
+    // Biases
+    for (let l = 0; l < network.biases.length; l++) {
+        const b = network.biases[l];
+        const gb = grads.biases[l];
+        let m = optimizerState.m[idx];
+        let v = optimizerState.v[idx];
+        let r = optimizerState.r[idx];
+
+        if (config.optimizer === 'momentum') {
+            const vCoeff = momentumCoeff;
+            const oneMinus = 1 - vCoeff;
+            for (let i = 0; i < b.length; i++) {
+                v[i] = vCoeff * v[i] + oneMinus * gb[i];
+                b[i] -= lr * v[i];
+            }
+        } else if (config.optimizer === 'rmsprop') {
+            const oneMinusRho = 1 - rho;
+            for (let i = 0; i < b.length; i++) {
+                r[i] = rho * r[i] + oneMinusRho * gb[i] * gb[i];
+                const step = lr / Math.sqrt(r[i] + epsilon);
+                b[i] -= step * gb[i];
+            }
+        } else if (config.optimizer === 'adam') {
+            for (let i = 0; i < b.length; i++) {
+                m[i] = beta1 * m[i] + (1 - beta1) * gb[i];
+                v[i] = beta2 * v[i] + (1 - beta2) * gb[i] * gb[i];
+                const mHat = m[i] / (1 - Math.pow(beta1, optimizerState.t));
+                const vHat = v[i] / (1 - Math.pow(beta2, optimizerState.t));
+                b[i] -= lr * mHat / (Math.sqrt(vHat) + epsilon);
+            }
+        }
+
+        optimizerState.m[idx] = m;
+        optimizerState.v[idx] = v;
+        optimizerState.r[idx] = r;
+        idx++;
+    }
+}
+
+    function deepClone(obj) {
+        return JSON.parse(JSON.stringify(obj));
+    }
+
+    function makeRunLabel(slot) {
+        const optName = config.optimizer === 'sgd' ? 'Simple' : config.optimizer;
+        return `${slot}: ${config.activation}, L=${network.numLayers}, H=${network.hiddenSize}, η=${config.learningRate.toFixed(3)}, ${optName}`;
+    }
+
+    function saveRun(slot) {
+        if (history.steps.length < 2) {
+            alert('Train the network for a few steps before saving a run.');
+            return;
+        }
+
+        const run = {
+            label: makeRunLabel(slot),
+            steps: history.steps.slice(),
+            loss: history.loss.slice(),
+            avgLoss: history.avgLoss.slice(),
+            network: deepClone(network),
+            config: {
+                activation: config.activation,
+                learningRate: config.learningRate,
+                numLayers: network.numLayers,
+                hiddenSize: network.hiddenSize,
+                targetFuncStr: config.targetFuncStr,
+                optimizer: config.optimizer
+            }
+        };
+
+        savedRuns[slot] = run;
+
+        const labelEl = document.getElementById(slot === 'A' ? 'runALabel' : 'runBLabel');
+        if (labelEl) {
+            labelEl.textContent = run.label;
+        }
+
+        // Style the save button to show it has saved data (subtle indicator - thicker border)
+        const saveBtn = document.getElementById(slot === 'A' ? 'saveRunA' : 'saveRunB');
+        if (saveBtn) {
+            saveBtn.style.cssText = 'font-size:11px; padding:4px 8px; margin-right:8px; border:2px solid #28a745; box-shadow:0 0 3px rgba(40,167,69,0.3);';
+        }
+
+        // Enable and style compare button when both A and B are saved
+        const compareBtn = document.getElementById('compareBtn');
+        if (savedRuns.A && savedRuns.B) {
+            compareBtn.disabled = false;
+            compareBtn.style.cssText = 'font-size:11px; padding:4px 8px; margin-right:12px; background-color:#007bff; color:white; border:1px solid #007bff; cursor:pointer;';
+        }
+
+        updateUI();
+    }
+
+    function forwardWithNetwork(x, net, activationName) {
+        const actFn = activationFns[activationName].fn;
+        const h = net.hiddenSize;
+        const numLayers = net.numLayers;
+
+        let activations = [];
+        let zValues = [];
+
+        activations.push([x]);
+
+        // Hidden layer 1
+        let z = new Array(h);
+        let a = new Array(h);
+        const w0 = net.weights[0]; // shape [h, 1] represented as [h]
+        const b0 = net.biases[0];  // shape [h]
+        for (let i = 0; i < h; i++) {
+            let zi = w0[i] * x + b0[i];
+            z[i] = zi;
+            a[i] = actFn(zi);
+        }
+        zValues.push(z);
+        activations.push(a);
+
+        // Hidden layers 2..L
+        for (let layer = 1; layer < numLayers; layer++) {
+            const prev = activations[activations.length - 1];
+            const w = net.weights[layer];  // shape [h, h]
+            const b = net.biases[layer];   // shape [h]
+
+            z = new Array(h);
+            a = new Array(h);
+
+            for (let i = 0; i < h; i++) {
+                let zi = b[i];
+                const wi = w[i];
+                for (let j = 0; j < h; j++) {
+                    zi += wi[j] * prev[j];
+                }
+                z[i] = zi;
+                a[i] = actFn(zi);
+            }
+            zValues.push(z);
+            activations.push(a);
+        }
+
+        // Output layer
+        const lastLayer = activations[activations.length - 1];
+        const wOut = net.weights[net.weights.length - 1];       // shape [h]
+        const bOut = net.biases[net.biases.length - 1][0];      // shape [1]
+        let yhat = bOut;
+        for (let i = 0; i < h; i++) {
+            yhat += wOut[i] * lastLayer[i];
+        }
+
+        return yhat;
+    }
+
+    // -------------- Network, Target & Ops --------------
+
+    function compileTargetFunc() {
+        const input = document.getElementById('targetFuncInput');
+        let fStr = input.value.trim() || 'x*x';
+        
+        // Allow ^ as power operator (convert to **)
+        fStr = fStr.replace(/\^/g, '**');
+        
+        // Convert shorthand functions to Math.* (order matters - longer names first)
+        fStr = fStr.replace(/\blog10\b/g, 'Math.log10');  // log base 10
+        fStr = fStr.replace(/\bsqrt\b/g, 'Math.sqrt');
+        fStr = fStr.replace(/\babs\b/g, 'Math.abs');
+        fStr = fStr.replace(/\bsin\b/g, 'Math.sin');
+        fStr = fStr.replace(/\bcos\b/g, 'Math.cos');
+        fStr = fStr.replace(/\btan\b/g, 'Math.tan');
+        fStr = fStr.replace(/\bexp\b/g, 'Math.exp');      // e^x (natural exponential)
+        fStr = fStr.replace(/\blog\b/g, 'Math.log');      // natural log (ln)
+        fStr = fStr.replace(/\bfloor\b/g, 'Math.floor');
+        fStr = fStr.replace(/\bceil\b/g, 'Math.ceil');
+        fStr = fStr.replace(/\bround\b/g, 'Math.round');
+        fStr = fStr.replace(/\bsign\b/g, 'Math.sign');
+        fStr = fStr.replace(/\bmin\b/g, 'Math.min');
+        fStr = fStr.replace(/\bmax\b/g, 'Math.max');
+        fStr = fStr.replace(/\bpow\b/g, 'Math.pow');
+        
+        // Convert constants (but not inside already-converted Math.*)
+        fStr = fStr.replace(/\bPI\b/g, 'Math.PI');        // π ≈ 3.14159
+        fStr = fStr.replace(/\bE\b/g, 'Math.E');          // e ≈ 2.71828
+
+        try {
+            const fn = new Function('x', 'return ' + fStr + ';');
+            // Test it at a few points
+            fn(0);
+            fn(1);
+            fn(-1);
+            config.targetFunc = fn;
+            config.targetFuncStr = fStr;
+            input.style.borderColor = '#28a745';  // Green border for valid
+            input.style.backgroundColor = '#fff';
+            // Clear any error message
+            const errorSpan = document.getElementById('targetFuncError');
+            if (errorSpan) errorSpan.textContent = '';
+        } catch (e) {
+            // Highlight input in red but DON'T revert - let user continue editing
+            input.style.borderColor = '#dc3545';
+            input.style.backgroundColor = '#fff0f0';
+            // Show inline error message
+            let errorSpan = document.getElementById('targetFuncError');
+            if (!errorSpan) {
+                errorSpan = document.createElement('span');
+                errorSpan.id = 'targetFuncError';
+                errorSpan.style.cssText = 'color:#dc3545; font-size:11px; margin-left:8px;';
+                input.parentNode.appendChild(errorSpan);
+            }
+            errorSpan.textContent = '⚠ ' + e.message;
+            // Keep the previous valid function running - don't change config.targetFunc
+        }
+    }
+
+    function initializeNetwork() {
+        const L = network.numLayers;
+        const H = network.hiddenSize;
+
+        network.weights = [];
+        network.biases = [];
+        grads.weights = [];
+        grads.biases = [];
+
+        function randnScaled(scale) {
+            return scale * gaussianNoise(0, 1);
+        }
+
+        // Input -> Layer 1: weights shape [H, 1]
+        const w0 = new Array(H);
+        const b0 = new Array(H);
+        const scale0 = 1 / Math.sqrt(1);
+        for (let i = 0; i < H; i++) {
+            w0[i] = randnScaled(scale0);
+            b0[i] = 0;
+        }
+        network.weights.push(w0);
+        network.biases.push(b0);
+        grads.weights.push(new Array(H).fill(0));
+        grads.biases.push(new Array(H).fill(0));
+
+        // Hidden → Hidden
+        for (let l = 1; l < L; l++) {
+            const w = new Array(H);
+            const b = new Array(H);
+            const scale = 1 / Math.sqrt(H);
+            for (let i = 0; i < H; i++) {
+                w[i] = new Array(H);
+                for (let j = 0; j < H; j++) {
+                    w[i][j] = randnScaled(scale);
+                }
+                b[i] = 0;
+            }
+            network.weights.push(w);
+            network.biases.push(b);
+
+            const gw = new Array(H);
+            for (let i = 0; i < H; i++) {
+                gw[i] = new Array(H).fill(0);
+            }
+            grads.weights.push(gw);
+            grads.biases.push(new Array(H).fill(0));
+        }
+
+        // Output layer: weights [H], bias [1]
+        const wOut = new Array(H);
+        const bOut = [0];
+        const scaleOut = 1 / Math.sqrt(H);
+        for (let i = 0; i < H; i++) {
+            wOut[i] = randnScaled(scaleOut);
+        }
+        network.weights.push(wOut);
+        network.biases.push(bOut);
+
+        grads.weights.push(new Array(H).fill(0));
+        grads.biases.push([0]);
+
+        initializeOptimizerState();
+        computeOpsPerStep();
+    }
+
+    function computeOpsPerStep() {
+        const L = network.numLayers;
+        const H = network.hiddenSize;
+
+        let fwdAdds = 0, fwdMuls = 0;
+        let backAdds = 0, backMuls = 0;
+        let lossAdds = 0, lossMuls = 0;
+
+        // Forward ops: each neuron does sum of inputs + bias + activation
+        // Layer 1: H neurons, each 1 multiply + 1 add + (bias add)
+        fwdMuls += H;  // w*x
+        fwdAdds += H;  // plus bias
+
+        // Hidden layers
+        for (let l = 1; l < L; l++) {
+            // each H neuron: H multiplies + H adds + 1 add for bias
+            fwdMuls += H * H;
+            fwdAdds += H * (H + 1);
+        }
+
+        // Output layer: H multiplies + H adds + 1 bias
+        fwdMuls += H;
+        fwdAdds += H + 1;
+
+        // Loss = 1/2 (yhat - y)^2 -> 1 sub, 1 mul
+        lossAdds += 1;
+        lossMuls += 1;
+
+        // Backward (rough estimate, symmetrical to forward)
+        backMuls += fwdMuls * 2;
+        backAdds += fwdAdds * 2;
+
+        // Ops are now drawn on the Network Design canvas
+        // Keep these for backwards compatibility if elements exist
+        const setIfExists = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        setIfExists('opsFwdAdd', fwdAdds);
+        setIfExists('opsFwdMul', fwdMuls);
+        setIfExists('opsLossAdd', lossAdds);
+        setIfExists('opsLossMul', lossMuls);
+        setIfExists('opsBackAdd', backAdds);
+        setIfExists('opsBackMul', backMuls);
+        setIfExists('opsTotAdd', fwdAdds + lossAdds + backAdds);
+        setIfExists('opsTotMul', fwdMuls + lossMuls + backMuls);
+
+        return { fwdAdds, fwdMuls, lossAdds, lossMuls, backAdds, backMuls };
+    }
+
+    function sampleTrainingPoint() {
+        const x = config.xMin + Math.random() * (config.xMax - config.xMin);
+        let y;
+        try {
+            y = config.targetFunc(x);
+        } catch {
+            y = 0;
+        }
+        if (config.noise > 0) {
+            y += gaussianNoise(0, config.noise);
+        }
+        return { x, y };
+    }
+
+    function forward(x) {
+        const act = activationFns[config.activation].fn;
+        const L = network.numLayers;
+        const H = network.hiddenSize;
+
+        const activations = [];
+        const zValues = [];
+
+        activations.push([x]);
+
+        // Layer 1
+        const w0 = network.weights[0];   // [H]
+        const b0 = network.biases[0];    // [H]
+        let z = new Array(H);
+        let a = new Array(H);
+        for (let i = 0; i < H; i++) {
+            const zi = w0[i] * x + b0[i];
+            z[i] = zi;
+            a[i] = act(zi);
+        }
+        zValues.push(z);
+        activations.push(a);
+
+        // Hidden layers 2..L
+        for (let l = 1; l < L; l++) {
+            const w = network.weights[l];  // [H,H]
+            const b = network.biases[l];   // [H]
+            const prev = activations[activations.length - 1];
+
+            z = new Array(H);
+            a = new Array(H);
+            for (let i = 0; i < H; i++) {
+                let zi = b[i];
+                const wi = w[i];
+                for (let j = 0; j < H; j++) {
+                    zi += wi[j] * prev[j];
+                }
+                z[i] = zi;
+                a[i] = act(zi);
+            }
+            zValues.push(z);
+            activations.push(a);
+        }
+
+        // Output
+        const last = activations[activations.length - 1];
+        const wOut = network.weights[network.weights.length - 1]; // [H]
+        const bOut = network.biases[network.biases.length - 1][0];
+        let yhat = bOut;
+        for (let i = 0; i < H; i++) {
+            yhat += wOut[i] * last[i];
+        }
+
+        return { yhat, activations, zValues };
+    }
+
+    function backward(x, y, forwardResult) {
+        const { yhat, activations, zValues } = forwardResult;
+        const H = network.hiddenSize;
+        const L = network.numLayers;
+        const actPrime = activationFns[config.activation].dfn;
+
+        const error = yhat - y;
+        const loss = 0.5 * error * error;
+
+        // Initialize grads
+        for (let l = 0; l < grads.weights.length; l++) {
+            if (Array.isArray(grads.weights[l])) {
+                if (Array.isArray(grads.weights[l][0])) {
+                    for (let i = 0; i < grads.weights[l].length; i++) {
+                        grads.weights[l][i].fill(0);
+                    }
+                } else {
+                    grads.weights[l].fill(0);
+                }
+            }
+            grads.biases[l].fill(0);
+        }
+
+        // Output layer
+        const deltaOut = error;
+        const hL = activations[activations.length - 1];
+
+        for (let i = 0; i < H; i++) {
+            grads.weights[grads.weights.length - 1][i] = deltaOut * hL[i];
+        }
+        grads.biases[grads.biases.length - 1][0] = deltaOut;
+
+        let deltaNext = new Array(H);
+        for (let i = 0; i < H; i++) {
+            deltaNext[i] = network.weights[network.weights.length - 1][i] * deltaOut;
+        }
+
+        const deltas = new Array(L);
+        for (let l = L - 1; l >= 0; l--) {
+            const z = zValues[l];
+            const delta = new Array(H);
+
+            for (let i = 0; i < H; i++) {
+                delta[i] = deltaNext[i] * actPrime(z[i]);
+            }
+            deltas[l] = delta;
+
+            const prev = activations[l];
+            const gW = grads.weights[l];
+            const gB = grads.biases[l];
+
+            if (l === 0) {
+                for (let i = 0; i < H; i++) {
+                    gW[i] = delta[i] * prev[0];
+                    gB[i] = delta[i];
+                }
+            } else {
+                for (let i = 0; i < H; i++) {
+                    for (let j = 0; j < H; j++) {
+                        gW[i][j] = delta[i] * prev[j];
+                    }
+                    gB[i] = delta[i];
+                }
+            }
+
+            if (l > 0) {
+                const w = network.weights[l];
+                const deltaPrev = new Array(H).fill(0);
+                for (let i = 0; i < H; i++) {
+                    for (let j = 0; j < H; j++) {
+                        deltaPrev[j] += w[i][j] * delta[i];
+                    }
+                }
+                deltaNext = deltaPrev;
+            }
+        }
+
+        return loss;
+    }
+
+    // --------------- Training Loop ------------------
+
+    function trainStep() {
+        trainingState.stepsSinceLastUpdate++;
+        trainingState.step++;
+
+        const sample = sampleTrainingPoint();
+        const fwd = forward(sample.x);
+        const loss = backward(sample.x, sample.y, fwd);
+
+        updateParameters();
+
+        history.steps.push(trainingState.step);
+        history.loss.push(loss);
+        
+        // Record current weights (flatten all weights into a single array)
+        const flatWeights = [];
+        network.weights.forEach(layer => {
+            if (Array.isArray(layer[0])) {
+                layer.forEach(row => row.forEach(w => flatWeights.push(w)));
+            } else {
+                layer.forEach(w => flatWeights.push(w));
+            }
+        });
+        history.weights.push(flatWeights);
+
+        const window = config.avgWindow;
+        let sum = 0;
+        let count = 0;
+        for (let i = history.loss.length - 1; i >= 0 && count < window; i--, count++) {
+            sum += history.loss[i];
+        }
+        const avg = sum / Math.max(1, count);
+        history.avgLoss.push(avg);
+
+        const maxSamples = 500;
+        trainingState.recentSamples.push(sample);
+        if (trainingState.recentSamples.length > maxSamples) {
+            trainingState.recentSamples.shift();
+        }
+
+        // Accumulate actual ops count
+        const ops = computeOpsPerStep();
+        trainingState.totalAdds += ops.fwdAdds + ops.lossAdds + ops.backAdds;
+        trainingState.totalMuls += ops.fwdMuls + ops.lossMuls + ops.backMuls;
+    }
+
+    function runLoop() {
+        if (!trainingState.running) return;
+
+        const now = performance.now();
+        const stepsPerFrame = 10;
+        for (let i = 0; i < stepsPerFrame; i++) {
+            trainStep();
+        }
+
+        const elapsed = now - trainingState.lastUpdateTime;
+        if (elapsed > 0) {
+            const stepsPerSec = (stepsPerFrame * 1000) / elapsed;
+            document.getElementById('stepsPerSec').textContent = stepsPerSec.toFixed(0);
+        }
+
+        trainingState.lastUpdateTime = now;
+
+        updateUI();
+
+        if (trainingState.running) {
+            requestAnimationFrame(runLoop);
+        }
+    }
+
+    function reset() {
+        trainingState.running = false;
+        trainingState.animating = false;
+        trainingState.step = 0;
+        trainingState.totalAdds = 0;
+        trainingState.totalMuls = 0;
+        trainingState.lastUpdateTime = performance.now();
+        trainingState.stepsSinceLastUpdate = 0;
+        trainingState.recentSamples = [];
+
+        history.steps = [];
+        history.loss = [];
+        history.avgLoss = [];
+        history.weights = [];
+
+        // Exit comparison mode but DON'T clear saved runs - allow A/B comparison across different configs
+        exitComparisonMode();
+
+        compileTargetFunc();
+        initializeNetwork();
+
+        const sample = sampleTrainingPoint();
+        const fwd = forward(sample.x);
+        const loss = backward(sample.x, sample.y, fwd);
+        history.steps.push(0);
+        history.loss.push(loss);
+        history.avgLoss.push(loss);
+        
+        // Record initial weights
+        const flatWeights = [];
+        network.weights.forEach(layer => {
+            if (Array.isArray(layer[0])) {
+                layer.forEach(row => row.forEach(w => flatWeights.push(w)));
+            } else {
+                layer.forEach(w => flatWeights.push(w));
+            }
+        });
+        history.weights.push(flatWeights);
+
+        updateUI();
+    }
+
+    // --------------- Drawing -----------------------
+
+    function drawNetwork(animState = null) {
+        const canvas = document.getElementById('networkCanvas');
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        
+        ctx.clearRect(0, 0, w, h);
+        
+        const numLayers = network.numLayers;
+        const hiddenSize = network.hiddenSize;
+        
+        // Animation state
+        const isAnimating = animState !== null;
+        const animPhase = animState?.phase;
+        const animLayer = animState?.layer;
+        
+        // Layout calculations - input/output gaps are 50% of hidden layer spacing
+        const marginLeft = 35;
+        const marginRight = 70;  // Larger to fit y-hat node
+        const usableWidth = w - marginLeft - marginRight;
+        
+        // Calculate spacing: input-to-hidden and hidden-to-output are 0.5x the hidden-to-hidden spacing
+        // Total segments: 0.5 + (numLayers-1) + 0.5 = numLayers for numLayers >= 1
+        // For 1 hidden layer: 0.5 + 0.5 = 1 segment
+        // For 2 hidden layers: 0.5 + 1 + 0.5 = 2 segments
+        // For 3 hidden layers: 0.5 + 2 + 0.5 = 3 segments
+        const totalSegments = numLayers;
+        const hiddenLayerSpacing = usableWidth / totalSegments;
+        const inputOutputGap = hiddenLayerSpacing * 0.5;  // 50% of hidden layer spacing
+        
+        const nodeRadius = 24;
+        const fontSize = 13;
+        const smallFont = 10;
+        const weightFont = 9;  // Smaller font for weights
+        
+        // Calculate positions for each layer
+        const layers = [];
+        
+        // Input layer - at left margin
+        layers.push({x: marginLeft, nodes: [{y: h/2}]});
+        
+        // Hidden layers - spread across the middle
+        const hiddenStartX = marginLeft + inputOutputGap;
+        for (let l = 0; l < numLayers; l++) {
+            const x = hiddenStartX + hiddenLayerSpacing * l;
+            const nodes = [];
+            const spacing = Math.min(55, (h - 100) / (hiddenSize - 1 || 1));
+            const startY = h/2 - (hiddenSize - 1) * spacing / 2;
+            for (let i = 0; i < hiddenSize; i++) {
+                nodes.push({y: startY + i * spacing});
+            }
+            layers.push({x, nodes});
+        }
+        
+        // Output layer - at right margin
+        layers.push({x: w - marginRight, nodes: [{y: h/2}]});
+        
+        // Draw connections with weights
+        ctx.font = `${weightFont}px sans-serif`;
+        ctx.textAlign = 'center';
+        
+        for (let l = 0; l < layers.length - 1; l++) {
+            const fromLayer = layers[l];
+            const toLayer = layers[l + 1];
+            
+            // Highlight during forward animation
+            const shouldHighlight = isAnimating && animPhase === 'forward' && animLayer === l + 1;
+            
+            // Count total connections for offset calculation
+            const totalConnections = fromLayer.nodes.length * toLayer.nodes.length;
+            let connectionIdx = 0;
+            
+            fromLayer.nodes.forEach((fromNode, fromIdx) => {
+                toLayer.nodes.forEach((toNode, toIdx) => {
+                    ctx.strokeStyle = shouldHighlight ? '#90EE90' : '#007bff';
+                    ctx.lineWidth = shouldHighlight ? 2 : 1;
+                    ctx.beginPath();
+                    ctx.moveTo(fromLayer.x, fromNode.y);
+                    ctx.lineTo(toLayer.x, toNode.y);
+                    ctx.stroke();
+                    
+                    // Draw weight value on connection with horizontal offset to prevent overlap
+                    // Offset based on connection index, spreading weights along the line
+                    const t = totalConnections > 1 ? 0.3 + 0.4 * (connectionIdx / (totalConnections - 1)) : 0.5;
+                    const labelX = fromLayer.x + (toLayer.x - fromLayer.x) * t;
+                    const labelY = fromNode.y + (toNode.y - fromNode.y) * t;
+                    
+                    let weight;
+                    if (l === 0) {
+                        weight = network.weights[0][toIdx];
+                    } else if (l < numLayers) {
+                        weight = network.weights[l][fromIdx] ? network.weights[l][fromIdx][toIdx] : network.weights[l][toIdx];
+                    } else {
+                        weight = network.weights[network.weights.length - 1][fromIdx];
+                    }
+                    
+                    if (weight !== undefined) {
+                        // Draw small background for readability
+                        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                        const textWidth = ctx.measureText(weight.toFixed(2)).width;
+                        ctx.fillRect(labelX - textWidth/2 - 1, labelY - 8, textWidth + 2, 10);
+                        ctx.fillStyle = '#007bff';
+                        ctx.fillText(weight.toFixed(2), labelX, labelY - 1);
+                    }
+                    connectionIdx++;
+                });
+            });
+        }
+        
+        // Draw nodes
+        const actSymbol = config.activation === 'relu' ? 'ReLU' : 
+                          config.activation === 'tanh' ? 'tanh' : 'σ';
+        
+        // Determine if we can show full equations (small networks only)
+        const canShowFullEq = numLayers <= 2 && hiddenSize <= 4;
+        const wideRadius = canShowFullEq ? nodeRadius * 2.5 : nodeRadius * 1.2;
+        
+        // Helper to format weight with sign
+        const fmtW = (w) => {
+            if (w === undefined || w === null) return '?';
+            const val = w.toFixed(2);
+            return w >= 0 ? `+${val}` : val;
+        };
+        const fmtWFirst = (w) => {
+            if (w === undefined || w === null) return '?';
+            return w.toFixed(2);
+        };
+        
+        layers.forEach((layer, layerIdx) => {
+            layer.nodes.forEach((node, nodeIdx) => {
+                const nodeHighlight = isAnimating && animPhase === 'forward' && animLayer === layerIdx;
+                const showGradients = isAnimating && animPhase === 'backward' && animLayer === layerIdx;
+                
+                if (layerIdx === 0) {
+                    // Input node - small dot
+                    ctx.fillStyle = nodeHighlight ? '#90EE90' : '#333';
+                    ctx.beginPath();
+                    ctx.arc(layer.x, node.y, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                } else if (layerIdx === layers.length - 1) {
+                    // Output node - wider oval
+                    const outRadius = canShowFullEq ? wideRadius : nodeRadius * 1.3;
+                    ctx.fillStyle = nodeHighlight ? '#90EE90' : '#f0f8ff';
+                    ctx.strokeStyle = '#6f42c1';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.ellipse(layer.x, node.y, outRadius, nodeRadius, 0, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    if (canShowFullEq) {
+                        // Full equation: ŷ = v1*h1 + v2*h2 + ... + b
+                        const outputWeights = network.weights[network.weights.length - 1];
+                        const outputBias = network.biases[network.biases.length - 1][0];
+                        let eqParts = [];
+                        for (let i = 0; i < hiddenSize && i < 4; i++) {
+                            const w = outputWeights[i];
+                            if (i === 0) {
+                                eqParts.push(`${fmtWFirst(w)}·h${numLayers}${i+1}`);
+                            } else {
+                                eqParts.push(`${fmtW(w)}·h${numLayers}${i+1}`);
+                            }
+                        }
+                        if (hiddenSize > 4) eqParts.push('...');
+                        
+                        ctx.fillStyle = '#000';
+                        ctx.font = 'bold 18px sans-serif';
+                        ctx.fillText('ŷ', layer.x, node.y - 8);
+                        ctx.font = `${smallFont - 1}px sans-serif`;
+                        ctx.fillStyle = '#333';
+                        // Show equation on two lines if needed
+                        const eq1 = eqParts.slice(0, 2).join('');
+                        const eq2 = eqParts.slice(2).join('') + fmtW(outputBias);
+                        ctx.fillText(eq1, layer.x, node.y + 4);
+                        if (eq2.length > 3) {
+                            ctx.fillText(eq2, layer.x, node.y + 13);
+                        }
+                    } else {
+                        ctx.fillStyle = '#000';
+                        ctx.font = 'bold 18px sans-serif';
+                        ctx.fillText('ŷ', layer.x, node.y - 6);
+                        ctx.font = `${smallFont}px sans-serif`;
+                        ctx.fillStyle = '#555';
+                        ctx.fillText('Σv·h+b', layer.x, node.y + 8);
+                    }
+                } else {
+                    // Hidden node - oval with equation
+                    ctx.fillStyle = nodeHighlight ? '#90EE90' : '#e3f2fd';
+                    ctx.strokeStyle = '#007bff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.ellipse(layer.x, node.y, wideRadius, nodeRadius, 0, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    if (canShowFullEq) {
+                        // Full equation: ReLU(w1*x + b) for first layer
+                        // or ReLU(w1*h1 + w2*h2 + ... + b) for subsequent layers
+                        let eqStr = '';
+                        if (layerIdx === 1) {
+                            // First hidden layer: input is x
+                            const w = network.weights[0][nodeIdx];
+                            const b = network.biases[0][nodeIdx];
+                            eqStr = `${actSymbol}(${fmtWFirst(w)}·x${fmtW(b)})`;
+                        } else {
+                            // Subsequent hidden layers
+                            const prevLayerSize = hiddenSize;
+                            const layerWeights = network.weights[layerIdx - 1];
+                            const bias = network.biases[layerIdx - 1][nodeIdx];
+                            let terms = [];
+                            for (let i = 0; i < prevLayerSize && i < 3; i++) {
+                                const w = layerWeights[i] ? layerWeights[i][nodeIdx] : layerWeights[nodeIdx];
+                                if (i === 0) {
+                                    terms.push(`${fmtWFirst(w)}·h${layerIdx-1}${i+1}`);
+                                } else {
+                                    terms.push(`${fmtW(w)}·h${layerIdx-1}${i+1}`);
+                                }
+                            }
+                            if (prevLayerSize > 3) terms.push('...');
+                            eqStr = `${actSymbol}(${terms.join('')}${fmtW(bias)})`;
+                        }
+                        
+                        ctx.fillStyle = '#000';
+                        ctx.font = `bold ${fontSize - 1}px sans-serif`;
+                        ctx.fillText(`h${layerIdx}${nodeIdx+1}`, layer.x, node.y - 6);
+                        ctx.font = `${smallFont - 1}px sans-serif`;
+                        ctx.fillStyle = '#333';
+                        // Truncate if too long
+                        if (eqStr.length > 20) {
+                            ctx.fillText(eqStr.substring(0, 20), layer.x, node.y + 5);
+                            ctx.fillText(eqStr.substring(20), layer.x, node.y + 14);
+                        } else {
+                            ctx.fillText(eqStr, layer.x, node.y + 6);
+                        }
+                    } else {
+                        ctx.fillStyle = '#000';
+                        ctx.font = `bold ${fontSize}px sans-serif`;
+                        ctx.fillText(`h${layerIdx}${nodeIdx+1}`, layer.x, node.y - 4);
+                        ctx.font = `${smallFont}px sans-serif`;
+                        ctx.fillStyle = '#555';
+                        ctx.fillText(`${actSymbol}(z)`, layer.x, node.y + 8);
+                    }
+                }
+            });
+        });
+        
+        // Input label - larger and bolder
+        ctx.fillStyle = '#333';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('x', layers[0].x, layers[0].nodes[0].y - 12);
+        
+        // Show current values: x, y, ŷ, and loss
+        if (trainingState.recentSamples.length > 0) {
+            const lastSample = trainingState.recentSamples[trainingState.recentSamples.length - 1];
+            const lastLoss = history.loss.length > 0 ? history.loss[history.loss.length - 1] : null;
+            
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#333';
+            
+            // Left side: input and target
+            ctx.fillText(`x = ${lastSample.x.toFixed(3)}`, 8, 18);
+            ctx.fillText(`y = ${lastSample.y.toFixed(3)}`, 8, 32);
+            
+            // Right side: prediction and loss
+            ctx.textAlign = 'right';
+            if (history.loss.length > 0) {
+                const fwd = forward(lastSample.x);
+                ctx.fillText(`ŷ = ${fwd.yhat.toFixed(3)}`, w - 8, 18);
+                ctx.fillStyle = lastLoss < 0.01 ? '#28a745' : '#dc3545';
+                ctx.fillText(`L = ½(ŷ-y)² = ${lastLoss.toFixed(4)}`, w - 8, 32);
+            }
+        }
+        
+        // Bottom: architecture info
+        ctx.fillStyle = '#666';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        const optName = config.optimizer === 'sgd' ? 'Simple' : config.optimizer;
+        ctx.fillText(`L=${numLayers} layers, H=${hiddenSize} units, σ=${actSymbol}, opt=${optName}`, w/2, h - 6);
+        
+        // Update HTML Ops/Step table
+        const ops = computeOpsPerStep();
+        document.getElementById('opsFwdAdds').textContent = ops.fwdAdds;
+        document.getElementById('opsFwdMuls').textContent = ops.fwdMuls;
+        document.getElementById('opsBackAdds').textContent = ops.backAdds;
+        document.getElementById('opsBackMuls').textContent = ops.backMuls;
+        document.getElementById('opsTotAdds').textContent = ops.fwdAdds + ops.backAdds;
+        document.getElementById('opsTotMuls').textContent = ops.fwdMuls + ops.backMuls;
+    }
+    
+    // Animated step function
+    async function animatedStep() {
+        if (trainingState.animating) return;
+        trainingState.animating = true;
+        
+        // Sample data
+        const sample = sampleTrainingPoint();
+        trainingState.recentSamples.push(sample);
+        if (trainingState.recentSamples.length > 500) {
+            trainingState.recentSamples.shift();
+        }
+        
+        const numLayers = network.numLayers;
+        const delayPerLayer = 300; // 0.3 seconds per layer
+        
+        // Animate forward pass
+        drawNetwork({phase: 'forward', layer: 0});
+        await sleep(delayPerLayer);
+        
+        for (let i = 1; i <= numLayers; i++) {
+            drawNetwork({phase: 'forward', layer: i});
+            await sleep(delayPerLayer);
+        }
+        
+        drawNetwork({phase: 'forward', layer: numLayers + 1});
+        await sleep(delayPerLayer);
+        
+        // Compute forward and backward
+        const fwd = forward(sample.x);
+        const loss = backward(sample.x, sample.y, fwd);
+        
+        // Animate backward pass
+        drawNetwork({phase: 'backward', layer: numLayers + 1});
+        await sleep(delayPerLayer);
+        
+        for (let i = numLayers; i >= 1; i--) {
+            drawNetwork({phase: 'backward', layer: i});
+            await sleep(delayPerLayer);
+        }
+        
+        drawNetwork({phase: 'backward', layer: 0});
+        await sleep(delayPerLayer);
+        
+        // Update parameters
+        updateParameters();
+        
+        // Update history
+        trainingState.step++;
+        history.steps.push(trainingState.step);
+        history.loss.push(loss);
+        
+        // Record current weights (flatten all weights into a single array)
+        const flatWeights = [];
+        network.weights.forEach(layer => {
+            if (Array.isArray(layer[0])) {
+                layer.forEach(row => row.forEach(w => flatWeights.push(w)));
+            } else {
+                layer.forEach(w => flatWeights.push(w));
+            }
+        });
+        history.weights.push(flatWeights);
+        
+        const windowSize = config.avgWindow;
+        let sum = 0, count = 0;
+        for (let i = history.loss.length - 1; i >= 0 && count < windowSize; i--, count++) {
+            sum += history.loss[i];
+        }
+        history.avgLoss.push(sum / Math.max(1, count));
+        
+        // Update ops
+        const ops = computeOpsPerStep();
+        trainingState.totalAdds += ops.fwdAdds + ops.lossAdds + ops.backAdds;
+        trainingState.totalMuls += ops.fwdMuls + ops.lossMuls + ops.backMuls;
+        
+        trainingState.animating = false;
+        updateUI();
+    }
+    
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    function updateEquations() {
+        const L = network.numLayers;
+        const H = network.hiddenSize;
+        const act = config.activation;
+        const actName = act === 'relu' ? 'ReLU' : (act === 'tanh' ? 'tanh' : 'sigmoid');
+        
+        // Subscript numbers for cleaner notation
+        const sub = (n) => ['₀','₁','₂','₃'][n] || n;
+        
+        // Activation derivative in calculus terms
+        const actDeriv = {
+            'relu': "f'(z) = 1 if z > 0, else 0",
+            'tanh': "f'(z) = 1 − tanh²(z)",
+            'sigmoid': "f'(z) = f(z) · (1 − f(z))"
+        };
+        
+        let forwardHtml = `
+            <strong>Setup:</strong> ${L} hidden layer${L>1?'s':''}, ${H} neurons each<br>
+            <strong>Activation:</strong> f = ${actName}<br><br>
+        `;
+        
+        // Layer-by-layer forward with subscripts
+        forwardHtml += `<span style="color:#2E86AB">h${sub(0)}</span> = x  <em style="color:#888">(input)</em><br>`;
+        for (let l = 1; l <= L; l++) {
+            const prevH = l === 1 ? 'x' : `h${sub(l-1)}`;
+            forwardHtml += `<span style="color:#F18F01">z${sub(l)}</span> = W${sub(l)} · ${prevH} + b${sub(l)}  <em style="color:#888">(weighted sum)</em><br>`;
+            forwardHtml += `<span style="color:#28a745">h${sub(l)}</span> = f(z${sub(l)})  <em style="color:#888">(apply activation)</em><br>`;
+        }
+        forwardHtml += `<br><span style="color:#6f42c1">ŷ</span> = v · h${sub(L)} + c  <em style="color:#888">(output layer)</em>`;
+        
+        // Backward pass with calculus notation
+        let backwardHtml = `
+            <strong>Loss function:</strong> L = ½(ŷ − y)²<br><br>
+            <strong>Chain rule from output:</strong><br>
+            <span style="color:#dc3545">∂L/∂ŷ</span> = ŷ − y  <em style="color:#888">(prediction error)</em><br>
+            ∂L/∂v = (∂L/∂ŷ) · h${sub(L)}<br>
+            ∂L/∂c = ∂L/∂ŷ<br><br>
+            <strong>Chain rule through layers:</strong><br>
+        `;
+        
+        for (let l = L; l >= 1; l--) {
+            const upstream = l === L ? '(∂L/∂ŷ) · v' : `(∂L/∂h${sub(l+1)}) · W${sub(l+1)}`;
+            const prevH = l === 1 ? 'x' : `h${sub(l-1)}`;
+            backwardHtml += `<span style="color:#dc3545">∂L/∂h${sub(l)}</span> = ${upstream} · f'(z${sub(l)})<br>`;
+            backwardHtml += `∂L/∂W${sub(l)} = (∂L/∂h${sub(l)}) · ${prevH},  ∂L/∂b${sub(l)} = ∂L/∂h${sub(l)}<br>`;
+        }
+        
+        backwardHtml += `<br><strong>Activation derivative:</strong><br>${actDeriv[act]}`;
+        
+        const html = `
+            <div class="equation-block">
+                <div class="equation-title">Forward Pass</div>
+                <div class="math">${forwardHtml}</div>
+            </div>
+            <div class="equation-block">
+                <div class="equation-title">Backward Pass (Gradients)</div>
+                <div class="math">${backwardHtml}</div>
+            </div>
+        `;
+        
+        document.getElementById('equationsDiv').innerHTML = html;
+    }
+
+
+    function drawFitPlot() {
+        const canvas = document.getElementById('fitCanvas');
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        const padding = 50;
+
+        ctx.clearRect(0, 0, w, h);
+
+        const xMin = config.xMin;
+        const xMax = config.xMax;
+        const xRange = xMax - xMin;
+
+        const hasRunA = !!savedRuns.A;
+        const hasRunB = !!savedRuns.B;
+        const comparisonMode = hasRunA && hasRunB;
+
+        const numPoints = 200;
+        const truthPoints = [];
+        const modelPoints = [];
+        let modelPointsA = null;
+        let modelPointsB = null;
+
+        for (let i = 0; i <= numPoints; i++) {
+            const x = xMin + (i / numPoints) * xRange;
+            let yTruth;
+            try {
+                yTruth = config.targetFunc(x);
+            } catch (e) {
+                yTruth = 0;
+            }
+            truthPoints.push({ x, y: yTruth });
+
+            if (comparisonMode) {
+                if (!modelPointsA) modelPointsA = [];
+                if (!modelPointsB) modelPointsB = [];
+                const netA = savedRuns.A.network;
+                const cfgA = savedRuns.A.config;
+                const netB = savedRuns.B.network;
+                const cfgB = savedRuns.B.config;
+                modelPointsA.push({ x, y: forwardWithNetwork(x, netA, cfgA.activation) });
+                modelPointsB.push({ x, y: forwardWithNetwork(x, netB, cfgB.activation) });
+            } else {
+                modelPoints.push({ x, y: forward(x).yhat });
+            }
+        }
+
+        let allY = truthPoints.map(p => p.y);
+        if (comparisonMode) {
+            allY = allY.concat(modelPointsA.map(p => p.y)).concat(modelPointsB.map(p => p.y));
+        } else {
+            allY = allY.concat(modelPoints.map(p => p.y));
+        }
+        trainingState.recentSamples.forEach(s => allY.push(s.y));
+        let yMin = Math.min(...allY);
+        let yMax = Math.max(...allY);
+        if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) {
+            yMin = -1;
+            yMax = 1;
+        }
+        const yRange = yMax - yMin || 1;
+
+        const toCanvasX = (x) => padding + (x - xMin) / xRange * (w - 2 * padding);
+        const toCanvasY = (y) => h - padding - (y - yMin) / yRange * (h - 2 * padding);
+
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(padding, padding, w - 2 * padding, h - 2 * padding);
+
+        // Draw X axis tick marks and labels
+        ctx.fillStyle = '#666';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        const numXTicks = 5;
+        for (let i = 0; i <= numXTicks; i++) {
+            const xVal = xMin + (i / numXTicks) * xRange;
+            const cx = toCanvasX(xVal);
+            // Tick mark
+            ctx.strokeStyle = '#ccc';
+            ctx.beginPath();
+            ctx.moveTo(cx, h - padding);
+            ctx.lineTo(cx, h - padding + 5);
+            ctx.stroke();
+            // Label
+            ctx.fillText(xVal.toFixed(1), cx, h - padding + 16);
+        }
+
+        // Draw Y axis tick marks and labels
+        ctx.textAlign = 'right';
+        const numYTicks = 5;
+        for (let i = 0; i <= numYTicks; i++) {
+            const yVal = yMin + (i / numYTicks) * yRange;
+            const cy = toCanvasY(yVal);
+            // Tick mark
+            ctx.strokeStyle = '#ccc';
+            ctx.beginPath();
+            ctx.moveTo(padding - 5, cy);
+            ctx.lineTo(padding, cy);
+            ctx.stroke();
+            // Label
+            ctx.fillText(yVal.toFixed(2), padding - 8, cy + 3);
+        }
+
+        ctx.strokeStyle = '#28a745';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        truthPoints.forEach((p, i) => {
+            const cx = toCanvasX(p.x);
+            const cy = toCanvasY(p.y);
+            if (i === 0) ctx.moveTo(cx, cy);
+            else ctx.lineTo(cx, cy);
+        });
+        ctx.stroke();
+
+        if (comparisonMode) {
+            ctx.strokeStyle = '#007bff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            modelPointsA.forEach((p, i) => {
+                const cx = toCanvasX(p.x);
+                const cy = toCanvasY(p.y);
+                if (i === 0) ctx.moveTo(cx, cy);
+                else ctx.lineTo(cx, cy);
+            });
+            ctx.stroke();
+
+            ctx.strokeStyle = '#ff9800';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            modelPointsB.forEach((p, i) => {
+                const cx = toCanvasX(p.x);
+                const cy = toCanvasY(p.y);
+                if (i === 0) ctx.moveTo(cx, cy);
+                else ctx.lineTo(cx, cy);
+            });
+            ctx.stroke();
+        } else {
+            ctx.strokeStyle = '#007bff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            modelPoints.forEach((p, i) => {
+                const cx = toCanvasX(p.x);
+                const cy = toCanvasY(p.y);
+                if (i === 0) ctx.moveTo(cx, cy);
+                else ctx.lineTo(cx, cy);
+            });
+            ctx.stroke();
+        }
+
+        ctx.fillStyle = 'rgba(220, 53, 69, 0.5)';
+        trainingState.recentSamples.forEach((s) => {
+            const cx = toCanvasX(s.x);
+            const cy = toCanvasY(s.y);
+            ctx.beginPath();
+            ctx.arc(cx, cy, 2.5, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+
+        ctx.font = '11px sans-serif';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('x', w / 2, h - 8);
+        ctx.save();
+        ctx.translate(10, h / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('y', 0, 0);
+        ctx.restore();
+
+        ctx.font = '13px sans-serif';
+        ctx.textAlign = 'left';
+
+        ctx.strokeStyle = '#28a745';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(w - 150, 20);
+        ctx.lineTo(w - 130, 20);
+        ctx.stroke();
+        ctx.fillStyle = '#333';
+        ctx.fillText('f(x) truth', w - 120, 24);
+
+        if (comparisonMode) {
+            // 2-column legend layout for comparison mode
+            const col1X = w - 150;
+            const col2X = w - 80;
+            const row1Y = 40;
+            const row2Y = 56;
+            
+            // Row 1, Col 1: ŷ_A(x)
+            ctx.strokeStyle = '#007bff';
+            ctx.beginPath();
+            ctx.moveTo(col1X, row1Y);
+            ctx.lineTo(col1X + 20, row1Y);
+            ctx.stroke();
+            ctx.fillStyle = '#333';
+            ctx.fillText('ŷ_A(x)', col1X + 24, row1Y + 4);
+            
+            // Row 1, Col 2: ŷ_B(x)
+            ctx.strokeStyle = '#ff9800';
+            ctx.beginPath();
+            ctx.moveTo(col2X, row1Y);
+            ctx.lineTo(col2X + 20, row1Y);
+            ctx.stroke();
+            ctx.fillText('ŷ_B(x)', col2X + 24, row1Y + 4);
+            
+            // Row 2, Col 1: samples
+            ctx.fillStyle = 'rgba(220, 53, 69, 0.5)';
+            ctx.beginPath();
+            ctx.arc(col1X + 10, row2Y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#333';
+            ctx.fillText('samples', col1X + 24, row2Y + 4);
+        } else {
+            // 2-column layout: put ŷ(x) model and samples on same row as f(x) truth
+            const row1Y = 20;  // f(x) truth already drawn at this row
+            const row2Y = 36;
+            const col2X = w - 80;
+            
+            // Row 1, Col 2: ŷ(x) model (f(x) truth is already at col 1)
+            ctx.strokeStyle = '#007bff';
+            ctx.beginPath();
+            ctx.moveTo(col2X, row1Y);
+            ctx.lineTo(col2X + 20, row1Y);
+            ctx.stroke();
+            ctx.fillStyle = '#333';
+            ctx.fillText('ŷ(x) model', col2X + 24, row1Y + 4);
+            
+            // Row 2, Col 1: samples
+            ctx.fillStyle = 'rgba(220, 53, 69, 0.5)';
+            ctx.beginPath();
+            ctx.arc(w - 140, row2Y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#333';
+            ctx.fillText('samples', w - 120, row2Y + 4);
+        }
+    }
+
+    function drawTrainingTraceComparison(ctx, w, h,
+                                     paddingLeft, paddingRight,
+                                     paddingTop, paddingBottom,
+                                     runA, runB,
+                                     showLoss, showAvgLoss, useLogScale = false) {
+    if (!runA || !runB) return;
+
+    const series = [];
+
+    if (showLoss) {
+        series.push({
+            name: 'Loss A',
+            steps: runA.steps,
+            data: runA.loss,
+            color: '#dc3545',
+            lineWidth: 2
+        });
+        series.push({
+            name: 'Loss B',
+            steps: runB.steps,
+            data: runB.loss,
+            color: '#ff9800',
+            lineWidth: 2
+        });
+    }
+
+    if (showAvgLoss) {
+        series.push({
+            name: 'Avg Loss A',
+            steps: runA.steps,
+            data: runA.avgLoss,
+            color: '#007bff',
+            lineWidth: 3
+        });
+        series.push({
+            name: 'Avg Loss B',
+            steps: runB.steps,
+            data: runB.avgLoss,
+            color: '#00bcd4',
+            lineWidth: 3
+        });
+    }
+
+    if (series.length === 0) return;
+
+    const plotWidth  = w - paddingLeft - paddingRight;
+    const plotHeight = h - paddingTop - paddingBottom;
+
+    // X (steps)
+    let stepMin = Infinity;
+    let stepMax = -Infinity;
+    series.forEach(s => {
+        if (s.steps.length > 0) {
+            stepMin = Math.min(stepMin, s.steps[0]);
+            stepMax = Math.max(stepMax, s.steps[s.steps.length - 1]);
+        }
+    });
+    if (!Number.isFinite(stepMin) || !Number.isFinite(stepMax)) return;
+    const stepRange = stepMax - stepMin || 1;
+
+    // Y (loss, linear)
+    let yMin = Infinity;
+    let yMax = -Infinity;
+    series.forEach(s => {
+        s.data.forEach(v => {
+            if (!Number.isFinite(v)) return;
+            yMin = Math.min(yMin, v);
+            yMax = Math.max(yMax, v);
+        });
+    });
+    if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) {
+        yMin = 0;
+        yMax = 1;
+    }
+    if (yMin === yMax) {
+        const eps = Math.max(1e-6, Math.abs(yMin) * 0.1);
+        yMin -= eps;
+        yMax += eps;
+    } else {
+        const pad = 0.1 * (yMax - yMin);
+        yMin -= pad;
+        yMax += pad;
+    }
+    const yRange = yMax - yMin || 1;
+
+    const toX = (step) =>
+        paddingLeft + ((step - stepMin) / stepRange) * plotWidth;
+    const toY = (val) =>
+        h - paddingBottom - ((val - yMin) / yRange) * plotHeight;
+
+    // Axes box
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(paddingLeft, paddingTop);
+    ctx.lineTo(paddingLeft, h - paddingBottom);
+    ctx.lineTo(w - paddingRight, h - paddingBottom);
+    ctx.lineTo(w - paddingRight, paddingTop);
+    ctx.closePath();
+    ctx.stroke();
+
+    // X ticks
+    ctx.fillStyle = '#666';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    const numXTicks = 5;
+    for (let i = 0; i <= numXTicks; i++) {
+        const s = stepMin + (i / numXTicks) * stepRange;
+        const x = toX(s);
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.beginPath();
+        ctx.moveTo(x, paddingTop);
+        ctx.lineTo(x, h - paddingBottom);
+        ctx.stroke();
+        ctx.fillStyle = '#666';
+        ctx.fillText(Math.round(s).toString(), x, h - paddingBottom + 13);
+    }
+
+    // Y ticks
+    ctx.textAlign = 'right';
+    const numYTicks = 5;
+    for (let i = 0; i <= numYTicks; i++) {
+        const val = yMin + (i / numYTicks) * yRange;
+        const y = toY(val);
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, y);
+        ctx.lineTo(w - paddingRight, y);
+        ctx.stroke();
+        ctx.fillStyle = '#dc3545';
+        ctx.fillText(val.toPrecision(3), paddingLeft - 4, y + 3);
+    }
+
+    // Axis labels - moved further left to avoid overlap with tick labels
+    ctx.save();
+    ctx.translate(10, h / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#dc3545';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(useLogScale ? 'Loss (log₁₀)' : 'Loss (linear)', 0, 0);
+    ctx.restore();
+
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Training Step', w / 2, h - 8);
+
+    // Series
+    series.forEach(s => {
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = s.lineWidth;
+        ctx.beginPath();
+        for (let i = 0; i < s.data.length; i++) {
+            const x = toX(s.steps[i]);
+            const y = toY(s.data[i]);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    });
+
+    // Legend - 2 columns to avoid overlap
+    const legendStartX = w / 2 - 120;
+    const legendColWidth = 110;
+    const legendStartY = 12;
+    const legendRowHeight = 14;
+    
+    series.forEach((s, i) => {
+        const col = i % 2;  // 0 or 1
+        const row = Math.floor(i / 2);  // 0, 1, ...
+        const x = legendStartX + col * legendColWidth;
+        const y = legendStartY + row * legendRowHeight;
+        
+        ctx.fillStyle = s.color;
+        ctx.fillRect(x, y, 20, s.lineWidth);
+        ctx.fillStyle = '#333';
+        ctx.font = s.lineWidth === 3 ? 'bold 10px sans-serif' : '10px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(s.name, x + 24, y + 4);
+    });
+}
+
+function drawTrainingTrace() {
+    const canvas = document.getElementById('traceCanvas');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    const paddingLeft = 60;
+    const paddingRight = 60;
+    const paddingTop = 40;
+    const paddingBottom = 40;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const showLoss = document.getElementById('traceLoss').checked;
+    const showAvgLoss = document.getElementById('traceAvgLoss').checked;
+    const showWeights = document.getElementById('traceWeights').checked;
+    const useLogScale = document.getElementById('traceLogScale').checked;
+
+    const hasRunA = !!savedRuns.A;
+    const hasRunB = !!savedRuns.B;
+    const comparisonMode = hasRunA && hasRunB && comparisonModeActive;
+
+    if (comparisonMode) {
+        drawTrainingTraceComparison(
+            ctx, w, h,
+            paddingLeft, paddingRight,
+            paddingTop, paddingBottom,
+            savedRuns.A, savedRuns.B,
+            showLoss, showAvgLoss, useLogScale
+        );
+        return;
+    }
+
+    if (!history.steps.length) return;
+
+    const series = [];
+
+    if (showLoss) {
+        series.push({
+            name: 'Loss',
+            steps: history.steps,
+            data: history.loss,
+            color: '#dc3545',
+            lineWidth: 2
+        });
+    }
+
+    if (showAvgLoss) {
+        series.push({
+            name: 'Avg Loss (100)',
+            steps: history.steps,
+            data: history.avgLoss,
+            color: '#007bff',
+            lineWidth: 3
+        });
+    }
+
+    if (series.length === 0 && !showWeights) return;
+
+    const plotWidth  = w - paddingLeft - paddingRight;
+    const plotHeight = h - paddingTop - paddingBottom;
+
+    // X axis range
+    const stepMin = history.steps[0];
+    const stepMax = history.steps[history.steps.length - 1];
+    const stepRange = stepMax - stepMin || 1;
+
+    // Y axis range for loss (supports log scale) - ALWAYS starts from 0 in linear mode
+    let yMin = 0;  // Loss always starts from 0
+    let yMax = -Infinity;
+    series.forEach(s => {
+        s.data.forEach(v => {
+            if (!Number.isFinite(v) || (useLogScale && v <= 0)) return;
+            const val = useLogScale ? Math.log10(v) : v;
+            yMax = Math.max(yMax, val);
+        });
+    });
+    if (useLogScale) {
+        // For log scale, find the minimum non-zero value
+        yMin = Infinity;
+        series.forEach(s => {
+            s.data.forEach(v => {
+                if (v > 0) yMin = Math.min(yMin, Math.log10(v));
+            });
+        });
+        if (!Number.isFinite(yMin)) yMin = -4;
+    }
+    if (!Number.isFinite(yMax)) {
+        yMax = useLogScale ? 0 : 1;
+    }
+    if (yMin === yMax) {
+        const eps = Math.max(0.1, Math.abs(yMin) * 0.1);
+        yMax += eps;
+    } else {
+        const pad = 0.1 * (yMax - yMin);
+        yMax += pad;
+    }
+    const yRange = yMax - yMin || 1;
+    
+    // Y axis range for weights (separate right axis)
+    let wMin = Infinity;
+    let wMax = -Infinity;
+    if (showWeights && history.weights.length > 0) {
+        history.weights.forEach(wArr => {
+            wArr.forEach(v => {
+                if (Number.isFinite(v)) {
+                    wMin = Math.min(wMin, v);
+                    wMax = Math.max(wMax, v);
+                }
+            });
+        });
+    }
+    if (!Number.isFinite(wMin) || !Number.isFinite(wMax)) {
+        wMin = -2;
+        wMax = 2;
+    }
+    if (wMin === wMax) {
+        wMin -= 1;
+        wMax += 1;
+    } else {
+        const wPad = 0.1 * (wMax - wMin);
+        wMin -= wPad;
+        wMax += wPad;
+    }
+    const wRange = wMax - wMin || 1;
+
+    const toX = (step) =>
+        paddingLeft + ((step - stepMin) / stepRange) * plotWidth;
+    const toY = (val) => {
+        const v = useLogScale ? Math.log10(Math.max(val, 1e-10)) : val;
+        return h - paddingBottom - ((v - yMin) / yRange) * plotHeight;
+    };
+
+    // Axes box
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(paddingLeft, paddingTop);
+    ctx.lineTo(paddingLeft, h - paddingBottom);
+    ctx.lineTo(w - paddingRight, h - paddingBottom);
+    ctx.lineTo(w - paddingRight, paddingTop);
+    ctx.closePath();
+    ctx.stroke();
+
+    // X ticks
+    ctx.fillStyle = '#666';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    const numXTicks = 5;
+    for (let i = 0; i <= numXTicks; i++) {
+        const s = stepMin + (i / numXTicks) * stepRange;
+        const x = toX(s);
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.beginPath();
+        ctx.moveTo(x, paddingTop);
+        ctx.lineTo(x, h - paddingBottom);
+        ctx.stroke();
+        ctx.fillStyle = '#666';
+        ctx.fillText(Math.round(s).toString(), x, h - paddingBottom + 13);
+    }
+
+    // Y ticks
+    ctx.textAlign = 'right';
+    const numYTicks = 5;
+    for (let i = 0; i <= numYTicks; i++) {
+        const yVal = yMin + (i / numYTicks) * yRange;
+        const y = h - paddingBottom - (i / numYTicks) * plotHeight;
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, y);
+        ctx.lineTo(w - paddingRight, y);
+        ctx.stroke();
+        ctx.fillStyle = '#dc3545';
+        if (useLogScale) {
+            const realVal = Math.pow(10, yVal);
+            ctx.fillText(realVal.toExponential(0), paddingLeft - 4, y + 3);
+        } else {
+            ctx.fillText(yVal.toPrecision(3), paddingLeft - 4, y + 3);
+        }
+    }
+
+    // Axis labels
+    ctx.save();
+    ctx.translate(15, h / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#dc3545';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(useLogScale ? 'Loss (log₁₀)' : 'Loss (linear)', 0, 0);
+    ctx.restore();
+
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Training Step', w / 2, h - 8);
+
+    // Draw loss series
+    series.forEach(s => {
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = s.lineWidth;
+        ctx.beginPath();
+        let started = false;
+        for (let i = 0; i < s.data.length; i++) {
+            const val = s.data[i];
+            if (!Number.isFinite(val) || (useLogScale && val <= 0)) continue;
+            const x = toX(s.steps[i]);
+            const y = toY(val);
+            if (!started) { ctx.moveTo(x, y); started = true; }
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    });
+
+    // Draw weight traces (on right Y axis)
+    if (showWeights && history.weights && history.weights.length > 0) {
+        const numWeights = history.weights[0].length;
+        const weightColors = ['#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#ff7f0e', '#2ca02c'];
+        
+        // Use pre-calculated weight range from earlier
+        const toWY = (val) => h - paddingBottom - ((val - wMin) / wRange) * plotHeight;
+        
+        // Draw right axis tick marks and labels for weights
+        ctx.textAlign = 'left';
+        ctx.font = '9px sans-serif';
+        for (let i = 0; i <= numYTicks; i++) {
+            const wVal = wMin + (i / numYTicks) * wRange;
+            const y = h - paddingBottom - (i / numYTicks) * plotHeight;
+            // Tick mark
+            ctx.strokeStyle = '#9467bd';
+            ctx.beginPath();
+            ctx.moveTo(w - paddingRight, y);
+            ctx.lineTo(w - paddingRight + 5, y);
+            ctx.stroke();
+            // Label
+            ctx.fillStyle = '#9467bd';
+            ctx.fillText(wVal.toFixed(1), w - paddingRight + 8, y + 3);
+        }
+        
+        // Draw weight lines
+        for (let wi = 0; wi < Math.min(numWeights, 8); wi++) {
+            ctx.strokeStyle = weightColors[wi % weightColors.length];
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            for (let i = 0; i < history.weights.length; i++) {
+                const x = toX(history.steps[i]);
+                const y = toWY(history.weights[i][wi]);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1.0;
+        
+        // Right axis label
+        ctx.save();
+        ctx.translate(w - 5, h / 2);
+        ctx.rotate(Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#9467bd';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('Weights', 0, 0);
+        ctx.restore();
+    }
+}
+
+   
+    function updateUI() {
+        document.getElementById('stepCount').textContent = trainingState.step;
+        const lastLoss = history.loss[history.loss.length - 1];
+        document.getElementById('lossValue').textContent =
+            Number.isFinite(lastLoss) ? lastLoss.toExponential(2) : '—';
+
+        document.getElementById('totalAdds').textContent = trainingState.totalAdds.toLocaleString();
+        document.getElementById('totalMuls').textContent = trainingState.totalMuls.toLocaleString();
+
+        drawNetwork();
+        drawFitPlot();
+        drawTrainingTrace();
+        updateEquations();
+    }
+
+    // --------------- Wiring Controls ----------------
+
+    function setupControls() {
+        const lrSlider = document.getElementById('learningRate');
+        const lrValue = document.getElementById('learningRateValue');
+        lrSlider.addEventListener('input', () => {
+            const log10eta = parseFloat(lrSlider.value);
+            const eta = Math.pow(10, log10eta);
+            config.learningRate = eta;
+            lrValue.textContent = eta.toFixed(3);
+        });
+        (function initLR() {
+            const log10eta = parseFloat(lrSlider.value);
+            const eta = Math.pow(10, log10eta);
+            config.learningRate = eta;
+            lrValue.textContent = eta.toFixed(3);
+        })();
+
+        const noiseSlider = document.getElementById('noise');
+        const noiseLabel = document.getElementById('noiseValue');
+        noiseSlider.addEventListener('input', () => {
+            config.noise = parseFloat(noiseSlider.value);
+            noiseLabel.textContent = config.noise.toFixed(2);
+        });
+        config.noise = parseFloat(noiseSlider.value);
+        noiseLabel.textContent = config.noise.toFixed(2);
+
+        const numLayersSlider = document.getElementById('numLayers');
+        const numLayersValue = document.getElementById('numLayersValue');
+        numLayersSlider.addEventListener('input', () => {
+            network.numLayers = parseInt(numLayersSlider.value, 10);
+            numLayersValue.textContent = network.numLayers.toString();
+            reset();  // Auto-reset when network architecture changes
+        });
+        network.numLayers = parseInt(numLayersSlider.value, 10);
+        numLayersValue.textContent = network.numLayers.toString();
+
+        const hiddenSizeSlider = document.getElementById('hiddenSize');
+        const hiddenSizeValue = document.getElementById('hiddenSizeValue');
+        hiddenSizeSlider.addEventListener('input', () => {
+            network.hiddenSize = parseInt(hiddenSizeSlider.value, 10);
+            hiddenSizeValue.textContent = network.hiddenSize.toString();
+            reset();  // Auto-reset when network architecture changes
+        });
+        network.hiddenSize = parseInt(hiddenSizeSlider.value, 10);
+        hiddenSizeValue.textContent = network.hiddenSize.toString();
+
+        const xMinSlider = document.getElementById('xMin');
+        const xMaxSlider = document.getElementById('xMax');
+        const xMinLabel = document.getElementById('xMinLabel');
+        const xMaxLabel = document.getElementById('xMaxLabel');
+        function syncXRange() {
+            let minVal = parseFloat(xMinSlider.value);
+            let maxVal = parseFloat(xMaxSlider.value);
+            if (minVal >= maxVal) {
+                if (this === xMinSlider) {
+                    minVal = maxVal - 0.1;
+                    xMinSlider.value = minVal.toString();
+                } else {
+                    maxVal = minVal + 0.1;
+                    xMaxSlider.value = maxVal.toString();
+                }
+            }
+            config.xMin = minVal;
+            config.xMax = maxVal;
+            xMinLabel.textContent = minVal.toFixed(1);
+            xMaxLabel.textContent = maxVal.toFixed(1);
+        }
+        xMinSlider.addEventListener('input', syncXRange);
+        xMaxSlider.addEventListener('input', syncXRange);
+        config.xMin = parseFloat(xMinSlider.value);
+        config.xMax = parseFloat(xMaxSlider.value);
+
+        const targetFuncInput = document.getElementById('targetFuncInput');
+        targetFuncInput.addEventListener('change', () => {
+            compileTargetFunc();
+            reset();
+        });
+        targetFuncInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                compileTargetFunc();
+                reset();
+            }
+        });
+
+        const activationSelector = document.getElementById('activationSelector');
+        activationSelector.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('activation-option')) return;
+            const options = activationSelector.querySelectorAll('.activation-option');
+            options.forEach(opt => opt.classList.remove('selected'));
+            e.target.classList.add('selected');
+            config.activation = e.target.dataset.act;
+            updateUI();
+        });
+
+        const optimizerSelectEl = document.getElementById('optimizerSelect');
+        optimizerSelectEl.addEventListener('change', (e) => {
+            config.optimizer = e.target.value;
+            initializeOptimizerState();
+        });
+
+        const gifBtnEl = document.getElementById('gifBtn');
+        gifBtnEl.addEventListener('click', () => {
+            startGifCapture();
+        });
+
+        const saveRunABtn = document.getElementById('saveRunA');
+        const saveRunBBtn = document.getElementById('saveRunB');
+        const compareBtn = document.getElementById('compareBtn');
+        
+        saveRunABtn.addEventListener('click', () => saveRun('A'));
+        saveRunBBtn.addEventListener('click', () => saveRun('B'));
+        
+        compareBtn.addEventListener('click', () => {
+            if (savedRuns.A && savedRuns.B) {
+                comparisonModeActive = !comparisonModeActive;
+                // Toggle button appearance
+                if (comparisonModeActive) {
+                    compareBtn.style.cssText = 'font-size:11px; padding:4px 8px; margin-right:12px; background-color:#0056b3; color:white; border:1px solid #0056b3; cursor:pointer;';
+                    compareBtn.textContent = '✓ Comparing A vs B';
+                } else {
+                    compareBtn.style.cssText = 'font-size:11px; padding:4px 8px; margin-right:12px; background-color:#007bff; color:white; border:1px solid #007bff; cursor:pointer;';
+                    compareBtn.textContent = 'Compare A vs B';
+                }
+                updateUI();
+            }
+        });
+
+        document.getElementById('stepBtn').addEventListener('click', () => {
+            trainingState.running = false;
+            document.getElementById('runBtn').textContent = 'Run';
+            exitComparisonMode();  // Exit comparison when stepping
+            animatedStep();
+        });
+
+        document.getElementById('runBtn').addEventListener('click', () => {
+            trainingState.running = !trainingState.running;
+            const btn = document.getElementById('runBtn');
+            btn.textContent = trainingState.running ? 'Pause' : 'Run';
+            trainingState.lastUpdateTime = performance.now();
+            if (trainingState.running) {
+                exitComparisonMode();  // Exit comparison when running
+                requestAnimationFrame(runLoop);
+            }
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('runBtn').textContent = 'Run';
+            reset();
+        });
+
+        document.getElementById('traceLoss').addEventListener('change', updateUI);
+        document.getElementById('traceAvgLoss').addEventListener('change', updateUI);
+        document.getElementById('traceWeights').addEventListener('change', updateUI);
+        document.getElementById('traceLogScale').addEventListener('change', updateUI);
+        
+        // Rolling average window slider
+        const avgWindowSlider = document.getElementById('avgWindowSlider');
+        const avgWindowValue = document.getElementById('avgWindowValue');
+        avgWindowSlider.addEventListener('input', () => {
+            config.avgWindow = parseInt(avgWindowSlider.value);
+            avgWindowValue.textContent = config.avgWindow;
+            // Recalculate all rolling averages with new window size
+            history.avgLoss = [];
+            for (let i = 0; i < history.loss.length; i++) {
+                let sum = 0, count = 0;
+                for (let j = i; j >= 0 && count < config.avgWindow; j--, count++) {
+                    sum += history.loss[j];
+                }
+                history.avgLoss.push(sum / Math.max(1, count));
+            }
+            updateUI();
+        });
+        document.getElementById('traceWeights').addEventListener('change', updateUI);
+        
+        // Network Design panel - activation buttons
+        document.querySelectorAll('#networkActivation .act-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update button styling
+                document.querySelectorAll('#networkActivation .act-btn').forEach(b => {
+                    b.style.border = '2px solid #ccc';
+                    b.style.background = '#fff';
+                    b.style.color = '#333';
+                    b.style.fontWeight = '500';
+                });
+                btn.style.border = '2px solid #007bff';
+                btn.style.background = '#007bff';
+                btn.style.color = 'white';
+                btn.style.fontWeight = '600';
+                
+                // Update config
+                config.activation = btn.dataset.act;
+                
+                // Also update hidden selector for compatibility
+                const options = document.querySelectorAll('#activationSelector .activation-option');
+                options.forEach(opt => opt.classList.remove('selected'));
+                document.querySelector(`#activationSelector .activation-option[data-act="${btn.dataset.act}"]`)?.classList.add('selected');
+                
+                updateUI();
+            });
+        });
+        
+        // Drag handles for layers (horizontal) and size (vertical)
+        // Time-based: each tick changes value by 1
+        setupDragHandle('layersHandle', 'horizontal', (delta) => {
+            const change = delta > 0 ? 1 : -1;
+            const newVal = Math.max(1, Math.min(3, network.numLayers + change));
+            if (newVal !== network.numLayers) {
+                network.numLayers = newVal;
+                document.getElementById('numLayers').value = newVal;
+                document.getElementById('numLayersValue').textContent = newVal;
+                document.getElementById('networkLayersDisplay').textContent = newVal;
+                reset();
+            }
+        });
+        
+        setupDragHandle('sizeHandle', 'vertical', (delta) => {
+            // Vertical: negative delta (drag up) = increase size
+            const change = delta > 0 ? -1 : 1;
+            const newVal = Math.max(2, Math.min(10, network.hiddenSize + change));
+            if (newVal !== network.hiddenSize) {
+                network.hiddenSize = newVal;
+                document.getElementById('hiddenSize').value = newVal;
+                document.getElementById('hiddenSizeValue').textContent = newVal;
+                document.getElementById('networkSizeDisplay').textContent = newVal;
+                reset();
+            }
+        });
+        
+        // Drag handles for x-range
+        // Time-based: each tick changes value by 0.2
+        setupDragHandle('xMinHandle', 'horizontal', (delta) => {
+            const change = delta > 0 ? 0.2 : -0.2;
+            const newVal = config.xMin + change;
+            const clampedVal = Math.max(-5, Math.min(config.xMax - 0.5, newVal));
+            config.xMin = Math.round(clampedVal * 10) / 10;
+            document.getElementById('xMin').value = config.xMin;
+            document.getElementById('xMinLabel').textContent = config.xMin.toFixed(1);
+            document.getElementById('xMinDisplay').textContent = config.xMin.toFixed(1);
+            drawFitPlot();
+        });
+        
+        setupDragHandle('xMaxHandle', 'horizontal', (delta) => {
+            const change = delta > 0 ? 0.2 : -0.2;
+            const newVal = config.xMax + change;
+            const clampedVal = Math.max(config.xMin + 0.5, Math.min(5, newVal));
+            config.xMax = Math.round(clampedVal * 10) / 10;
+            document.getElementById('xMax').value = config.xMax;
+            document.getElementById('xMaxLabel').textContent = config.xMax.toFixed(1);
+            document.getElementById('xMaxDisplay').textContent = config.xMax.toFixed(1);
+            drawFitPlot();
+        });
+        
+        // Update displays on init
+        document.getElementById('networkLayersDisplay').textContent = network.numLayers;
+        document.getElementById('networkSizeDisplay').textContent = network.hiddenSize;
+        document.getElementById('xMinDisplay').textContent = config.xMin.toFixed(1);
+        document.getElementById('xMaxDisplay').textContent = config.xMax.toFixed(1);
+    }
+    
+    function setupDragHandle(elementId, direction, onDrag) {
+        const handle = document.getElementById(elementId);
+        if (!handle) return;
+        
+        let startX, startY;
+        let currentOffset = 0;
+        let intervalId = null;
+        const DEAD_ZONE = 8;  // pixels before triggering
+        const INTERVAL_MS = 80;  // how often to increment (faster = smoother)
+        const INCREMENT_PER_TICK = 15;  // pixels worth of change per tick
+        
+        const startInterval = () => {
+            if (intervalId) return;
+            intervalId = setInterval(() => {
+                if (Math.abs(currentOffset) > DEAD_ZONE) {
+                    // Direction based on offset sign
+                    const sign = currentOffset > 0 ? 1 : -1;
+                    onDrag(sign * INCREMENT_PER_TICK);
+                }
+            }, INTERVAL_MS);
+        };
+        
+        const stopInterval = () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        };
+        
+        handle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startX = e.clientX;
+            startY = e.clientY;
+            currentOffset = 0;
+            
+            // Disable transition during drag for immediate feedback
+            handle.style.transition = 'none';
+            
+            const onMouseMove = (e) => {
+                currentOffset = direction === 'horizontal' ? (e.clientX - startX) : (e.clientY - startY);
+                
+                // Clamp visual offset to reasonable range (±20px)
+                const clampedOffset = Math.max(-20, Math.min(20, currentOffset));
+                
+                // Visual feedback - move the handle
+                if (direction === 'horizontal') {
+                    if (elementId === 'layersHandle') {
+                        handle.style.transform = `translateX(calc(-50% + ${clampedOffset}px))`;
+                    } else {
+                        handle.style.transform = `translateX(${clampedOffset}px)`;
+                    }
+                } else {
+                    handle.style.transform = `translateY(calc(-50% + ${clampedOffset}px))`;
+                }
+                
+                // Start interval if displaced beyond dead zone
+                if (Math.abs(currentOffset) > DEAD_ZONE) {
+                    startInterval();
+                } else {
+                    stopInterval();
+                }
+            };
+            
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                stopInterval();
+                
+                // Re-enable transition for rubberband effect
+                handle.style.transition = 'transform 0.15s ease-out';
+                
+                // Rubberband back to original position
+                if (direction === 'horizontal') {
+                    if (elementId === 'layersHandle') {
+                        handle.style.transform = 'translateX(-50%)';
+                    } else {
+                        handle.style.transform = 'translateX(0)';
+                    }
+                } else {
+                    handle.style.transform = 'translateY(-50%)';
+                }
+                
+                currentOffset = 0;
+            };
+            
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    }
+
+    // --------------- Init ----------------------------
+
+    function init() {
+        compileTargetFunc();
+        initializeNetwork();
+        setupControls();
+        reset();
+    }
+
+    window.addEventListener('load', init);
+</script>
+</body>
+</html>
