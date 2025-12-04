@@ -13,18 +13,40 @@
             padding: 16px;
             background: #f5f5f5;
             color: #333;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 1700px;
             margin: 0 auto;
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             padding: 10px 14px 14px 14px;
             min-height: calc(100vh - 20px);
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr 310px;
+            gap: 16px;
+            align-items: start;
+        }
+
+        #mainContent {
+            grid-column: 1;
+            grid-row: 1;
+            min-width: 0;
+        }
+        
+        #guideSidebar {
+            grid-column: 2;
+            grid-row: 1;
+            position: sticky;
+            top: 16px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.5;
         }
 
         h1 {
@@ -43,6 +65,8 @@
             grid-template-columns: 1fr 1fr;
             grid-template-rows: auto auto auto;
             gap: 10px;
+            width: 100%;
+            min-width: 0;
         }
         
         .controls-strip {
@@ -58,6 +82,8 @@
             border-radius: 6px;
             padding: 8px 10px;
             border: 1px solid #e0e0e0;
+            min-width: 0;
+            overflow: hidden;
         }
 
         .panel h2 {
@@ -109,13 +135,13 @@
         }
 
         button {
-            padding: 6px 10px;
+            padding: 5px 9px;
             background: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         button:hover {
@@ -227,7 +253,7 @@
             min-height: 150px;
             overflow-y: auto;
             display: grid;
-            grid-template-columns: 1fr 1fr;  /* 2 columns: Forward Pass | Backward Pass */
+            grid-template-columns: 1fr 1fr;  /* 2 columns: Forward | Backward */
             gap: 12px;
         }
 
@@ -269,6 +295,10 @@
             .container {
                 padding: 10px;
                 max-width: 100%;
+                grid-template-columns: 1fr 250px;
+            }
+            #guideSidebar {
+                font-size: 9px;
             }
             .grid {
                 grid-template-columns: 1fr;
@@ -315,6 +345,13 @@
                 padding: 8px;
                 max-width: 100%;
                 overflow-x: hidden;
+                grid-template-columns: 1fr;
+            }
+            #guideSidebar {
+                display: none;
+            }
+            #guideToggle {
+                display: none;
             }
             h1 {
                 font-size: 18px;
@@ -373,7 +410,7 @@
                 max-height: 250px;
             }
             /* Hide drag handles on mobile - they don't work well with touch */
-            #sizeHandle, #layersHandle, #xMinHandle, #xMaxHandle {
+            #sizeHandle, #layersHandle, #trainMinHandle, #trainMaxHandle {
                 display: none;
             }
             /* Show hidden sliders on mobile for layer/size control */
@@ -411,30 +448,98 @@
 </head>
 <body>
 <div class="container">
-    <h1 style="margin-bottom:2px;">LearnCurve</h1>
-    <p style="margin:0 0 8px 0; font-size:11px; color:#666;">An interactive visualization tool for understanding how neural networks learn to approximate mathematical functions in real-time. © 2025 Chris Rowen — Available under <a href="https://opensource.org/licenses/MIT" style="color:#007bff; text-decoration:none;">MIT License</a></p>
+    <!-- Main Content Area -->
+    <div id="mainContent" style="display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+            <div>
+                <h1 style="margin-bottom:2px;">LearnCurve</h1>
+                <p style="margin:0; font-size:11px; color:#666;">An interactive tool for understanding how neural networks learn. © 2025 Chris Rowen — <a href="https://opensource.org/licenses/MIT" style="color:#007bff; text-decoration:none;">MIT License</a></p>
+            </div>
+            <button id="guideToggle" style="padding:4px 10px; font-size:11px; background:#138496; border:none; border-radius:4px; color:white; cursor:pointer; white-space:nowrap;" title="Show/hide learning guide">Hide Guide ◀</button>
+        </div>
 
-    <div class="grid">
-        <!-- CONTROLS STRIP - spans full width, two rows -->
-        <div class="panel controls-strip" style="padding:8px 12px;">
-            <!-- Row 1: Target function and training parameters -->
-            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:6px;">
-                <!-- Target function -->
+        <div class="grid">
+        <!-- PHASE 1: CREATE TRAINING DATA - spans full width -->
+        <div class="panel controls-strip" id="phase1Panel" style="padding:8px 12px; border-left:4px solid #28a745;">
+            <div id="phase1Header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:12px; font-weight:bold; color:#28a745;">① CREATE TRAINING DATA</span>
+                    <button id="toggleRecipeBtn" style="padding:4px 12px; font-size:11px; background:#28a745; font-weight:bold; display:none;" title="Edit data recipe and regenerate">✏️ Edit Recipe</button>
+                </div>
+                <span id="dataStatus" style="font-size:10px; color:#888;">Define a data recipe, then generate training data</span>
+            </div>
+            
+            <!-- Recipe Controls - single row -->
+            <div id="recipeControls" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:5px 8px; background:#f8f9fa; border-radius:4px;">
+                <!-- Data Recipe -->
                 <div style="display:flex; align-items:center; gap:4px;">
-                    <label style="font-size:11px; font-weight:600;">Target f(x):</label>
-                    <input type="text" id="targetFuncInput" value="x*x" style="width:100px; font-size:11px; padding:3px 5px;" />
-                    <span style="font-size:9px; color:#777;">(x + - * / ^ sin cos exp log sqrt abs PI E)</span>
+                    <label style="font-size:11px; font-weight:600;">Recipe:</label>
+                    <input type="text" id="targetFuncInput" value="sin(x)" style="width:90px; font-size:11px; padding:3px 5px;" title="Formula for generating data" />
                 </div>
                 
-                <span style="color:#ddd;">|</span>
+                <!-- Data Range -->
+                <div style="display:flex; align-items:center; gap:3px;">
+                    <label style="font-size:10px; color:#555;">x:</label>
+                    <input type="number" id="dataXMinInput" value="-3" step="0.5" style="width:38px; font-size:10px; padding:2px;">
+                    <span style="font-size:9px;">to</span>
+                    <input type="number" id="dataXMaxInput" value="3" step="0.5" style="width:38px; font-size:10px; padding:2px;">
+                </div>
+                
+                <!-- Count -->
+                <div style="display:flex; align-items:center; gap:3px;">
+                    <label style="font-size:10px; color:#555;" title="Total number of data points to generate">Samples:</label>
+                    <input type="range" id="totalSamples" min="20" max="500" step="10" value="100" style="width:80px;">
+                    <span class="value" id="totalSamplesValue" style="font-size:10px; min-width:24px;">100</span>
+                </div>
                 
                 <!-- Noise -->
                 <div style="display:flex; align-items:center; gap:3px;">
-                    <label style="font-size:10px; color:#555;">Noise:</label>
-                    <input type="range" id="noise" min="0" max="1" step="0.05" value="0" style="width:50px;">
-                    <span class="value" id="noiseValue" style="font-size:10px; min-width:28px;">0.00</span>
+                    <label style="font-size:10px; color:#555;" title="Noise level - random variation added to y values">Noise:</label>
+                    <input type="range" id="noise" min="0" max="1" step="0.01" value="0.02" style="width:80px;">
+                    <span class="value" id="noiseValue" style="font-size:10px; min-width:24px;">0.02</span>
                 </div>
                 
+                <!-- Generate Button -->
+                <button id="generateDataBtn" style="padding:5px 12px; font-size:11px; background:#28a745; font-weight:bold;">🎲 Generate</button>
+            </div>
+            
+            <!-- Data Summary (accordion, collapsed by default after generation) -->
+            <div id="dataSummary" style="display:none; background:#f0f8f0; border:1px solid #c3e6c3; border-radius:4px;">
+                <!-- Summary header (always visible) -->
+                <div id="dataSummaryHeader" style="display:flex; align-items:center; gap:8px; padding:4px 10px; cursor:pointer;" title="Click to show/hide data preview">
+                    <span id="dataSummaryToggle" style="font-size:10px; color:#28a745;">▶</span>
+                    <span style="font-size:10px; color:#28a745; font-weight:bold;">✓ Data Ready:</span>
+                    <span style="font-size:10px; color:#333;"><span id="trainCount">80</span> training, <span id="testCount">20</span> held-out</span>
+                    <span id="dataSummaryNote" style="flex:1; font-size:9px; color:#555; font-style:italic;"></span>
+                    <button id="newDataBtn" style="padding:2px 6px; font-size:9px; background:#6c757d;" title="Generate new random data">↻ New</button>
+                </div>
+                <!-- Expandable data preview -->
+                <div id="dataSummaryContent" style="display:none; padding:4px 10px 6px 10px; border-top:1px solid #c3e6c3;">
+                    <div style="display:flex; align-items:flex-start; gap:12px;">
+                        <div style="min-width:140px;">
+                            <div style="font-size:9px; font-weight:bold; color:#007bff; margin-bottom:2px;">📊 Training Points</div>
+                            <div id="trainDataPreview" style="font-size:8px; font-family:monospace; color:#333; background:#fff; padding:2px 4px; border-radius:2px; border:1px solid #ddd; line-height:1.3;"></div>
+                        </div>
+                        <div style="min-width:140px;">
+                            <div style="font-size:9px; font-weight:bold; color:#ff9800; margin-bottom:2px;">🔒 Held-Out Points</div>
+                            <div id="testDataPreview" style="font-size:8px; font-family:monospace; color:#999; background:#fafafa; padding:2px 4px; border-radius:2px; border:1px solid #eee; line-height:1.3;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Hidden elements for compatibility -->
+            <span id="trainRangeLabel" style="display:none;"></span>
+            <span id="testRangeInfo" style="display:none;"></span>
+        </div>
+        
+        <!-- PHASE 2: TRAIN THE MODEL - spans full width -->
+        <div class="panel controls-strip" id="phase2Panel" style="padding:6px 12px; border-left:4px solid #007bff; opacity:0.5; pointer-events:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:12px; font-weight:bold; color:#007bff;">② TRAIN THE MODEL</span>
+                <span id="epochStatus" style="font-size:10px; color:#888;">Generate examples first...</span>
+            </div>
+            <!-- Row 1: Network and training parameters -->
+            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:4px;">
                 <!-- Learning Rate -->
                 <div style="display:flex; align-items:center; gap:3px;">
                     <label style="font-size:10px; color:#555;">Learning Rate:</label>
@@ -459,32 +564,30 @@
                         <svg width="16" height="10" viewBox="0 0 24 14"><path d="M1 12 L4 12 Q8 12 12 7 Q16 2 20 2 L23 2" stroke="currentColor" stroke-width="2" fill="none"/></svg>Sigmoid
                     </button>
                 </div>
-            </div>
-            
-            <!-- Row 2: Action buttons, compare, and stats -->
-            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
-                <!-- Action buttons -->
-                <button id="stepBtn" style="padding:4px 10px; font-size:11px;">Step</button>
-                <button id="runBtn" style="padding:4px 10px; font-size:11px;">Run</button>
-                <button id="resetBtn" style="padding:4px 10px; font-size:11px;">Reset</button>
-                <button id="gifBtn" style="padding:4px 8px; font-size:10px;">Capture</button>
-                
-                <span style="color:#ddd;">|</span>
-                
-                <!-- Compare buttons -->
-                <button id="saveRunA" style="padding:4px 8px; font-size:10px; background:#6c757d;">Save Run A</button>
-                <button id="saveRunB" style="padding:4px 8px; font-size:10px; background:#6c757d;">Save Run B</button>
-                <button id="compareBtn" style="padding:4px 8px; font-size:10px; background:#6c757d;" disabled>Compare A vs B</button>
                 
                 <span style="color:#ddd;">|</span>
                 
                 <!-- Stats -->
-                <span style="font-size:11px; color:#555;">Step: <strong id="stepCount">0</strong></span>
-                <span style="font-size:11px; color:#555;">Loss: <strong id="lossValue">—</strong></span>
-                <span style="font-size:11px; color:#007bff;"><span id="stepsPerSec">—</span> steps/s</span>
+                <span style="font-size:11px; color:#28a745;">Train Loss: <strong id="trainLossValue">—</strong></span>
+                <span style="font-size:11px; color:#007bff;"><span id="stepsPerSec">—</span> steps/sec</span>
+                <span style="font-size:10px; color:#888;" title="Total arithmetic operations this training run (shows cost of training)">Total: <strong id="totalOpsDisplay" style="color:#6f42c1;">0</strong> ops</span>
+            </div>
+            <!-- Hidden elements for backwards compatibility -->
+            <span id="epochCount" style="display:none;">0</span>
+            <span id="stepCount" style="display:none;">0</span>
+            <span id="stepsPerEpoch" style="display:none;">80</span>
+            
+            <!-- Row 2: Training action buttons -->
+            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                <!-- Training buttons -->
+                <button id="stepBtn" style="padding:4px 10px; font-size:11px;" title="Train one step (process one training example)">Step</button>
+                <button id="runEpochBtn" style="padding:4px 10px; font-size:11px; background:#17a2b8;" title="Run one epoch = process ALL training examples once">Run Epoch</button>
+                <button id="runBtn" style="padding:4px 10px; font-size:11px;" title="Run continuous training until stopped">Run</button>
+                <button id="resetModelBtn" style="padding:4px 10px; font-size:11px; background:#ffc107; color:#333;" title="Re-initialize weights randomly (keeps data)">Reset Model</button>
+                <button id="gifBtn" style="padding:4px 8px; font-size:10px;">Capture</button>
             </div>
             
-            <!-- Hidden elements -->
+            <!-- Hidden elements for backwards compatibility -->
             <input type="range" id="xMin" min="-5" max="0" step="0.1" value="-2" style="display:none;">
             <input type="range" id="xMax" min="0" max="5" step="0.1" value="2" style="display:none;">
             <span id="xMinLabel" style="display:none;">-2</span>
@@ -495,6 +598,8 @@
             <span id="totalMuls" style="display:none;">0</span>
             <span id="opsLossAdd" style="display:none">0</span>
             <span id="opsLossMul" style="display:none">0</span>
+            <span id="lossValue" style="display:none;">—</span>
+            <button id="resetBtn" style="display:none;">Reset</button>
             <div class="activation-selector" id="activationSelector" style="display:none;">
                 <span class="activation-option selected" data-act="relu">ReLU</span>
                 <span class="activation-option" data-act="sigmoid">sigmoid</span>
@@ -509,18 +614,20 @@
 
         <!-- 2x2 VISUALIZATION GRID -->
         <!-- Top Left: Network Design -->
-        <div class="panel" style="padding:6px 6px 10px 6px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-bottom:0;">
+        <div class="panel" style="padding:6px 6px 24px 6px; overflow:visible !important;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                 <h2 style="margin:0; font-size:13px; border:none; padding:0;">Network Design</h2>
                 <div id="opsTableHtml" style="font-size:9px; background:#f8f9ff; border:1px solid #007bff; border-radius:3px; padding:2px 6px;">
-                    <span style="color:#28a745;">Fwd:</span><span id="opsFwdAdds">0</span>+<span id="opsFwdMuls">0</span>×
-                    <span style="color:#dc3545; margin-left:4px;">Back:</span><span id="opsBackAdds">0</span>+<span id="opsBackMuls">0</span>×
+                    <span style="color:#28a745;">Fwd:</span><span id="opsFwdAdds">0</span>+ <span id="opsFwdMuls">0</span>×
+                    <span style="color:#dc3545; margin-left:4px;">Back:</span><span id="opsBackAdds">0</span>+ <span id="opsBackMuls">0</span>×
                 </div>
             </div>
-            <div style="position:relative; display:inline-block;">
-                <canvas id="networkCanvas" width="520" height="300"></canvas>
-                <div id="sizeHandle" style="position:absolute; right:-18px; top:50%; transform:translateY(-50%); width:20px; height:60px; background:linear-gradient(to bottom, #007bff, #0056b3); border-radius:3px; cursor:ns-resize; display:flex; flex-direction:column; align-items:center; justify-content:space-evenly; color:white; font-size:8px; transition: transform 0.15s ease-out;" title="Drag: Width"><span>▲</span><span style="writing-mode:vertical-rl; text-orientation:mixed; font-size:8px;">Width</span><span>▼</span></div>
-                <div id="layersHandle" style="position:absolute; bottom:-12px; left:50%; transform:translateX(-50%); height:18px; width:70px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:8px; transition: transform 0.15s ease-out;" title="Drag: Layers">◀ Layers ▶</div>
+            <div style="position:relative; margin-bottom:8px; margin-right:20px;">
+                <canvas id="networkCanvas" width="520" height="300" style="width:100%;"></canvas>
+                <div id="sizeHandle" style="position:absolute; right:-20px; top:50%; transform:translateY(-50%); width:18px; height:50px; background:linear-gradient(to bottom, #007bff, #0056b3); border-radius:3px; cursor:ns-resize; display:flex; flex-direction:column; align-items:center; justify-content:space-evenly; color:white; font-size:7px; transition: transform 0.15s ease-out; z-index:10;" title="Drag to change neurons per layer"><span>▲</span><span style="writing-mode:vertical-rl; text-orientation:mixed; font-size:7px;">Width</span><span>▼</span></div>
+            </div>
+            <div style="text-align:center;">
+                <div id="layersHandle" style="display:inline-flex; height:16px; width:68px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; align-items:center; justify-content:center; color:white; font-size:7px; transition: transform 0.15s ease-out;" title="Drag to change number of layers">◀ Layers ▶</div>
             </div>
             <span id="networkLayersDisplay" style="display:none;">1</span>
             <span id="networkSizeDisplay" style="display:none;">3</span>
@@ -529,11 +636,28 @@
 
         <!-- Top Right: Fit Plot -->
         <div class="panel" style="padding:6px;">
-            <h2 style="margin:0 0 4px 0; font-size:13px; border:none; padding:0;">Fit Plot: f(x) vs ŷ(x)</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
+                <h2 style="margin:0; font-size:13px; border:none; padding:0;">Examples vs Model</h2>
+                <div id="trainRangeControls" style="display:flex; gap:6px; font-size:9px; align-items:center; opacity:0.5; pointer-events:none;">
+                    <label style="color:#17a2b8; font-weight:bold;" title="Restrict which x-values are used for training. Points outside this range test extrapolation.">Train x:</label>
+                    <input type="number" id="trainXMinInput" value="-2" step="0.5" style="width:36px; font-size:9px; padding:1px; border:1px solid #17a2b8;" title="Min x for training">
+                    <span>to</span>
+                    <input type="number" id="trainXMaxInput" value="2" step="0.5" style="width:36px; font-size:9px; padding:1px; border:1px solid #17a2b8;" title="Max x for training">
+                    <span style="color:#888; font-size:8px;">(<span id="trainPointCount">—</span> train pts)</span>
+                </div>
+                <div id="revealControls" style="display:flex; gap:6px; font-size:9px; opacity:0.5; pointer-events:none;">
+                    <label style="display:flex; align-items:center; gap:2px; cursor:pointer;" title="Show held-out examples">
+                        <input type="checkbox" id="showHeldOut"> Held-Out
+                    </label>
+                    <label style="display:flex; align-items:center; gap:2px; cursor:pointer;" title="Show original recipe curve">
+                        <input type="checkbox" id="showRecipe"> Recipe
+                    </label>
+                </div>
+            </div>
             <div style="position:relative;">
                 <canvas id="fitCanvas" class="chart" width="520" height="340" style="width:100%;"></canvas>
-                <div id="xMinHandle" style="position:absolute; left:40px; bottom:2px; width:24px; height:12px; background:#007bff; border-radius:2px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:7px;" title="x-min">◀▶</div>
-                <div id="xMaxHandle" style="position:absolute; right:40px; bottom:2px; width:24px; height:12px; background:#007bff; border-radius:2px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:7px;" title="x-max">◀▶</div>
+                <div id="trainMinHandle" style="position:absolute; left:50px; bottom:2px; width:24px; height:12px; background:#17a2b8; border-radius:2px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:7px; opacity:0.5; pointer-events:none;" title="Drag to restrict training range (test extrapolation)">◀▶</div>
+                <div id="trainMaxHandle" style="position:absolute; right:50px; bottom:2px; width:24px; height:12px; background:#17a2b8; border-radius:2px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:7px; opacity:0.5; pointer-events:none;" title="Drag to restrict training range (test extrapolation)">◀▶</div>
             </div>
             <span id="xMinDisplay" style="display:none;">-2.0</span>
             <span id="xMaxDisplay" style="display:none;">2.0</span>
@@ -545,21 +669,21 @@
 
         <!-- Bottom Left: Training Trace -->
         <div class="panel" style="padding:6px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:3px;">
                 <h2 style="margin:0; font-size:13px; border:none; padding:0;">Training Trace</h2>
-                <div style="display:flex; gap:6px; font-size:9px; align-items:center;">
-                    <label style="display:flex; align-items:center; gap:1px;"><input type="checkbox" id="traceLoss" checked>Loss</label>
-                    <label style="display:flex; align-items:center; gap:1px;"><input type="checkbox" id="traceWeights" checked>Weights</label>
-                    <label style="display:flex; align-items:center; gap:1px;"><input type="checkbox" id="traceLogScale">Log Scale</label>
-                    <span style="color:#ccc;">|</span>
-                    <label style="display:flex; align-items:center; gap:1px;"><input type="checkbox" id="traceAvgLoss" checked>Avg Loss</label>
-                    <span>Window:</span><input type="range" id="avgWindowSlider" min="10" max="1000" step="10" value="100" style="width:40px;"><span id="avgWindowValue" style="color:#007bff;">100</span>
-                    <span style="color:#ccc;">|</span>
-                    <span>ΔLoss:<strong id="deltaLossValue" style="color:#28a745;">—</strong></span>
+                <div style="display:flex; gap:5px; font-size:9px; align-items:center;">
+                    <label style="display:flex; align-items:center; gap:1px;" title="Show loss curve"><input type="checkbox" id="traceLoss" checked>Loss</label>
+                    <label style="display:flex; align-items:center; gap:1px;" title="Show weight trajectories"><input type="checkbox" id="traceWeights" checked>Wts</label>
+                    <label style="display:flex; align-items:center; gap:1px;" title="Logarithmic scale"><input type="checkbox" id="traceLogScale">Log</label>
+                    <span style="color:#ddd;">|</span>
+                    <label style="display:flex; align-items:center; gap:1px;" title="Rolling average"><input type="checkbox" id="traceAvgLoss" checked>Avg</label>
+                    <input type="range" id="avgWindowSlider" min="10" max="1000" step="10" value="100" style="width:35px;" title="Averaging window size"><span id="avgWindowValue" style="color:#007bff; min-width:22px;">100</span>
+                    <span style="color:#ddd;">|</span>
+                    <span style="white-space:nowrap;" title="Loss change from start to now">Δ:<strong id="deltaLossValue" style="color:#28a745; min-width:45px;">—</strong></span>
                 </div>
             </div>
-            <div style="position:relative; width:520px; margin:0 auto;">
-                <canvas id="traceCanvas" class="chart" width="520" height="360"></canvas>
+            <div style="position:relative;">
+                <canvas id="traceCanvas" class="chart" width="520" height="360" style="width:100%;"></canvas>
                 <div id="traceViewHandle" style="position:absolute; bottom:4px; left:230px; width:60px; height:14px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; display:none; align-items:center; justify-content:center; color:white; font-size:8px; opacity:0.9; z-index:10;" title="Drag left/right to zoom into early training steps (when paused)">◀ Zoom ▶</div>
             </div>
         </div>
@@ -578,16 +702,93 @@
                 </div>
             </div>
             <canvas id="lossCanvas" class="chart" width="520" height="360"></canvas>
-            <div style="font-size:9px; color:#888; text-align:center;">🟢&nbsp;Start &nbsp;🔴&nbsp;Current • <span style="color:#00f;">■</span>≤0.001 <span style="color:#0aa;">■</span>0.01 <span style="color:#0a0;">■</span>0.1 <span style="color:#aa0;">■</span>1.0 <span style="color:#f00;">■</span>≥10</div>
+            <div style="font-size:8px; color:#888; text-align:center; margin-top:2px;">🟢 Start 🔴 Current • <span style="color:#00f;">■</span>≤.001 <span style="color:#0aa;">■</span>.01 <span style="color:#0a0;">■</span>.1 <span style="color:#aa0;">■</span>1 <span style="color:#f00;">■</span>≥10</div>
         </div>
     </div>
     
-    <!-- EQUATIONS STRIP - spans full width -->
-    <div class="panel equations-panel" style="padding:6px 10px;">
-        <h2 style="margin:0 0 4px 0; font-size:13px; border:none; padding:0;">Equations & Backprop</h2>
-        <div class="equations" id="equationsDiv"></div>
+    <!-- STEP 3: EVALUATE - spans full width -->
+    <div class="panel controls-strip" id="phase3Panel" style="padding:6px 12px; border-left:4px solid #ff9800; opacity:0.5; pointer-events:none; margin-top:10px;">
+        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+            <span style="font-size:12px; font-weight:bold; color:#ff9800;">③ EVALUATE & COMPARE</span>
+            
+            <button id="evaluateBtn" style="padding:5px 14px; font-size:11px; background:#ff9800; font-weight:bold;" title="Test model on held-out data to measure generalization">🔍 Evaluate on Held-Out</button>
+            
+            <span id="evalResults" style="font-size:10px; color:#555; display:none;"></span>
+            
+            <span style="color:#ddd;">|</span>
+            
+            <button id="saveRunA" style="padding:4px 10px; font-size:10px; background:#6c757d;">Save as Run A</button>
+            <button id="saveRunB" style="padding:4px 10px; font-size:10px; background:#6c757d;">Save as Run B</button>
+            <button id="compareBtn" style="padding:4px 10px; font-size:10px; background:#6c757d;" disabled>Compare A vs B</button>
+        </div>
     </div>
-</div>
+    
+    <!-- THE MATH - spans full width, collapsible -->
+    <div class="panel equations-panel" style="padding:6px 10px; margin-top:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" id="equationsHeader">
+            <h2 style="margin:0; font-size:13px; border:none; padding:0;">📐 Equations</h2>
+            <button id="toggleEquationsBtn" style="padding:2px 8px; font-size:10px; background:#6c757d;">▼ Collapse</button>
+        </div>
+        <div class="equations" id="equationsDiv" style="margin-top:6px;"></div>
+    </div>
+    </div><!-- end main content -->
+    
+    <!-- Learning Guide Sidebar -->
+    <div id="guideSidebar" style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:12px 14px;">
+        <div style="margin-bottom:8px; border-bottom:2px solid #17a2b8; padding-bottom:4px;">
+            <span style="font-size:16px; font-weight:bold; color:#17a2b8;">📖 How Neural Networks Learn</span>
+        </div>
+        
+        <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">The Big Picture</h4>
+        <p style="margin:0 0 6px 0;">We use <strong>machine learning</strong> to build equations that serve as <strong>predictive models</strong>—estimating the next word in a composition or identifying objects in a picture. You have <strong>data</strong> representing typical inputs and desired outputs, but don't know the <strong>pattern</strong>. A <strong>neural network</strong> finds a <strong>function that fits</strong> the data—like recreating a curve from scattered dots, but for arbitrarily complex functions.</p>
+        
+        <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">The Three Phases</h4>
+        <p style="margin:0 0 3px 0;"><span style="color:#28a745; font-weight:bold;">①</span> <strong>Create Data</strong> — Generate examples from a hidden "recipe."</p>
+        <p style="margin:0 0 3px 0;"><span style="color:#007bff; font-weight:bold;">②</span> <strong>Train</strong> — Measure error, adjust parameters, repeat.</p>
+        <p style="margin:0 0 6px 0;"><span style="color:#6f42c1; font-weight:bold;">③</span> <strong>Evaluate</strong> — Test on held-out data to verify learning.</p>
+        
+        <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">Key Terms</h4>
+        <div style="font-size:12px; line-height:1.4;">
+            <p style="margin:0 0 2px 0;"><strong style="color:#007bff;">Data Recipe</strong> — Function that generates data</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#007bff;">Training Data</strong> — Examples the model learns from</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#007bff;">Held-Out Data</strong> — Reserved to test real learning</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#007bff;">Noise</strong> — Random variation (real data is messy)</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Step</strong> — Update from one example</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Epoch</strong> — Full pass through training data</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Loss</strong> — Model error (lower = better)</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Learning Rate</strong> — Step size for parameter updates</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Optimizer</strong> — Weight update algorithm</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Weights</strong> — Multipliers on connections</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Biases</strong> — Offset added at each neuron</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Gradient</strong> — Steepest uphill direction</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#dc3545;">Overfitting</strong> — Memorizing instead of learning</p>
+            <p style="margin:0 0 6px 0;"><strong style="color:#dc3545;">Extrapolation</strong> — Predicting outside training range</p>
+        </div>
+        
+        <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">The Math</h4>
+        <p style="margin:0 0 3px 0;"><strong>Forward:</strong> Each layer: weighted sum → activation → output.</p>
+        <p style="margin:0 0 3px 0;"><strong>Loss:</strong> ½(predicted − actual)² penalizes big errors.</p>
+        <p style="margin:0 0 3px 0;"><strong>Backward:</strong> Trace error via <em>chain rule</em> to find each weight's effect.</p>
+        <p style="margin:0 0 3px 0; font-size:11px; color:#666; font-style:italic; padding-left:6px;">d[f(g(x))]/dx = f'(g(x)) · g'(x)</p>
+        <p style="margin:0 0 6px 0;"><strong>Update:</strong> Step opposite to gradient (downhill).</p>
+        
+        <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">Optimizers</h4>
+        <p style="margin:0 0 3px 0;"><strong>Simple (SGD)</strong> — Basic: weight -= rate × gradient</p>
+        <p style="margin:0 0 6px 0;"><strong>Adam</strong> — Adapts rate per-weight. Usually faster.</p>
+        
+        <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">Try These</h4>
+        <p style="margin:0 0 2px 0;">📈 <strong>Simple:</strong> <code>x</code>, <code>x^2</code>, <code>x^3-3*x</code></p>
+        <p style="margin:0 0 2px 0;">🌊 <strong>Waves:</strong> <code>sin(x)</code>, <code>sin(x)+sin(3*x)</code></p>
+        <p style="margin:0 0 2px 0;">📐 <strong>Sharp:</strong> <code>abs(x)</code>, <code>sign(x)</code>, <code>floor(x)</code></p>
+        <p style="margin:0 0 2px 0;">🔬 Restrict training range → extrapolation fails</p>
+        <p style="margin:0 0 2px 0;">⚡ Compare SGD vs Adam</p>
+        <p style="margin:0;">📊 Increase noise → learning breaks down</p>
+        
+        <div style="margin-top:8px; padding-top:6px; border-top:1px solid #ddd; font-size:12px; color:#888; text-align:center;">
+            💡 <em>ML = adjusting numbers to minimize error!</em>
+        </div>
+    </div>
+</div><!-- end container -->
 
 <script>
     // ---------------- Config & State ----------------
@@ -595,13 +796,53 @@
     let config = {
         learningRate: 0.1,
         activation: 'relu',
-        xMin: -2,
-        xMax: 2,
-        noise: 0,
+        // Data generation range (full range)
+        dataXMin: -3,
+        dataXMax: 3,
+        // Training range (can be subset of data range)
+        trainXMin: -2,
+        trainXMax: 2,
+        // Legacy compatibility
+        xMin: -3,
+        xMax: 3,
+        noise: 0.02,
         targetFunc: null,
-        targetFuncStr: 'x^2',
+        targetFuncStr: 'sin(x)',
         optimizer: 'sgd',
-        avgWindow: 100
+        avgWindow: 100,
+        // Dataset configuration
+        totalSamples: 100,      // Total number of samples to generate
+        trainTestSplit: 0.8,    // 80% train, 20% test
+        testEvalInterval: 10    // Legacy - test loss now evaluated at epoch boundaries
+    };
+
+    // Training dataset - fixed points generated from target function
+    let dataset = {
+        generated: false,       // Has data been generated?
+        allTrain: [],           // All training points (full data range)
+        allTest: [],            // All test points (full data range)
+        train: [],              // Training points within trainXMin..trainXMax
+        test: [],               // Test points (all held-out, for evaluation)
+        epoch: 0,               // Current epoch number
+        stepInEpoch: 0,         // Current step within epoch
+        shuffleOrder: [],       // Randomized order for current epoch
+        totalEpochs: 0          // Total epochs completed
+    };
+    
+    // Reveal controls for assessment
+    let revealOptions = {
+        showHeldOut: false,     // Show held-out (test) examples
+        showRecipe: false,      // Show original data recipe curve
+        evaluated: false        // Has evaluation been run?
+    };
+    
+    // Evaluation results
+    let evaluationResults = {
+        testLossInRange: null,    // MSE for test points within training range
+        testLossOutRange: null,   // MSE for test points outside training range
+        testLossTotal: null,      // Total test MSE
+        pointsInRange: 0,
+        pointsOutRange: 0
     };
 
     let network = {
@@ -618,7 +859,8 @@
 
     let history = {
         steps: [],
-        loss: [],
+        loss: [],           // Training loss per step
+        testLoss: [],       // Test loss evaluated periodically [{step, loss}, ...]
         avgLoss: [],
         weights: []
     };
@@ -1454,7 +1696,7 @@ function updateParameters() {
 
     function compileTargetFunc() {
         const input = document.getElementById('targetFuncInput');
-        let originalStr = input.value.trim() || 'x*x';
+        let originalStr = input.value.trim() || 'x^2';
         
         // Make case-insensitive by converting to lowercase for function matching
         let fStr = originalStr;
@@ -1663,7 +1905,8 @@ function updateParameters() {
         return { fwdAdds, fwdMuls, lossAdds, lossMuls, backAdds, backMuls };
     }
 
-    function sampleTrainingPoint() {
+    // Generate a single point from the target function (used for visualization)
+    function sampleTargetPoint() {
         const x = config.xMin + Math.random() * (config.xMax - config.xMin);
         let y;
         try {
@@ -1675,6 +1918,555 @@ function updateParameters() {
             y += gaussianNoise(0, config.noise);
         }
         return { x, y };
+    }
+    
+    // Legacy function - now gets next point from dataset
+    function sampleTrainingPoint() {
+        if (!dataset.generated || dataset.train.length === 0) {
+            // Fallback to random sampling if no dataset
+            return sampleTargetPoint();
+        }
+        
+        // Get the current training sample based on shuffle order
+        const idx = dataset.shuffleOrder[dataset.stepInEpoch % dataset.train.length];
+        return dataset.train[idx];
+    }
+    
+    // Generate fixed training and test datasets
+    function generateDataset() {
+        const totalSamples = config.totalSamples;
+        const trainRatio = config.trainTestSplit;
+        
+        // Generate all points across the FULL data range
+        const allPoints = [];
+        const dataRange = config.dataXMax - config.dataXMin;
+        
+        for (let i = 0; i < totalSamples; i++) {
+            // Use stratified sampling for better coverage
+            const x = config.dataXMin + (i + Math.random()) * dataRange / totalSamples;
+            let y;
+            try {
+                y = config.targetFunc(x);
+            } catch {
+                y = 0;
+            }
+            if (config.noise > 0) {
+                y += gaussianNoise(0, config.noise);
+            }
+            // Mark if point is within training range
+            const inTrainRange = x >= config.trainXMin && x <= config.trainXMax;
+            allPoints.push({ x, y, inTrainRange });
+        }
+        
+        // Shuffle all points
+        for (let i = allPoints.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [allPoints[i], allPoints[j]] = [allPoints[j], allPoints[i]];
+        }
+        
+        // Split into train candidates and test
+        const trainCount = Math.floor(totalSamples * trainRatio);
+        const allTrainCandidates = allPoints.slice(0, trainCount);
+        const allTestPoints = allPoints.slice(trainCount);
+        
+        // Store all points
+        dataset.allTrain = allTrainCandidates;
+        dataset.allTest = allTestPoints;
+        
+        // Filter training points to only those within training range
+        dataset.train = allTrainCandidates.filter(p => p.inTrainRange);
+        
+        // Test set includes ALL held-out points (both in and out of range)
+        dataset.test = allTestPoints;
+        
+        // Count test points in/out of training range
+        const testInRange = allTestPoints.filter(p => p.inTrainRange).length;
+        const testOutRange = allTestPoints.length - testInRange;
+        
+        dataset.generated = true;
+        dataset.epoch = 0;
+        dataset.stepInEpoch = 0;
+        dataset.totalEpochs = 0;
+        
+        // Reset evaluation
+        revealOptions.evaluated = false;
+        evaluationResults = {
+            testLossInRange: null,
+            testLossOutRange: null,
+            testLossTotal: null,
+            pointsInRange: testInRange,
+            pointsOutRange: testOutRange
+        };
+        
+        // Initialize shuffle order for first epoch
+        shuffleTrainingOrder();
+        
+        // Update x range for Fit Plot to show full data range
+        config.xMin = config.dataXMin;
+        config.xMax = config.dataXMax;
+        
+        // Update UI
+        updatePhaseUI();
+        updateTrainingHandlePositions();
+        
+        const outsideCount = allTrainCandidates.filter(p => !p.inTrainRange).length;
+        console.log(`Generated ${totalSamples} total points:`);
+        console.log(`  Training: ${dataset.train.length} in range (${outsideCount} excluded outside train range)`);
+        console.log(`  Held-out: ${testInRange} in range, ${testOutRange} outside (extrapolation test)`);
+        
+        return { 
+            trainCount: dataset.train.length, 
+            testCount: dataset.test.length,
+            testInRange,
+            testOutRange
+        };
+    }
+    
+    // Run evaluation on held-out data
+    function runEvaluation() {
+        if (!dataset.generated || dataset.test.length === 0) return null;
+        
+        let lossInRange = 0;
+        let lossOutRange = 0;
+        let countInRange = 0;
+        let countOutRange = 0;
+        
+        for (const point of dataset.test) {
+            const fwd = forward(point.x);
+            const error = fwd.yhat - point.y;
+            const loss = 0.5 * error * error;
+            
+            if (point.inTrainRange) {
+                lossInRange += loss;
+                countInRange++;
+            } else {
+                lossOutRange += loss;
+                countOutRange++;
+            }
+        }
+        
+        evaluationResults = {
+            testLossInRange: countInRange > 0 ? lossInRange / countInRange : null,
+            testLossOutRange: countOutRange > 0 ? lossOutRange / countOutRange : null,
+            testLossTotal: (lossInRange + lossOutRange) / dataset.test.length,
+            pointsInRange: countInRange,
+            pointsOutRange: countOutRange
+        };
+        
+        revealOptions.evaluated = true;
+        revealOptions.showHeldOut = true;  // Automatically reveal held-out points
+        
+        // Update the checkbox
+        const showHeldOutCheckbox = document.getElementById('showHeldOut');
+        if (showHeldOutCheckbox) showHeldOutCheckbox.checked = true;
+        
+        // Record in history
+        history.testLoss.push({ 
+            step: trainingState.step, 
+            loss: evaluationResults.testLossTotal,
+            inRange: evaluationResults.testLossInRange,
+            outRange: evaluationResults.testLossOutRange
+        });
+        
+        return evaluationResults;
+    }
+    
+    // Shuffle the training order for a new epoch
+    function shuffleTrainingOrder() {
+        dataset.shuffleOrder = [];
+        for (let i = 0; i < dataset.train.length; i++) {
+            dataset.shuffleOrder.push(i);
+        }
+        // Fisher-Yates shuffle
+        for (let i = dataset.shuffleOrder.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [dataset.shuffleOrder[i], dataset.shuffleOrder[j]] = [dataset.shuffleOrder[j], dataset.shuffleOrder[i]];
+        }
+    }
+    
+    // Compute loss over the entire test set
+    function computeTestLoss() {
+        if (!dataset.generated || dataset.test.length === 0) return null;
+        
+        let totalLoss = 0;
+        for (const point of dataset.test) {
+            const fwd = forward(point.x);
+            const error = fwd.yhat - point.y;
+            totalLoss += 0.5 * error * error;
+        }
+        return totalLoss / dataset.test.length;
+    }
+    
+    // Compute loss over the entire training set
+    function computeTrainLoss() {
+        if (!dataset.generated || dataset.train.length === 0) return null;
+        
+        let totalLoss = 0;
+        for (const point of dataset.train) {
+            const fwd = forward(point.x);
+            const error = fwd.yhat - point.y;
+            totalLoss += 0.5 * error * error;
+        }
+        return totalLoss / dataset.train.length;
+    }
+    
+    // Update training range from config and re-filter dataset
+    function updateTrainingRangeFromConfig() {
+        if (!dataset.generated) return;
+        if (!dataset.allTrain || !dataset.allTest) return;
+        
+        // Re-filter training points based on new training range
+        // (allTrain and allTest are preserved from original generation)
+        dataset.train = dataset.allTrain.filter(p => 
+            p.x >= config.trainXMin && p.x <= config.trainXMax
+        );
+        
+        // Update test points' inTrainRange status
+        dataset.test = dataset.allTest.map(p => ({
+            ...p,
+            inTrainRange: p.x >= config.trainXMin && p.x <= config.trainXMax
+        }));
+        
+        // Reset training state (new dataset means starting fresh)
+        dataset.epoch = 0;
+        dataset.stepInEpoch = 0;
+        shuffleTrainingOrder();
+        
+        updatePhaseUI();
+    }
+    
+    // Update training handle positions based on training range
+    function updateTrainingHandlePositions() {
+        const fitCanvas = document.getElementById('fitCanvas');
+        const trainMinHandle = document.getElementById('trainMinHandle');
+        const trainMaxHandle = document.getElementById('trainMaxHandle');
+        
+        if (!fitCanvas || !trainMinHandle || !trainMaxHandle) return;
+        
+        // Calculate plot area (must match drawFitPlot padding)
+        const paddingLeft = 50;
+        const paddingRight = 50;
+        const canvasWidth = fitCanvas.offsetWidth || 520;
+        const plotWidth = canvasWidth - paddingLeft - paddingRight;
+        
+        const dataRange = config.xMax - config.xMin;
+        if (dataRange <= 0) return;
+        
+        // Calculate handle positions based on training range relative to data range
+        const minFrac = (config.trainXMin - config.xMin) / dataRange;
+        const maxFrac = (config.trainXMax - config.xMin) / dataRange;
+        
+        // Position handles (12px handle width, so offset by 12 to center)
+        const minPx = paddingLeft + (minFrac * plotWidth) - 12;
+        const maxPx = paddingLeft + (maxFrac * plotWidth) - 12;
+        
+        trainMinHandle.style.left = minPx + 'px';
+        trainMinHandle.style.right = 'auto';
+        trainMaxHandle.style.left = maxPx + 'px';
+        trainMaxHandle.style.right = 'auto';
+        
+        // Enable handles if data is generated
+        if (dataset.generated) {
+            trainMinHandle.style.opacity = '1';
+            trainMinHandle.style.pointerEvents = 'auto';
+            trainMaxHandle.style.opacity = '1';
+            trainMaxHandle.style.pointerEvents = 'auto';
+        } else {
+            trainMinHandle.style.opacity = '0.5';
+            trainMinHandle.style.pointerEvents = 'none';
+            trainMaxHandle.style.opacity = '0.5';
+            trainMaxHandle.style.pointerEvents = 'none';
+        }
+    }
+    
+    // Update phase UI based on data state
+    function updatePhaseUI() {
+        const phase1 = document.getElementById('phase1Panel');
+        const phase2 = document.getElementById('phase2Panel');
+        const dataStatus = document.getElementById('dataStatus');
+        const epochStatus = document.getElementById('epochStatus');
+        const generateBtn = document.getElementById('generateDataBtn');
+        const newDataBtn = document.getElementById('newDataBtn');
+        const stepsPerEpoch = document.getElementById('stepsPerEpoch');
+        const revealControls = document.getElementById('revealControls');
+        const recipeControls = document.getElementById('recipeControls');
+        const dataSummary = document.getElementById('dataSummary');
+        const toggleRecipeBtn = document.getElementById('toggleRecipeBtn');
+        
+        if (dataset.generated) {
+            // Phase 1: Data is ready - keep header bright, show Edit Recipe button
+            phase1.style.opacity = '1';
+            phase1.style.borderLeftColor = '#28a745';
+            
+            // Hide recipe controls (they get dulled when shown again after collapse)
+            recipeControls.style.display = 'none';
+            recipeControls.style.opacity = '0.6';
+            toggleRecipeBtn.style.display = 'inline-block';
+            toggleRecipeBtn.textContent = '✏️ Edit Recipe';
+            
+            // Show data summary (bright)
+            dataSummary.style.display = 'block';
+            dataSummary.style.opacity = '1';
+            
+            // Update data counts
+            document.getElementById('trainCount').textContent = dataset.train.length;
+            document.getElementById('testCount').textContent = dataset.test.length;
+            
+            // Show training range info
+            const trainRangeLabel = document.getElementById('trainRangeLabel');
+            if (trainRangeLabel) {
+                trainRangeLabel.textContent = `[${config.trainXMin} to ${config.trainXMax}]`;
+            }
+            
+            // Show test range breakdown
+            const testInRange = dataset.test.filter(p => p.inTrainRange).length;
+            const testOutRange = dataset.test.length - testInRange;
+            const testRangeInfo = document.getElementById('testRangeInfo');
+            if (testRangeInfo) {
+                if (testOutRange > 0) {
+                    testRangeInfo.innerHTML = `<span style="color:#ff9800;">${testInRange} in</span> / <span style="color:#dc3545;">${testOutRange} out</span>`;
+                } else {
+                    testRangeInfo.textContent = `(all in range)`;
+                }
+            }
+            
+            // Update summary note
+            const dataSummaryNote = document.getElementById('dataSummaryNote');
+            if (dataSummaryNote) {
+                if (testOutRange > 0) {
+                    dataSummaryNote.innerHTML = `<em>Model trains on <strong>${dataset.train.length}</strong> points in range [${config.trainXMin}, ${config.trainXMax}]. ` +
+                        `<span style="color:#dc3545;"><strong>${testOutRange}</strong> held-out points are outside this range</span> — testing <strong>extrapolation</strong> (can the model generalize beyond its training?).</em>`;
+                } else {
+                    dataSummaryNote.innerHTML = `<em>Model trains on <strong>${dataset.train.length}</strong> points. Held-out data tests if it learned the pattern vs. memorized points.</em>`;
+                }
+            }
+            
+            // Populate data previews (show first 4 points each, compact format)
+            const formatPoint = (p) => `${p.x.toFixed(1)}→${p.y.toFixed(2)}`;
+            
+            const trainPreview = document.getElementById('trainDataPreview');
+            const testPreview = document.getElementById('testDataPreview');
+            
+            // Sort by x for display
+            const sortedTrain = [...dataset.train].sort((a, b) => a.x - b.x);
+            const sortedTest = [...dataset.test].sort((a, b) => a.x - b.x);
+            
+            trainPreview.innerHTML = sortedTrain.slice(0, 4).map(formatPoint).join('<br>') + 
+                (sortedTrain.length > 4 ? `<br><span style="color:#888;">+${sortedTrain.length - 4} more</span>` : '');
+            testPreview.innerHTML = sortedTest.slice(0, 4).map(formatPoint).join('<br>') + 
+                (sortedTest.length > 4 ? `<br><span style="color:#888;">+${sortedTest.length - 4} more</span>` : '');
+            
+            // Update train point count in Fit Plot header
+            const trainPointCount = document.getElementById('trainPointCount');
+            if (trainPointCount) trainPointCount.textContent = dataset.train.length;
+            
+            // Enable training range controls
+            const trainRangeControls = document.getElementById('trainRangeControls');
+            if (trainRangeControls) {
+                trainRangeControls.style.opacity = '1';
+                trainRangeControls.style.pointerEvents = 'auto';
+            }
+            
+            // Enable Phase 3
+            const phase3 = document.getElementById('phase3Panel');
+            if (phase3) {
+                phase3.style.opacity = '1';
+                phase3.style.pointerEvents = 'auto';
+            }
+            
+            dataStatus.innerHTML = `✓ Training data ready`;
+            dataStatus.style.color = '#28a745';
+            
+            // Phase 2: Enable
+            phase2.style.opacity = '1';
+            phase2.style.pointerEvents = 'auto';
+            epochStatus.textContent = `Epoch ${dataset.epoch} • Step ${dataset.stepInEpoch}/${dataset.train.length}`;
+            epochStatus.style.color = '#007bff';
+            
+            if (stepsPerEpoch) stepsPerEpoch.textContent = dataset.train.length;
+            
+            // Enable reveal controls (Assessment)
+            if (revealControls) {
+                revealControls.style.opacity = '1';
+                revealControls.style.pointerEvents = 'auto';
+            }
+        } else {
+            // Phase 1: Active - show recipe controls (bright)
+            phase1.style.opacity = '1';
+            phase1.style.borderLeftColor = '#28a745';
+            
+            // Show recipe controls (bright), hide toggle and summary
+            recipeControls.style.display = 'flex';
+            recipeControls.style.opacity = '1';
+            toggleRecipeBtn.style.display = 'none';
+            dataSummary.style.display = 'none';
+            
+            // Enable Phase 1 inputs
+            document.getElementById('targetFuncInput').disabled = false;
+            document.getElementById('dataXMinInput').disabled = false;
+            document.getElementById('dataXMaxInput').disabled = false;
+            document.getElementById('trainXMinInput').disabled = false;
+            document.getElementById('trainXMaxInput').disabled = false;
+            document.getElementById('totalSamples').disabled = false;
+            document.getElementById('noise').disabled = false;
+            
+            dataStatus.textContent = 'Define a data recipe, then generate training data';
+            dataStatus.style.color = '#888';
+            
+            // Phase 2: Disabled
+            phase2.style.opacity = '0.5';
+            phase2.style.pointerEvents = 'none';
+            epochStatus.textContent = 'Generate training data first...';
+            epochStatus.style.color = '#888';
+            
+            if (stepsPerEpoch) stepsPerEpoch.textContent = '—';
+            
+            // Disable reveal controls
+            if (revealControls) {
+                revealControls.style.opacity = '0.5';
+                revealControls.style.pointerEvents = 'none';
+            }
+            
+            // Reset reveal options
+            revealOptions.showHeldOut = false;
+            revealOptions.showRecipe = false;
+            const showHeldOutCheckbox = document.getElementById('showHeldOut');
+            const showRecipeCheckbox = document.getElementById('showRecipe');
+            if (showHeldOutCheckbox) showHeldOutCheckbox.checked = false;
+            if (showRecipeCheckbox) showRecipeCheckbox.checked = false;
+        }
+    }
+    
+    // Show full data in a popup/modal
+    function showFullDataView() {
+        if (!dataset.generated) return;
+        
+        const formatPoint = (p, i) => `${(i+1).toString().padStart(3, ' ')}. x = ${p.x.toFixed(4).padStart(8, ' ')}  →  y = ${p.y.toFixed(4)}`;
+        
+        // Sort by x for display
+        const sortedTrain = [...dataset.train].sort((a, b) => a.x - b.x);
+        const sortedTest = [...dataset.test].sort((a, b) => a.x - b.x);
+        
+        const trainText = sortedTrain.map((p, i) => formatPoint(p, i)).join('\n');
+        const testText = sortedTest.map((p, i) => formatPoint(p, i)).join('\n');
+        
+        const fullText = `TRAINING DATA (${dataset.train.length} points)\n` +
+            `${'='.repeat(40)}\n` +
+            `${trainText}\n\n` +
+            `HELD-OUT DATA (${dataset.test.length} points)\n` +
+            `${'='.repeat(40)}\n` +
+            `${testText}`;
+        
+        // Create a simple modal
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000;';
+        modal.innerHTML = `
+            <div style="background:white; border-radius:8px; padding:16px; max-width:600px; max-height:80vh; overflow:auto; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h3 style="margin:0; font-size:16px;">Generated Data (input → output)</h3>
+                    <button id="closeDataModal" style="padding:4px 12px; font-size:12px;">Close</button>
+                </div>
+                <pre style="font-size:11px; background:#f5f5f5; padding:12px; border-radius:4px; overflow:auto; max-height:60vh; margin:0;">${fullText}</pre>
+                <div style="margin-top:12px; font-size:10px; color:#666;">
+                    <strong>Note:</strong> The model only sees the training data. Held-out data is used to test if the model learned the underlying pattern (generalization) vs. just memorizing the training points (overfitting).
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal || e.target.id === 'closeDataModal') {
+                document.body.removeChild(modal);
+            }
+        });
+    }
+    
+    // Clear dataset and return to Phase 1
+    function clearDataset() {
+        dataset.generated = false;
+        dataset.train = [];
+        dataset.test = [];
+        dataset.epoch = 0;
+        dataset.stepInEpoch = 0;
+        dataset.shuffleOrder = [];
+        dataset.totalEpochs = 0;
+        
+        // Also reset the model
+        resetModel();
+        updatePhaseUI();
+    }
+    
+    // Reset just the model (keep data)
+    function resetModel() {
+        trainingState.running = false;
+        trainingState.animating = false;
+        trainingState.step = 0;
+        trainingState.totalAdds = 0;
+        trainingState.totalMuls = 0;
+        trainingState.lastUpdateTime = performance.now();
+        trainingState.stepsSinceLastUpdate = 0;
+        trainingState.recentSamples = [];
+        
+        // Reset epoch tracking
+        dataset.epoch = 0;
+        dataset.stepInEpoch = 0;
+        dataset.totalEpochs = 0;
+        if (dataset.generated) {
+            shuffleTrainingOrder();
+        }
+        
+        history.steps = [];
+        history.loss = [];
+        history.testLoss = [];
+        history.avgLoss = [];
+        history.weights = [];
+        
+        // Reset evaluation state - must re-evaluate after model reset
+        revealOptions.evaluated = false;
+        
+        exitComparisonMode();
+        initializeNetwork();
+        
+        // Repopulate weight selectors and recompute loss surface
+        populateWeightSelectors();
+        lossSurfaceCache = null;
+        lossSurfaceTrail = [];
+        
+        if (lossLandscapeAutoMode) {
+            autoSelectInterestingWeights();
+        }
+        computeLossSurface();
+        
+        lossSurfaceStartPosition = {
+            x: getWeightByIndex(lossSurfaceWeightIndices[0]),
+            y: getWeightByIndex(lossSurfaceWeightIndices[1])
+        };
+        lossSurfaceTrail = [lossSurfaceStartPosition];
+        
+        // Compute initial losses if data exists
+        if (dataset.generated) {
+            const trainLoss = computeTrainLoss();
+            const testLoss = computeTestLoss();
+            
+            history.steps.push(0);
+            history.loss.push(trainLoss);
+            history.avgLoss.push(null);
+            history.testLoss.push({ step: 0, loss: testLoss });
+            
+            // Record initial weights
+            const flatWeights = [];
+            network.weights.forEach(layer => {
+                if (Array.isArray(layer[0])) {
+                    layer.forEach(row => row.forEach(w => flatWeights.push(w)));
+                } else {
+                    layer.forEach(w => flatWeights.push(w));
+                }
+            });
+            history.weights.push(flatWeights);
+        }
+        
+        updatePhaseUI();
+        updateUI();
     }
 
     function forward(x) {
@@ -1821,6 +2613,23 @@ function updateParameters() {
     function trainStep() {
         trainingState.stepsSinceLastUpdate++;
         trainingState.step++;
+        
+        // Advance through the dataset
+        if (dataset.generated) {
+            dataset.stepInEpoch++;
+            
+            // Check if we've completed an epoch
+            if (dataset.stepInEpoch >= dataset.train.length) {
+                dataset.epoch++;
+                dataset.totalEpochs++;
+                dataset.stepInEpoch = 0;
+                shuffleTrainingOrder();  // Reshuffle for next epoch
+                
+                // Update epoch display
+                const epochCount = document.getElementById('epochCount');
+                if (epochCount) epochCount.textContent = dataset.epoch;
+            }
+        }
 
         const sample = sampleTrainingPoint();
         const fwd = forward(sample.x);
@@ -1837,6 +2646,12 @@ function updateParameters() {
 
         history.steps.push(trainingState.step);
         history.loss.push(loss);
+        
+        // Evaluate test loss at epoch boundaries (smoother curve)
+        if (dataset.generated && dataset.stepInEpoch === 0) {
+            const testLoss = computeTestLoss();
+            history.testLoss.push({ step: trainingState.step, loss: testLoss, epoch: dataset.epoch });
+        }
         
         // Record current weights (flatten all weights into a single array)
         const flatWeights = [];
@@ -1903,6 +2718,14 @@ function updateParameters() {
             }
             drawLossSurface();
         }
+        
+        // Update epoch status display
+        if (dataset.generated) {
+            const epochStatus = document.getElementById('epochStatus');
+            if (epochStatus) {
+                epochStatus.textContent = `Epoch ${dataset.epoch} • Step ${dataset.stepInEpoch}/${dataset.train.length}`;
+            }
+        }
     }
 
     function runLoop() {
@@ -1937,16 +2760,8 @@ function updateParameters() {
         }
     }
 
+    // Full reset - clears data and returns to Phase 1
     function reset() {
-        trainingState.running = false;
-        trainingState.animating = false;
-        trainingState.step = 0;
-        trainingState.totalAdds = 0;
-        trainingState.totalMuls = 0;
-        trainingState.lastUpdateTime = performance.now();
-        trainingState.stepsSinceLastUpdate = 0;
-        trainingState.recentSamples = [];
-        
         // Stop any ongoing GIF recording
         if (gifCapture.recording || gifCapture.timeout) {
             gifCapture.recording = false;
@@ -1961,54 +2776,13 @@ function updateParameters() {
                 gifBtn.disabled = false;
             }
         }
-
-        history.steps = [];
-        history.loss = [];
-        history.avgLoss = [];
-        history.weights = [];
-
-        // Exit comparison mode but DON'T clear saved runs - allow A/B comparison across different configs
-        exitComparisonMode();
-
+        
+        // Clear dataset and reset model
+        clearDataset();
+        
+        // Compile target function
         compileTargetFunc();
-        initializeNetwork();
         
-        // Repopulate weight selectors and recompute loss surface
-        populateWeightSelectors();
-        lossSurfaceCache = null;
-        lossSurfaceTrail = [];  // Clear optimization trail
-        
-        // Recompute loss surface after reset
-        if (lossLandscapeAutoMode) {
-            autoSelectInterestingWeights();
-        }
-        computeLossSurface();
-        
-        // Record starting position for trail
-        lossSurfaceStartPosition = {
-            x: getWeightByIndex(lossSurfaceWeightIndices[0]),
-            y: getWeightByIndex(lossSurfaceWeightIndices[1])
-        };
-        lossSurfaceTrail = [lossSurfaceStartPosition];
-
-        const sample = sampleTrainingPoint();
-        const fwd = forward(sample.x);
-        const loss = backward(sample.x, sample.y, fwd);
-        history.steps.push(0);
-        history.loss.push(loss);
-        history.avgLoss.push(null);  // Don't show average until we have 10 points
-        
-        // Record initial weights
-        const flatWeights = [];
-        network.weights.forEach(layer => {
-            if (Array.isArray(layer[0])) {
-                layer.forEach(row => row.forEach(w => flatWeights.push(w)));
-            } else {
-                layer.forEach(w => flatWeights.push(w));
-            }
-        });
-        history.weights.push(flatWeights);
-
         updateUI();
     }
 
@@ -2534,14 +3308,14 @@ function updateParameters() {
         
         const html = `
             <div class="equation-block">
-                <div class="equation-title">Forward Pass</div>
+                <div class="equation-title">Forward</div>
                 <div class="math">${forwardHtml}</div>
             </div>
             <div class="equation-block">
-                <div class="equation-title">Backward Pass (Gradients)</div>
+                <div class="equation-title">Backward (Gradients)</div>
                 <div class="math">${backwardHtml}</div>
                 <br>
-                <div class="equation-title" style="margin-top:8px;">Optimizer: ${optName}</div>
+                <div class="equation-title" style="margin-top:8px;">Update: ${optName}</div>
                 <div class="math">${optExplain}</div>
             </div>
         `;
@@ -2557,9 +3331,8 @@ function updateParameters() {
         const h = canvas.height;
         const paddingLeft = 50;
         const paddingRight = 50;
-        const paddingTop = 30;  // Reduced from 50 to move graph up
-        const paddingBottom = 38;  // Reduced to bring axis labels closer to handles
-        const padding = 50;  // Keep for backward compatibility where uniform padding used
+        const paddingTop = 30;
+        const paddingBottom = 38;
 
         ctx.clearRect(0, 0, w, h);
 
@@ -2571,22 +3344,14 @@ function updateParameters() {
         const hasRunB = !!savedRuns.B;
         const comparisonMode = hasRunA && hasRunB;
 
+        // Generate model prediction curve
         const numPoints = 200;
-        const truthPoints = [];
         const modelPoints = [];
         let modelPointsA = null;
         let modelPointsB = null;
 
         for (let i = 0; i <= numPoints; i++) {
             const x = xMin + (i / numPoints) * xRange;
-            let yTruth;
-            try {
-                yTruth = config.targetFunc(x);
-            } catch (e) {
-                yTruth = 0;
-            }
-            truthPoints.push({ x, y: yTruth });
-
             if (comparisonMode) {
                 if (!modelPointsA) modelPointsA = [];
                 if (!modelPointsB) modelPointsB = [];
@@ -2601,19 +3366,46 @@ function updateParameters() {
             }
         }
 
-        let allY = truthPoints.map(p => p.y);
-        if (comparisonMode) {
-            allY = allY.concat(modelPointsA.map(p => p.y)).concat(modelPointsB.map(p => p.y));
-        } else {
-            allY = allY.concat(modelPoints.map(p => p.y));
+        // Collect all Y values for axis range calculation
+        let allY = [];
+        
+        // Always include target function range for consistent axis
+        for (let i = 0; i <= 50; i++) {
+            const x = xMin + (i / 50) * xRange;
+            try { allY.push(config.targetFunc(x)); } catch { /* ignore */ }
         }
-        trainingState.recentSamples.forEach(s => allY.push(s.y));
+        
+        // Include training and test data points in range
+        if (dataset.generated) {
+            dataset.train.forEach(p => allY.push(p.y));
+            dataset.test.forEach(p => allY.push(p.y));
+        }
+        
+        // Include model predictions if they're not too extreme
+        const modelYs = comparisonMode 
+            ? [...modelPointsA.map(p => p.y), ...modelPointsB.map(p => p.y)]
+            : modelPoints.map(p => p.y);
+        const dataYMin = allY.length > 0 ? Math.min(...allY) : -1;
+        const dataYMax = allY.length > 0 ? Math.max(...allY) : 1;
+        const dataYRange = dataYMax - dataYMin || 1;
+        
+        // Only include model Y values if they're within reasonable range (5x data range)
+        modelYs.forEach(y => {
+            if (Number.isFinite(y) && y >= dataYMin - dataYRange * 2 && y <= dataYMax + dataYRange * 2) {
+                allY.push(y);
+            }
+        });
+
         let yMin = Math.min(...allY);
         let yMax = Math.max(...allY);
         if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) {
             yMin = -1;
             yMax = 1;
         }
+        // Add 10% padding
+        const yPad = (yMax - yMin) * 0.1 || 0.5;
+        yMin -= yPad;
+        yMax += yPad;
         const yRange = yMax - yMin || 1;
 
         const plotWidth = w - paddingLeft - paddingRight;
@@ -2621,6 +3413,7 @@ function updateParameters() {
         const toCanvasX = (x) => paddingLeft + (x - xMin) / xRange * plotWidth;
         const toCanvasY = (y) => h - paddingBottom - (y - yMin) / yRange * plotHeight;
 
+        // Draw plot border
         ctx.strokeStyle = '#ccc';
         ctx.lineWidth = 1;
         ctx.strokeRect(paddingLeft, paddingTop, plotWidth, plotHeight);
@@ -2633,13 +3426,11 @@ function updateParameters() {
         for (let i = 0; i <= numXTicks; i++) {
             const xVal = xMin + (i / numXTicks) * xRange;
             const cx = toCanvasX(xVal);
-            // Tick mark
             ctx.strokeStyle = '#ccc';
             ctx.beginPath();
             ctx.moveTo(cx, h - paddingBottom);
             ctx.lineTo(cx, h - paddingBottom + 5);
             ctx.stroke();
-            // Label
             ctx.fillText(xVal.toFixed(1), cx, h - paddingBottom + 16);
         }
 
@@ -2649,28 +3440,99 @@ function updateParameters() {
         for (let i = 0; i <= numYTicks; i++) {
             const yVal = yMin + (i / numYTicks) * yRange;
             const cy = toCanvasY(yVal);
-            // Tick mark
             ctx.strokeStyle = '#ccc';
             ctx.beginPath();
             ctx.moveTo(paddingLeft - 5, cy);
             ctx.lineTo(paddingLeft, cy);
             ctx.stroke();
-            // Label
             ctx.fillText(yVal.toFixed(2), paddingLeft - 8, cy + 3);
         }
 
-        ctx.strokeStyle = '#28a745';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        truthPoints.forEach((p, i) => {
-            const cx = toCanvasX(p.x);
-            const cy = toCanvasY(p.y);
-            if (i === 0) ctx.moveTo(cx, cy);
-            else ctx.lineTo(cx, cy);
-        });
-        ctx.stroke();
+        // Draw data recipe curve (only if revealing or no data yet)
+        if (!dataset.generated || revealOptions.showRecipe) {
+            const recipeAlpha = dataset.generated ? 0.4 : 0.3;
+            ctx.strokeStyle = `rgba(40, 167, 69, ${recipeAlpha})`;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 3]);
+            ctx.beginPath();
+            for (let i = 0; i <= 100; i++) {
+                const x = xMin + (i / 100) * xRange;
+                let y;
+                try { y = config.targetFunc(x); } catch { y = 0; }
+                const cx = toCanvasX(x);
+                const cy = toCanvasY(y);
+                if (i === 0) ctx.moveTo(cx, cy);
+                else ctx.lineTo(cx, cy);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
 
+        // Draw training examples (filled circles) - always shown when data exists
+        if (dataset.generated && dataset.train.length > 0) {
+            ctx.fillStyle = '#007bff';
+            dataset.train.forEach((p) => {
+                const cx = toCanvasX(p.x);
+                const cy = toCanvasY(p.y);
+                ctx.beginPath();
+                ctx.arc(cx, cy, 4, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+
+        // Draw training range indicator (vertical bands showing where model was trained)
+        if (dataset.generated && (config.trainXMin > config.dataXMin || config.trainXMax < config.dataXMax)) {
+            ctx.fillStyle = 'rgba(0, 123, 255, 0.05)';
+            const trainLeft = toCanvasX(config.trainXMin);
+            const trainRight = toCanvasX(config.trainXMax);
+            ctx.fillRect(trainLeft, paddingTop, trainRight - trainLeft, plotHeight);
+            
+            // Draw dashed vertical lines at training boundaries
+            ctx.strokeStyle = 'rgba(0, 123, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(trainLeft, paddingTop);
+            ctx.lineTo(trainLeft, h - paddingBottom);
+            ctx.moveTo(trainRight, paddingTop);
+            ctx.lineTo(trainRight, h - paddingBottom);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // Draw held-out examples - only if revealed
+        if (dataset.generated && dataset.test.length > 0 && revealOptions.showHeldOut) {
+            dataset.test.forEach((p) => {
+                const cx = toCanvasX(p.x);
+                const cy = toCanvasY(p.y);
+                
+                if (p.inTrainRange) {
+                    // In-range test points: orange diamonds (interpolation test)
+                    ctx.strokeStyle = '#ff9800';
+                    ctx.lineWidth = 2;
+                    ctx.fillStyle = 'rgba(255, 152, 0, 0.3)';
+                } else {
+                    // Out-of-range test points: red diamonds (extrapolation test)
+                    ctx.strokeStyle = '#dc3545';
+                    ctx.lineWidth = 2;
+                    ctx.fillStyle = 'rgba(220, 53, 69, 0.3)';
+                }
+                
+                // Draw diamond shape
+                ctx.beginPath();
+                ctx.moveTo(cx, cy - 5);
+                ctx.lineTo(cx + 4, cy);
+                ctx.lineTo(cx, cy + 5);
+                ctx.lineTo(cx - 4, cy);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+
+        // Draw model prediction curve
         if (comparisonMode) {
+            // Model A - blue
             ctx.strokeStyle = '#007bff';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -2682,6 +3544,7 @@ function updateParameters() {
             });
             ctx.stroke();
 
+            // Model B - orange
             ctx.strokeStyle = '#ff9800';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -2693,8 +3556,9 @@ function updateParameters() {
             });
             ctx.stroke();
         } else {
-            ctx.strokeStyle = '#007bff';
-            ctx.lineWidth = 2;
+            // Single model - purple
+            ctx.strokeStyle = '#6f42c1';
+            ctx.lineWidth = 2.5;
             ctx.beginPath();
             modelPoints.forEach((p, i) => {
                 const cx = toCanvasX(p.x);
@@ -2705,15 +3569,7 @@ function updateParameters() {
             ctx.stroke();
         }
 
-        ctx.fillStyle = 'rgba(220, 53, 69, 0.5)';
-        trainingState.recentSamples.forEach((s) => {
-            const cx = toCanvasX(s.x);
-            const cy = toCanvasY(s.y);
-            ctx.beginPath();
-            ctx.arc(cx, cy, 2.5, 0, 2 * Math.PI);
-            ctx.fill();
-        });
-
+        // Axis labels
         ctx.font = '11px sans-serif';
         ctx.fillStyle = '#666';
         ctx.textAlign = 'center';
@@ -2724,51 +3580,115 @@ function updateParameters() {
         ctx.fillText('y', 0, 0);
         ctx.restore();
 
-        // Single row legend at top
-        ctx.font = '11px sans-serif';
+        // Legend
+        ctx.font = '10px sans-serif';
         ctx.textAlign = 'left';
         const legendY = 14;
-        let legendX = w - 280;
+        let legendX = w - 350;
 
-        // f(x) truth - green line
-        ctx.strokeStyle = '#28a745';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(legendX, legendY);
-        ctx.lineTo(legendX + 16, legendY);
-        ctx.stroke();
-        ctx.fillStyle = '#333';
-        ctx.fillText('f(x)', legendX + 20, legendY + 4);
-        legendX += 50;
+        if (dataset.generated) {
+            // Training examples - blue circle
+            ctx.fillStyle = '#007bff';
+            ctx.beginPath();
+            ctx.arc(legendX + 4, legendY, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#333';
+            ctx.fillText(`Training (${dataset.train.length})`, legendX + 12, legendY + 3);
+            legendX += 75;
 
-        // ŷ(x) model - blue line
-        ctx.strokeStyle = '#007bff';
-        ctx.beginPath();
-        ctx.moveTo(legendX, legendY);
-        ctx.lineTo(legendX + 16, legendY);
-        ctx.stroke();
-        ctx.fillStyle = '#333';
-        ctx.fillText('ŷ(x)', legendX + 20, legendY + 4);
-        legendX += 50;
+            // Held-out examples (only if revealed)
+            if (revealOptions.showHeldOut) {
+                // In-range test points (interpolation)
+                const inRangeCount = dataset.test.filter(p => p.inTrainRange).length;
+                const outRangeCount = dataset.test.length - inRangeCount;
+                
+                if (inRangeCount > 0) {
+                    ctx.strokeStyle = '#ff9800';
+                    ctx.lineWidth = 1.5;
+                    ctx.fillStyle = 'rgba(255, 152, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(legendX + 4, legendY - 4);
+                    ctx.lineTo(legendX + 8, legendY);
+                    ctx.lineTo(legendX + 4, legendY + 4);
+                    ctx.lineTo(legendX, legendY);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#333';
+                    ctx.fillText(`Held (${inRangeCount})`, legendX + 12, legendY + 3);
+                    legendX += 55;
+                }
+                
+                // Out-of-range test points (extrapolation)
+                if (outRangeCount > 0) {
+                    ctx.strokeStyle = '#dc3545';
+                    ctx.lineWidth = 1.5;
+                    ctx.fillStyle = 'rgba(220, 53, 69, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(legendX + 4, legendY - 4);
+                    ctx.lineTo(legendX + 8, legendY);
+                    ctx.lineTo(legendX + 4, legendY + 4);
+                    ctx.lineTo(legendX, legendY);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#333';
+                    ctx.fillText(`Extrap (${outRangeCount})`, legendX + 12, legendY + 3);
+                    legendX += 60;
+                }
+            }
+            
+            // Data recipe - green dashed (only if revealed)
+            if (revealOptions.showRecipe) {
+                ctx.strokeStyle = 'rgba(40, 167, 69, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3, 2]);
+                ctx.beginPath();
+                ctx.moveTo(legendX, legendY);
+                ctx.lineTo(legendX + 16, legendY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#333';
+                ctx.fillText('Recipe', legendX + 20, legendY + 3);
+                legendX += 55;
+            }
+        } else {
+            // No data yet - show recipe preview
+            ctx.strokeStyle = 'rgba(40, 167, 69, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([3, 2]);
+            ctx.beginPath();
+            ctx.moveTo(legendX, legendY);
+            ctx.lineTo(legendX + 16, legendY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#333';
+            ctx.fillText('Recipe preview', legendX + 20, legendY + 3);
+            legendX += 95;
+        }
 
-        // samples - red dot
-        ctx.fillStyle = 'rgba(220, 53, 69, 0.5)';
-        ctx.beginPath();
-        ctx.arc(legendX + 4, legendY, 3, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.fillStyle = '#333';
-        ctx.fillText('samples', legendX + 12, legendY + 4);
+        // Model prediction - purple line
+        if (dataset.generated) {
+            ctx.strokeStyle = '#6f42c1';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(legendX, legendY);
+            ctx.lineTo(legendX + 16, legendY);
+            ctx.stroke();
+            ctx.fillStyle = '#333';
+            ctx.fillText('Model', legendX + 20, legendY + 3);
+        }
 
         if (comparisonMode) {
-            // Add A/B labels for comparison mode
-            legendX += 60;
+            legendX += 55;
             ctx.strokeStyle = '#ff9800';
             ctx.beginPath();
             ctx.moveTo(legendX, legendY);
             ctx.lineTo(legendX + 16, legendY);
             ctx.stroke();
             ctx.fillStyle = '#333';
-            ctx.fillText('ŷ_B', legendX + 20, legendY + 4);
+            ctx.fillText('Model B', legendX + 20, legendY + 3);
         }
     }
 
@@ -3010,18 +3930,13 @@ function drawTrainingTrace() {
         maxSteps = history.steps.length > 0 ? history.steps[history.steps.length - 1] : 0;
     }
     
-    // Show view handle when paused and have enough data to zoom
+    // Show view handle when we have enough data to zoom
     const viewHandle = document.getElementById('traceViewHandle');
     const hasEnoughData = comparisonMode ? maxSteps > 50 : history.steps.length > 50;
     if (viewHandle) {
-        const canZoom = !trainingState.running && hasEnoughData;
-        if (canZoom) {
+        if (hasEnoughData) {
             viewHandle.style.display = 'flex';
             viewHandle.style.opacity = '0.9';
-        } else if (hasEnoughData) {
-            // Show but grayed out when running
-            viewHandle.style.display = 'flex';
-            viewHandle.style.opacity = '0.3';
         } else {
             viewHandle.style.display = 'none';
         }
@@ -3065,31 +3980,49 @@ function drawTrainingTrace() {
 
     if (showLoss) {
         series.push({
-            name: 'Loss',
+            name: 'Train Loss',
             steps: viewSteps,
             data: viewLoss,
-            color: '#dc3545',
+            color: '#28a745',  // Green for training (matches train points)
             lineWidth: 2
         });
     }
 
     if (showAvgLoss) {
         series.push({
-            name: 'Avg Loss (100)',
+            name: 'Avg Loss',
             steps: viewSteps,
             data: viewAvgLoss,
             color: '#007bff',
             lineWidth: 3
         });
     }
-
+    
     const plotWidth  = w - paddingLeft - paddingRight;
     const plotHeight = h - paddingTop - paddingBottom;
 
-    // X axis range (use defaults if no data)
+    // X axis range (use defaults if no data) - declare early so test loss filter can use it
     const stepMin = viewSteps.length > 0 ? viewSteps[0] : 0;
     const stepMax = viewSteps.length > 0 ? viewSteps[viewSteps.length - 1] : 100;
     const stepRange = stepMax - stepMin || 100;
+
+    // Add test loss series if evaluated (only show after clicking Evaluate button)
+    if (showLoss && history.testLoss.length > 0 && revealOptions.evaluated) {
+        // Filter test loss to view window
+        const viewTestLoss = history.testLoss.filter(t => 
+            t.step >= stepMin && (traceViewEndStep === null || t.step <= traceViewEndStep)
+        );
+        if (viewTestLoss.length > 0) {
+            series.push({
+                name: 'Test Loss',
+                steps: viewTestLoss.map(t => t.step),
+                data: viewTestLoss.map(t => t.loss),
+                color: '#ff9800',  // Orange for test (matches test points)
+                lineWidth: 2,
+                dashed: true  // Dashed line to distinguish from train
+            });
+        }
+    }
 
     // Y axis range for loss (supports log scale) - ALWAYS starts from 0 in linear mode
     let yMin = 0;  // Loss always starts from 0
@@ -3232,6 +4165,11 @@ function drawTrainingTrace() {
     series.forEach(s => {
         ctx.strokeStyle = s.color;
         ctx.lineWidth = s.lineWidth;
+        if (s.dashed) {
+            ctx.setLineDash([5, 3]);
+        } else {
+            ctx.setLineDash([]);
+        }
         ctx.beginPath();
         let started = false;
         for (let i = 0; i < s.data.length; i++) {
@@ -3243,6 +4181,7 @@ function drawTrainingTrace() {
             else ctx.lineTo(x, y);
         }
         ctx.stroke();
+        ctx.setLineDash([]);
     });
 
     // Draw weight traces (on right Y axis)
@@ -3814,11 +4753,66 @@ function drawTrainingTrace() {
         try {
             document.getElementById('stepCount').textContent = trainingState.step;
             const lastLoss = history.loss[history.loss.length - 1];
-            document.getElementById('lossValue').textContent =
-                Number.isFinite(lastLoss) ? lastLoss.toExponential(2) : '—';
+            const lossValue = document.getElementById('lossValue');
+            if (lossValue) {
+                lossValue.textContent = Number.isFinite(lastLoss) ? lastLoss.toExponential(2) : '—';
+            }
 
             document.getElementById('totalAdds').textContent = trainingState.totalAdds.toLocaleString();
             document.getElementById('totalMuls').textContent = trainingState.totalMuls.toLocaleString();
+            
+            // Update total ops display
+            const totalOps = trainingState.totalAdds + trainingState.totalMuls;
+            const totalOpsDisplay = document.getElementById('totalOpsDisplay');
+            if (totalOpsDisplay) {
+                if (totalOps >= 1e9) {
+                    totalOpsDisplay.textContent = (totalOps / 1e9).toFixed(1) + 'B';
+                } else if (totalOps >= 1e6) {
+                    totalOpsDisplay.textContent = (totalOps / 1e6).toFixed(1) + 'M';
+                } else if (totalOps >= 1e3) {
+                    totalOpsDisplay.textContent = (totalOps / 1e3).toFixed(1) + 'K';
+                } else {
+                    totalOpsDisplay.textContent = totalOps.toString();
+                }
+            }
+            
+            // Update epoch and step counters
+            const epochCountEl = document.getElementById('epochCount');
+            if (epochCountEl) {
+                epochCountEl.textContent = dataset.epoch;
+            }
+            
+            // Update train/test loss displays
+            const trainLossEl = document.getElementById('trainLossValue');
+            const testLossEl = document.getElementById('testLossValue');
+            
+            if (trainLossEl) {
+                trainLossEl.textContent = Number.isFinite(lastLoss) ? lastLoss.toExponential(2) : '—';
+            }
+            
+            // Only show test loss after evaluation button is clicked
+            if (testLossEl && history.testLoss.length > 0 && revealOptions.evaluated) {
+                const lastTestLoss = history.testLoss[history.testLoss.length - 1].loss;
+                testLossEl.textContent = Number.isFinite(lastTestLoss) ? lastTestLoss.toExponential(2) : '—';
+                
+                // Highlight overfitting: test loss > train loss significantly
+                if (lastTestLoss > lastLoss * 1.5) {
+                    testLossEl.style.color = '#dc3545';  // Red warning
+                } else {
+                    testLossEl.style.color = '#ff9800';  // Normal orange
+                }
+            } else if (testLossEl) {
+                testLossEl.textContent = '—';
+                testLossEl.style.color = '#888';
+            }
+            
+            // Update epoch status display
+            if (dataset.generated) {
+                const epochStatus = document.getElementById('epochStatus');
+                if (epochStatus) {
+                    epochStatus.textContent = `Epoch ${dataset.epoch} • Step ${dataset.stepInEpoch}/${dataset.train.length}`;
+                }
+            }
             
             // Calculate delta-loss (change in rolling average over last window)
             const deltaLossEl = document.getElementById('deltaLossValue');
@@ -3973,14 +4967,282 @@ function drawTrainingTrace() {
         const targetFuncInput = document.getElementById('targetFuncInput');
         targetFuncInput.addEventListener('change', () => {
             compileTargetFunc();
-            reset();
+            drawFitPlot();  // Update preview
         });
         targetFuncInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 compileTargetFunc();
-                reset();
+                drawFitPlot();
             }
         });
+        
+        // Phase 1: Data generation controls
+        const totalSamplesSlider = document.getElementById('totalSamples');
+        const totalSamplesValue = document.getElementById('totalSamplesValue');
+        if (totalSamplesSlider && totalSamplesValue) {
+            totalSamplesSlider.addEventListener('input', () => {
+                config.totalSamples = parseInt(totalSamplesSlider.value);
+                totalSamplesValue.textContent = config.totalSamples;
+            });
+            config.totalSamples = parseInt(totalSamplesSlider.value);
+        }
+        
+        // Data Range inputs for Phase 1
+        const dataXMinInput = document.getElementById('dataXMinInput');
+        const dataXMaxInput = document.getElementById('dataXMaxInput');
+        const trainXMinInput = document.getElementById('trainXMinInput');
+        const trainXMaxInput = document.getElementById('trainXMaxInput');
+        
+        if (dataXMinInput && dataXMaxInput) {
+            dataXMinInput.addEventListener('change', () => {
+                config.dataXMin = parseFloat(dataXMinInput.value);
+                config.xMin = config.dataXMin;
+                // Ensure train range is within data range
+                if (config.trainXMin < config.dataXMin) {
+                    config.trainXMin = config.dataXMin;
+                    trainXMinInput.value = config.trainXMin;
+                }
+                drawFitPlot();
+            });
+            dataXMaxInput.addEventListener('change', () => {
+                config.dataXMax = parseFloat(dataXMaxInput.value);
+                config.xMax = config.dataXMax;
+                // Ensure train range is within data range
+                if (config.trainXMax > config.dataXMax) {
+                    config.trainXMax = config.dataXMax;
+                    trainXMaxInput.value = config.trainXMax;
+                }
+                drawFitPlot();
+            });
+            config.dataXMin = parseFloat(dataXMinInput.value);
+            config.dataXMax = parseFloat(dataXMaxInput.value);
+            config.xMin = config.dataXMin;
+            config.xMax = config.dataXMax;
+        }
+        
+        if (trainXMinInput && trainXMaxInput) {
+            trainXMinInput.addEventListener('change', () => {
+                config.trainXMin = parseFloat(trainXMinInput.value);
+                // Clamp to data range
+                config.trainXMin = Math.max(config.dataXMin, Math.min(config.dataXMax, config.trainXMin));
+                trainXMinInput.value = config.trainXMin;
+                drawFitPlot();
+            });
+            trainXMaxInput.addEventListener('change', () => {
+                config.trainXMax = parseFloat(trainXMaxInput.value);
+                // Clamp to data range
+                config.trainXMax = Math.max(config.dataXMin, Math.min(config.dataXMax, config.trainXMax));
+                trainXMaxInput.value = config.trainXMax;
+                drawFitPlot();
+            });
+            config.trainXMin = parseFloat(trainXMinInput.value);
+            config.trainXMax = parseFloat(trainXMaxInput.value);
+        }
+        
+        // Evaluate button
+        const evaluateBtn = document.getElementById('evaluateBtn');
+        const evalResults = document.getElementById('evalResults');
+        if (evaluateBtn) {
+            evaluateBtn.addEventListener('click', () => {
+                if (!dataset.generated) {
+                    alert('Generate training data first!');
+                    return;
+                }
+                
+                const results = runEvaluation();
+                
+                if (results && evalResults) {
+                    let resultText = `Total: ${results.testLossTotal.toFixed(4)}`;
+                    if (results.pointsInRange > 0) {
+                        resultText += ` | In-range: ${results.testLossInRange.toFixed(4)}`;
+                    }
+                    if (results.pointsOutRange > 0) {
+                        resultText += ` | Out-range: ${results.testLossOutRange.toFixed(4)}`;
+                        // Highlight if extrapolation is much worse
+                        if (results.testLossOutRange > results.testLossInRange * 2) {
+                            resultText += ' ⚠️';
+                        }
+                    }
+                    evalResults.textContent = resultText;
+                    evalResults.style.display = 'inline';
+                    evalResults.style.color = '#ff9800';
+                }
+                
+                updateUI();
+            });
+        }
+        
+        // Generate Data button
+        const generateDataBtn = document.getElementById('generateDataBtn');
+        if (generateDataBtn) {
+            generateDataBtn.addEventListener('click', () => {
+                compileTargetFunc();
+                
+                // Set training range to 95% of data range (hints at restriction possibility)
+                const dataRange = config.dataXMax - config.dataXMin;
+                const margin = dataRange * 0.025;  // 2.5% margin on each side
+                config.trainXMin = Math.round((config.dataXMin + margin) * 100) / 100;
+                config.trainXMax = Math.round((config.dataXMax - margin) * 100) / 100;
+                document.getElementById('trainXMinInput').value = config.trainXMin;
+                document.getElementById('trainXMaxInput').value = config.trainXMax;
+                
+                generateDataset();
+                resetModel();  // Initialize model for new data
+                updateUI();
+            });
+        }
+        
+        // New Data button (returns to Phase 1)
+        const newDataBtn = document.getElementById('newDataBtn');
+        if (newDataBtn) {
+            newDataBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Don't trigger header toggle
+                clearDataset();
+                updateUI();
+            });
+        }
+        
+        // Data summary accordion toggle
+        const dataSummaryHeader = document.getElementById('dataSummaryHeader');
+        if (dataSummaryHeader) {
+            dataSummaryHeader.addEventListener('click', (e) => {
+                // Don't toggle if clicking the New button
+                if (e.target.id === 'newDataBtn') return;
+                
+                const content = document.getElementById('dataSummaryContent');
+                const toggle = document.getElementById('dataSummaryToggle');
+                if (content && toggle) {
+                    const isHidden = content.style.display === 'none';
+                    content.style.display = isHidden ? 'block' : 'none';
+                    toggle.textContent = isHidden ? '▼' : '▶';
+                }
+            });
+        }
+        
+        // Learning Guide sidebar toggle (sidebar is visible by default)
+        const guideToggle = document.getElementById('guideToggle');
+        const guideSidebar = document.getElementById('guideSidebar');
+        
+        if (guideToggle && guideSidebar) {
+            guideToggle.addEventListener('click', () => {
+                const isHidden = guideSidebar.style.display === 'none';
+                guideSidebar.style.display = isHidden ? '' : 'none';  // Use '' to restore default flex behavior
+                guideToggle.style.background = isHidden ? '#138496' : '#17a2b8';
+                guideToggle.textContent = isHidden ? 'Hide Guide ◀' : '📖 Show Guide';
+            });
+        }
+        
+        // Reset Model button (keeps data, reinitializes weights)
+        const resetModelBtn = document.getElementById('resetModelBtn');
+        if (resetModelBtn) {
+            resetModelBtn.addEventListener('click', () => {
+                resetModel();
+                document.getElementById('runBtn').textContent = 'Run';
+                updateUI();
+            });
+        }
+        
+        // Run Epoch button
+        const runEpochBtn = document.getElementById('runEpochBtn');
+        if (runEpochBtn) {
+            runEpochBtn.addEventListener('click', async () => {
+                if (!dataset.generated) {
+                    alert('Generate examples first!');
+                    return;
+                }
+                
+                exitComparisonMode();
+                runEpochBtn.disabled = true;
+                runEpochBtn.textContent = 'Running...';
+                
+                // Run one complete epoch
+                const stepsPerEpoch = dataset.train.length;
+                const startStep = dataset.stepInEpoch;
+                const stepsRemaining = stepsPerEpoch - startStep;
+                
+                for (let i = 0; i < stepsRemaining; i++) {
+                    trainStep();
+                    
+                    // Update UI periodically
+                    if (i % 10 === 0) {
+                        updateUI();
+                        await new Promise(r => setTimeout(r, 0));  // Allow UI to update
+                    }
+                }
+                
+                runEpochBtn.disabled = false;
+                runEpochBtn.textContent = 'Run Epoch';
+                updateUI();
+            });
+        }
+        
+        // Reveal controls (Assessment phase)
+        const showHeldOutCheckbox = document.getElementById('showHeldOut');
+        const showRecipeCheckbox = document.getElementById('showRecipe');
+        
+        if (showHeldOutCheckbox) {
+            showHeldOutCheckbox.addEventListener('change', () => {
+                revealOptions.showHeldOut = showHeldOutCheckbox.checked;
+                drawFitPlot();
+                // Also evaluate test loss when revealing held-out
+                if (revealOptions.showHeldOut && dataset.generated) {
+                    const testLoss = computeTestLoss();
+                    if (history.testLoss.length === 0 || 
+                        history.testLoss[history.testLoss.length - 1].step !== trainingState.step) {
+                        history.testLoss.push({ step: trainingState.step, loss: testLoss });
+                    }
+                    updateUI();
+                }
+            });
+        }
+        
+        if (showRecipeCheckbox) {
+            showRecipeCheckbox.addEventListener('change', () => {
+                revealOptions.showRecipe = showRecipeCheckbox.checked;
+                drawFitPlot();
+            });
+        }
+        
+        // Recipe accordion toggle
+        const toggleRecipeBtn = document.getElementById('toggleRecipeBtn');
+        const recipeControls = document.getElementById('recipeControls');
+        if (toggleRecipeBtn && recipeControls) {
+            toggleRecipeBtn.addEventListener('click', () => {
+                const isHidden = recipeControls.style.display === 'none';
+                recipeControls.style.display = isHidden ? 'flex' : 'none';
+                recipeControls.style.opacity = isHidden ? '1' : '0.6';  // Bright when editing
+                toggleRecipeBtn.textContent = isHidden ? '▼ Hide Recipe' : '✏️ Edit Recipe';
+            });
+        }
+        
+        // View full data button
+        const viewFullDataBtn = document.getElementById('viewFullDataBtn');
+        if (viewFullDataBtn) {
+            viewFullDataBtn.addEventListener('click', showFullDataView);
+        }
+        
+        // Equations accordion toggle
+        const toggleEquationsBtn = document.getElementById('toggleEquationsBtn');
+        const equationsDiv = document.getElementById('equationsDiv');
+        const equationsHeader = document.getElementById('equationsHeader');
+        
+        if (toggleEquationsBtn && equationsDiv) {
+            const toggleEquations = () => {
+                const isHidden = equationsDiv.style.display === 'none';
+                equationsDiv.style.display = isHidden ? 'grid' : 'none';
+                toggleEquationsBtn.textContent = isHidden ? '▼ Collapse' : '▶ Expand';
+            };
+            
+            toggleEquationsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleEquations();
+            });
+            
+            // Also allow clicking on the header
+            if (equationsHeader) {
+                equationsHeader.addEventListener('click', toggleEquations);
+            }
+        }
 
         const activationSelector = document.getElementById('activationSelector');
         activationSelector.addEventListener('click', (e) => {
@@ -4200,7 +5462,8 @@ function drawTrainingTrace() {
                 document.getElementById('numLayers').value = newVal;
                 document.getElementById('numLayersValue').textContent = newVal;
                 document.getElementById('networkLayersDisplay').textContent = newVal;
-                reset();
+                resetModel();
+                updateUI();
             }
         }, () => ({
             canDecrease: network.numLayers > 1,  // Can't go below 1 layer
@@ -4216,41 +5479,45 @@ function drawTrainingTrace() {
                 document.getElementById('hiddenSize').value = newVal;
                 document.getElementById('hiddenSizeValue').textContent = newVal;
                 document.getElementById('networkSizeDisplay').textContent = newVal;
-                reset();
+                resetModel();
+                updateUI();
             }
         }, () => ({
             canDecrease: network.hiddenSize > 2,   // Can't go below 2 neurons
             canIncrease: network.hiddenSize < 16   // Can't go above 16 neurons
         }));
         
-        // Drag handles for x-range
-        // Time-based: each tick changes value by 0.2
-        setupDragHandle('xMinHandle', 'horizontal', (delta) => {
+        // Training range handles - restrict training to subset of data range
+        // These handles position relative to the data range boundaries
+        // Handles can slide inward to restrict training, or back outward to the full data range
+        setupDragHandle('trainMinHandle', 'horizontal', (delta) => {
+            if (!dataset.generated) return;
             const change = delta > 0 ? 0.2 : -0.2;
-            const newVal = config.xMin + change;
-            const clampedVal = Math.max(-5, Math.min(config.xMax - 0.5, newVal));
-            config.xMin = Math.round(clampedVal * 10) / 10;
-            document.getElementById('xMin').value = config.xMin;
-            document.getElementById('xMinLabel').textContent = config.xMin.toFixed(1);
-            document.getElementById('xMinDisplay').textContent = config.xMin.toFixed(1);
+            const newVal = config.trainXMin + change;
+            // Can slide from data min to (trainXMax - 0.5)
+            const clampedVal = Math.max(config.dataXMin, Math.min(config.trainXMax - 0.5, newVal));
+            config.trainXMin = Math.round(clampedVal * 10) / 10;
+            updateTrainingRangeFromConfig();
+            updateTrainingHandlePositions();
             drawFitPlot();
         }, () => ({
-            canDecrease: config.xMin > -5,              // Can't go below -5
-            canIncrease: config.xMin < config.xMax - 0.5 // Can't overlap with xMax
+            canDecrease: config.trainXMin > config.dataXMin,           // Can move back toward data min
+            canIncrease: config.trainXMin < config.trainXMax - 0.5     // Can't overlap with trainMax
         }));
         
-        setupDragHandle('xMaxHandle', 'horizontal', (delta) => {
+        setupDragHandle('trainMaxHandle', 'horizontal', (delta) => {
+            if (!dataset.generated) return;
             const change = delta > 0 ? 0.2 : -0.2;
-            const newVal = config.xMax + change;
-            const clampedVal = Math.max(config.xMin + 0.5, Math.min(5, newVal));
-            config.xMax = Math.round(clampedVal * 10) / 10;
-            document.getElementById('xMax').value = config.xMax;
-            document.getElementById('xMaxLabel').textContent = config.xMax.toFixed(1);
-            document.getElementById('xMaxDisplay').textContent = config.xMax.toFixed(1);
+            const newVal = config.trainXMax + change;
+            // Can slide from (trainXMin + 0.5) to data max
+            const clampedVal = Math.max(config.trainXMin + 0.5, Math.min(config.dataXMax, newVal));
+            config.trainXMax = Math.round(clampedVal * 10) / 10;
+            updateTrainingRangeFromConfig();
+            updateTrainingHandlePositions();
             drawFitPlot();
         }, () => ({
-            canDecrease: config.xMax > config.xMin + 0.5, // Can't overlap with xMin
-            canIncrease: config.xMax < 5                   // Can't go above 5
+            canDecrease: config.trainXMax > config.trainXMin + 0.5,    // Can't overlap with trainMin
+            canIncrease: config.trainXMax < config.dataXMax            // Can move back toward data max
         }));
         
         // Training Trace view handle - controls how much of the history to show
