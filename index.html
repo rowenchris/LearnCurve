@@ -295,10 +295,11 @@
             .container {
                 padding: 10px;
                 max-width: 100%;
-                grid-template-columns: 1fr 250px;
+                grid-template-columns: 1fr 220px;
             }
             #guideSidebar {
                 font-size: 9px;
+                width: 220px;
             }
             .grid {
                 grid-template-columns: 1fr;
@@ -309,7 +310,7 @@
                 margin-bottom: 10px;
             }
             .panel h2 {
-                font-size: 15px;
+                font-size: 14px;
             }
             #networkCanvas {
                 max-width: 100%;
@@ -336,6 +337,47 @@
             }
         }
         
+        /* Tablet portrait - sidebar moves to bottom */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+            }
+            #mainContent {
+                grid-row: 1;
+            }
+            #guideSidebar {
+                grid-column: 1;
+                grid-row: 2;
+                width: 100%;
+                max-width: 100%;
+                max-height: none;
+                position: static;
+                margin-top: 16px;
+                font-size: 11px;
+            }
+            #guideSidebar h3 {
+                font-size: 15px;
+            }
+            #guideSidebar h4 {
+                font-size: 13px;
+            }
+            #guideToggle {
+                display: none;
+            }
+            /* Phase panel controls should stack */
+            #phase1Panel > div, #phase2Panel > div {
+                flex-wrap: wrap;
+            }
+            /* Smaller fonts for cramped controls */
+            #phase1Panel, #phase2Panel, #phase3Panel {
+                font-size: 11px;
+            }
+            #phase1Panel label, #phase2Panel label {
+                font-size: 10px;
+            }
+        }
+        
         /* iPhone and small mobile */
         @media (max-width: 480px) {
             body {
@@ -348,10 +390,15 @@
                 grid-template-columns: 1fr;
             }
             #guideSidebar {
-                display: none;
+                font-size: 10px;
+                padding: 10px;
+                max-height: none;
             }
-            #guideToggle {
-                display: none;
+            #guideSidebar h3 {
+                font-size: 14px;
+            }
+            #guideSidebar h4 {
+                font-size: 12px;
             }
             h1 {
                 font-size: 18px;
@@ -410,27 +457,21 @@
                 max-height: 250px;
             }
             /* Hide drag handles on mobile - they don't work well with touch */
-            #sizeHandle, #layersHandle, #trainMinHandle, #trainMaxHandle {
-                display: none;
+            #sizeHandle, #layersHandle, #trainMinHandle, #trainMaxHandle, #traceViewHandle {
+                display: none !important;
             }
-            /* Show hidden sliders on mobile for layer/size control */
-            #numLayers, #hiddenSize {
-                display: inline-block !important;
-                width: 80px;
-                margin: 0 5px;
-            }
-            #numLayersValue, #hiddenSizeValue {
-                display: inline !important;
-            }
-            /* Add mobile-only slider container */
+            /* Show mobile control containers */
             .mobile-sliders {
                 display: flex !important;
                 flex-wrap: wrap;
-                gap: 10px;
-                margin-bottom: 10px;
-                padding: 8px;
+                gap: 8px;
+                padding: 6px 8px;
                 background: #f0f4f8;
                 border-radius: 4px;
+            }
+            /* Hide desktop-only train range controls header inputs on mobile */
+            #trainRangeControls {
+                display: none !important;
             }
             /* Make activation buttons stack */
             #networkActivation {
@@ -466,7 +507,7 @@
                     <span style="font-size:12px; font-weight:bold; color:#28a745;">① CREATE TRAINING DATA</span>
                     <button id="toggleRecipeBtn" style="padding:4px 12px; font-size:11px; background:#28a745; font-weight:bold; display:none;" title="Edit data recipe and regenerate">✏️ Edit Recipe</button>
                 </div>
-                <span id="dataStatus" style="font-size:10px; color:#888;">Define a data recipe, then generate training data</span>
+                <span id="dataStatus" style="font-size:10px; color:#555;">Define a data recipe, then generate training data</span>
             </div>
             
             <!-- Recipe Controls - single row -->
@@ -479,7 +520,7 @@
                 
                 <!-- Data Range -->
                 <div style="display:flex; align-items:center; gap:3px;">
-                    <label style="font-size:10px; color:#555;">x:</label>
+                    <label style="font-size:10px; color:#333;">x:</label>
                     <input type="number" id="dataXMinInput" value="-3" step="0.5" style="width:38px; font-size:10px; padding:2px;">
                     <span style="font-size:9px;">to</span>
                     <input type="number" id="dataXMaxInput" value="3" step="0.5" style="width:38px; font-size:10px; padding:2px;">
@@ -487,14 +528,14 @@
                 
                 <!-- Count -->
                 <div style="display:flex; align-items:center; gap:3px;">
-                    <label style="font-size:10px; color:#555;" title="Total number of data points to generate">Samples:</label>
+                    <label style="font-size:10px; color:#333;" title="Total number of data points to generate">Samples:</label>
                     <input type="range" id="totalSamples" min="20" max="500" step="10" value="100" style="width:80px;">
                     <span class="value" id="totalSamplesValue" style="font-size:10px; min-width:24px;">100</span>
                 </div>
                 
                 <!-- Noise -->
                 <div style="display:flex; align-items:center; gap:3px;">
-                    <label style="font-size:10px; color:#555;" title="Noise level - random variation added to y values">Noise:</label>
+                    <label style="font-size:10px; color:#333;" title="Noise level - random variation added to y values">Noise:</label>
                     <input type="range" id="noise" min="0" max="1" step="0.01" value="0.02" style="width:80px;">
                     <span class="value" id="noiseValue" style="font-size:10px; min-width:24px;">0.02</span>
                 </div>
@@ -510,19 +551,19 @@
                     <span id="dataSummaryToggle" style="font-size:10px; color:#28a745;">▶</span>
                     <span style="font-size:10px; color:#28a745; font-weight:bold;">✓ Data Ready:</span>
                     <span style="font-size:10px; color:#333;"><span id="trainCount">80</span> training, <span id="testCount">20</span> held-out</span>
-                    <span id="dataSummaryNote" style="flex:1; font-size:9px; color:#555; font-style:italic;"></span>
+                    <span id="dataSummaryNote" style="flex:1; font-size:10px; color:#444; font-style:italic;"></span>
                     <button id="newDataBtn" style="padding:2px 6px; font-size:9px; background:#6c757d;" title="Generate new random data">↻ New</button>
                 </div>
                 <!-- Expandable data preview -->
                 <div id="dataSummaryContent" style="display:none; padding:4px 10px 6px 10px; border-top:1px solid #c3e6c3;">
                     <div style="display:flex; align-items:flex-start; gap:12px;">
                         <div style="min-width:140px;">
-                            <div style="font-size:9px; font-weight:bold; color:#007bff; margin-bottom:2px;">📊 Training Points</div>
-                            <div id="trainDataPreview" style="font-size:8px; font-family:monospace; color:#333; background:#fff; padding:2px 4px; border-radius:2px; border:1px solid #ddd; line-height:1.3;"></div>
+                            <div style="font-size:10px; font-weight:bold; color:#007bff; margin-bottom:2px;">📊 Training Points</div>
+                            <div id="trainDataPreview" style="font-size:9px; font-family:monospace; color:#333; background:#fff; padding:2px 4px; border-radius:2px; border:1px solid #ddd; line-height:1.3;"></div>
                         </div>
                         <div style="min-width:140px;">
-                            <div style="font-size:9px; font-weight:bold; color:#ff9800; margin-bottom:2px;">🔒 Held-Out Points</div>
-                            <div id="testDataPreview" style="font-size:8px; font-family:monospace; color:#999; background:#fafafa; padding:2px 4px; border-radius:2px; border:1px solid #eee; line-height:1.3;"></div>
+                            <div style="font-size:10px; font-weight:bold; color:#ff9800; margin-bottom:2px;">🔒 Held-Out Points</div>
+                            <div id="testDataPreview" style="font-size:9px; font-family:monospace; color:#666; background:#fafafa; padding:2px 4px; border-radius:2px; border:1px solid #eee; line-height:1.3;"></div>
                         </div>
                     </div>
                 </div>
@@ -536,27 +577,27 @@
         <div class="panel controls-strip" id="phase2Panel" style="padding:6px 12px; border-left:4px solid #007bff; opacity:0.5; pointer-events:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                 <span style="font-size:12px; font-weight:bold; color:#007bff;">② TRAIN THE MODEL</span>
-                <span id="epochStatus" style="font-size:10px; color:#888;">Generate examples first...</span>
+                <span id="epochStatus" style="font-size:10px; color:#555;">Generate examples first...</span>
             </div>
             <!-- Row 1: Network and training parameters -->
             <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:4px;">
                 <!-- Learning Rate -->
                 <div style="display:flex; align-items:center; gap:3px;">
-                    <label style="font-size:10px; color:#555;">Learning Rate:</label>
+                    <label style="font-size:10px; color:#333;">Learning Rate:</label>
                     <input type="range" id="learningRate" min="-3" max="-0.3" step="0.01" value="-1" style="width:50px;">
                     <span class="value" id="learningRateValue" style="font-size:10px; min-width:32px;">0.100</span>
                 </div>
                 
                 <!-- Optimizer -->
                 <div id="optimizerButtons" style="display:flex; align-items:center; gap:3px;">
-                    <label style="font-size:10px; color:#555;">Optimizer:</label>
+                    <label style="font-size:10px; color:#333;">Optimizer:</label>
                     <button class="opt-btn" data-opt="sgd" style="padding:2px 6px; font-size:10px; border:2px solid #007bff; background:#007bff; color:white; border-radius:3px; cursor:pointer;" title="Simple Gradient Descent&#10;&#10;w ← w − η · ∂L/∂w&#10;&#10;Each weight moves opposite to its gradient, proportional to learning rate η.&#10;&#10;Recommended learning rate: 0.05-0.2&#10;Simple but can be slow or oscillate.">Simple</button>
                     <button class="opt-btn" data-opt="adam" style="padding:2px 6px; font-size:10px; border:2px solid #ccc; background:#fff; color:#333; border-radius:3px; cursor:pointer;" title="Adam Optimizer&#10;&#10;Combines two ideas:&#10;• Momentum: smooth out noisy gradients&#10;• Adaptive rates: bigger steps for rare gradients&#10;&#10;Recommended learning rate: 0.001-0.02&#10;(Lower than Simple because Adam amplifies updates)&#10;&#10;Usually learns faster and more reliably.">Adam</button>
                 </div>
                 
                 <!-- Activation -->
                 <div id="activationButtons" style="display:flex; align-items:center; gap:3px;">
-                    <label style="font-size:10px; color:#555;">Activation:</label>
+                    <label style="font-size:10px; color:#333;">Activation:</label>
                     <button class="act-btn" data-act="relu" style="padding:2px 6px; font-size:10px; border:2px solid #007bff; background:#007bff; color:white; border-radius:3px; cursor:pointer; display:flex; align-items:center; gap:2px;">
                         <svg width="14" height="10" viewBox="0 0 20 14"><path d="M1 10 L10 10 L19 2" stroke="currentColor" stroke-width="2" fill="none"/></svg>ReLU
                     </button>
@@ -569,8 +610,8 @@
                 
                 <!-- Stats -->
                 <span style="font-size:11px; color:#28a745;">Train Loss: <strong id="trainLossValue">—</strong></span>
-                <span style="font-size:11px; color:#007bff;"><span id="stepsPerSec">—</span> steps/sec</span>
-                <span style="font-size:10px; color:#888;" title="Total arithmetic operations this training run (shows cost of training)">Total: <strong id="totalOpsDisplay" style="color:#6f42c1;">0</strong> ops</span>
+                <span style="font-size:11px; color:#007bff;"><span id="stepsPerSec">—</span> steps/second</span>
+                <span style="font-size:10px; color:#555;" title="Total arithmetic operations this training run (shows cost of training)">Total: <strong id="totalOpsDisplay" style="color:#6f42c1;">0</strong> ops</span>
             </div>
             <!-- Hidden elements for backwards compatibility -->
             <span id="epochCount" style="display:none;">0</span>
@@ -604,12 +645,8 @@
                 <span class="activation-option selected" data-act="relu">ReLU</span>
                 <span class="activation-option" data-act="sigmoid">sigmoid</span>
             </div>
-            <div class="mobile-sliders" style="display:none;">
-                <input type="range" id="numLayers" min="1" max="4" step="1" value="1">
-                <span id="numLayersValue">1</span>
-                <input type="range" id="hiddenSize" min="2" max="16" step="1" value="3">
-                <span id="hiddenSizeValue">3</span>
-            </div>
+            <span id="numLayersValue" style="display:none;">1</span>
+            <span id="hiddenSizeValue" style="display:none;">3</span>
         </div>
 
         <!-- 2x2 VISUALIZATION GRID -->
@@ -617,17 +654,30 @@
         <div class="panel" style="padding:6px 6px 24px 6px; overflow:visible !important;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                 <h2 style="margin:0; font-size:13px; border:none; padding:0;">Network Design</h2>
-                <div id="opsTableHtml" style="font-size:9px; background:#f8f9ff; border:1px solid #007bff; border-radius:3px; padding:2px 6px;">
+                <div id="opsTableHtml" style="font-size:10px; background:#f8f9ff; border:1px solid #007bff; border-radius:3px; padding:2px 6px;">
                     <span style="color:#28a745;">Fwd:</span><span id="opsFwdAdds">0</span>+ <span id="opsFwdMuls">0</span>×
                     <span style="color:#dc3545; margin-left:4px;">Back:</span><span id="opsBackAdds">0</span>+ <span id="opsBackMuls">0</span>×
                 </div>
             </div>
             <div style="position:relative; margin-bottom:8px; margin-right:20px;">
                 <canvas id="networkCanvas" width="520" height="300" style="width:100%;"></canvas>
-                <div id="sizeHandle" style="position:absolute; right:-20px; top:50%; transform:translateY(-50%); width:18px; height:50px; background:linear-gradient(to bottom, #007bff, #0056b3); border-radius:3px; cursor:ns-resize; display:flex; flex-direction:column; align-items:center; justify-content:space-evenly; color:white; font-size:7px; transition: transform 0.15s ease-out; z-index:10;" title="Drag to change neurons per layer"><span>▲</span><span style="writing-mode:vertical-rl; text-orientation:mixed; font-size:7px;">Width</span><span>▼</span></div>
+                <div id="sizeHandle" style="position:absolute; right:-22px; top:50%; transform:translateY(-50%); width:22px; height:55px; background:linear-gradient(to bottom, #007bff, #0056b3); border-radius:3px; cursor:ns-resize; display:flex; flex-direction:column; align-items:center; justify-content:space-evenly; color:white; font-size:9px; transition: transform 0.15s ease-out; z-index:10;" title="Drag to change neurons per layer"><span>▲</span><span style="writing-mode:vertical-rl; text-orientation:mixed; font-size:9px;">Width</span><span>▼</span></div>
             </div>
             <div style="text-align:center;">
-                <div id="layersHandle" style="display:inline-flex; height:16px; width:68px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; align-items:center; justify-content:center; color:white; font-size:7px; transition: transform 0.15s ease-out;" title="Drag to change number of layers">◀ Layers ▶</div>
+                <div id="layersHandle" style="display:inline-flex; height:18px; width:76px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; align-items:center; justify-content:center; color:white; font-size:9px; transition: transform 0.15s ease-out;" title="Drag to change number of layers">◀ Layers ▶</div>
+            </div>
+            <!-- Mobile controls (shown via CSS on small screens) -->
+            <div id="networkMobileControls" class="mobile-sliders" style="display:none; margin-top:8px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label style="font-size:11px; min-width:45px;">Layers:</label>
+                    <input type="range" id="numLayers" min="1" max="4" step="1" value="1" style="width:80px;">
+                    <span id="numLayersDisplay" style="font-size:11px; min-width:16px;">1</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label style="font-size:11px; min-width:45px;">Width:</label>
+                    <input type="range" id="hiddenSize" min="2" max="16" step="1" value="3" style="width:80px;">
+                    <span id="hiddenSizeDisplay" style="font-size:11px; min-width:16px;">3</span>
+                </div>
             </div>
             <span id="networkLayersDisplay" style="display:none;">1</span>
             <span id="networkSizeDisplay" style="display:none;">3</span>
@@ -638,14 +688,14 @@
         <div class="panel" style="padding:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
                 <h2 style="margin:0; font-size:13px; border:none; padding:0;">Examples vs Model</h2>
-                <div id="trainRangeControls" style="display:flex; gap:6px; font-size:9px; align-items:center; opacity:0.5; pointer-events:none;">
+                <div id="trainRangeControls" style="display:flex; gap:6px; font-size:10px; align-items:center; opacity:0.5; pointer-events:none;">
                     <label style="color:#17a2b8; font-weight:bold;" title="Restrict which x-values are used for training. Points outside this range test extrapolation.">Train x:</label>
-                    <input type="number" id="trainXMinInput" value="-2" step="0.5" style="width:36px; font-size:9px; padding:1px; border:1px solid #17a2b8;" title="Min x for training">
-                    <span>to</span>
-                    <input type="number" id="trainXMaxInput" value="2" step="0.5" style="width:36px; font-size:9px; padding:1px; border:1px solid #17a2b8;" title="Max x for training">
-                    <span style="color:#888; font-size:8px;">(<span id="trainPointCount">—</span> train pts)</span>
+                    <input type="number" id="trainXMinInput" value="-2" step="0.5" style="width:40px; font-size:10px; padding:2px; border:1px solid #17a2b8;" title="Min x for training">
+                    <span style="font-size:10px;">to</span>
+                    <input type="number" id="trainXMaxInput" value="2" step="0.5" style="width:40px; font-size:10px; padding:2px; border:1px solid #17a2b8;" title="Max x for training">
                 </div>
-                <div id="revealControls" style="display:flex; gap:6px; font-size:9px; opacity:0.5; pointer-events:none;">
+                <span id="trainPointCount" style="display:none;">—</span>
+                <div id="revealControls" style="display:flex; gap:6px; font-size:10px; opacity:0.5; pointer-events:none;">
                     <label style="display:flex; align-items:center; gap:2px; cursor:pointer;" title="Show held-out examples">
                         <input type="checkbox" id="showHeldOut"> Held-Out
                     </label>
@@ -661,9 +711,15 @@
             </div>
             <span id="xMinDisplay" style="display:none;">-2.0</span>
             <span id="xMaxDisplay" style="display:none;">2.0</span>
-            <div class="mobile-sliders" style="display:none;">
-                <input type="range" id="xMinMobile" min="-5" max="0" step="0.5" value="-2"><span id="xMinMobileVal">-2</span>
-                <input type="range" id="xMaxMobile" min="0" max="5" step="0.5" value="2"><span id="xMaxMobileVal">2</span>
+            <!-- Mobile training range controls -->
+            <div id="trainRangeMobileControls" class="mobile-sliders" style="display:none; margin-top:4px;">
+                <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+                    <label style="font-size:10px; color:#17a2b8; font-weight:bold;">Train Range:</label>
+                    <input type="number" id="trainXMinMobile" step="0.5" style="width:50px; font-size:11px; padding:2px;">
+                    <span style="font-size:10px;">to</span>
+                    <input type="number" id="trainXMaxMobile" step="0.5" style="width:50px; font-size:11px; padding:2px;">
+                    <button id="applyTrainRangeMobile" style="font-size:10px; padding:2px 6px;">Apply</button>
+                </div>
             </div>
         </div>
 
@@ -671,20 +727,28 @@
         <div class="panel" style="padding:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:3px;">
                 <h2 style="margin:0; font-size:13px; border:none; padding:0;">Training Trace</h2>
-                <div style="display:flex; gap:5px; font-size:9px; align-items:center;">
+                <div style="display:flex; gap:5px; font-size:10px; align-items:center; flex-wrap:wrap;">
                     <label style="display:flex; align-items:center; gap:1px;" title="Show loss curve"><input type="checkbox" id="traceLoss" checked>Loss</label>
-                    <label style="display:flex; align-items:center; gap:1px;" title="Show weight trajectories"><input type="checkbox" id="traceWeights" checked>Wts</label>
+                    <label style="display:flex; align-items:center; gap:1px;" title="Show weight trajectories"><input type="checkbox" id="traceWeights" checked>Weights</label>
                     <label style="display:flex; align-items:center; gap:1px;" title="Logarithmic scale"><input type="checkbox" id="traceLogScale">Log</label>
                     <span style="color:#ddd;">|</span>
-                    <label style="display:flex; align-items:center; gap:1px;" title="Rolling average"><input type="checkbox" id="traceAvgLoss" checked>Avg</label>
+                    <label style="display:flex; align-items:center; gap:1px;" title="Rolling average loss"><input type="checkbox" id="traceAvgLoss" checked>Average</label>
                     <input type="range" id="avgWindowSlider" min="10" max="1000" step="10" value="100" style="width:35px;" title="Averaging window size"><span id="avgWindowValue" style="color:#007bff; min-width:22px;">100</span>
                     <span style="color:#ddd;">|</span>
-                    <span style="white-space:nowrap;" title="Loss change from start to now">Δ:<strong id="deltaLossValue" style="color:#28a745; min-width:45px;">—</strong></span>
+                    <span style="white-space:nowrap;" title="Loss change from start to now">ΔLoss:<strong id="deltaLossValue" style="color:#28a745; min-width:45px;">—</strong></span>
                 </div>
             </div>
             <div style="position:relative;">
                 <canvas id="traceCanvas" class="chart" width="520" height="360" style="width:100%;"></canvas>
-                <div id="traceViewHandle" style="position:absolute; bottom:4px; left:230px; width:60px; height:14px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; display:none; align-items:center; justify-content:center; color:white; font-size:8px; opacity:0.9; z-index:10;" title="Drag left/right to zoom into early training steps (when paused)">◀ Zoom ▶</div>
+                <div id="traceViewHandle" style="position:absolute; bottom:4px; left:230px; width:66px; height:16px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; display:none; align-items:center; justify-content:center; color:white; font-size:9px; opacity:0.9; z-index:10;" title="Drag left/right to zoom into early training steps (when paused)">◀ Zoom ▶</div>
+            </div>
+            <!-- Mobile zoom control -->
+            <div id="zoomMobileControls" class="mobile-sliders" style="display:none; margin-top:4px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label style="font-size:10px;">Zoom (show first N steps):</label>
+                    <input type="range" id="zoomSliderMobile" min="50" max="5000" step="50" value="5000" style="width:100px;">
+                    <span id="zoomValueMobile" style="font-size:10px; min-width:40px;">All</span>
+                </div>
             </div>
         </div>
 
@@ -692,17 +756,17 @@
         <div class="panel" style="padding:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
                 <h2 style="margin:0; font-size:13px; border:none; padding:0;">Loss Landscape</h2>
-                <div style="display:flex; gap:3px; font-size:9px; align-items:center;">
+                <div style="display:flex; gap:3px; font-size:10px; align-items:center;">
                     <span id="weightSelectContainer" style="display:flex; gap:2px; align-items:center; opacity:0.5;" title="Click to manually select weights">
-                        <select id="weightXSelect" style="font-size:8px; padding:1px; max-width:65px;"><option value="0">w₁</option></select>
-                        <span style="font-size:8px;">vs</span>
-                        <select id="weightYSelect" style="font-size:8px; padding:1px; max-width:65px;"><option value="1">w₂</option></select>
+                        <select id="weightXSelect" style="font-size:9px; padding:1px; max-width:70px;"><option value="0">w₁</option></select>
+                        <span style="font-size:9px;">vs</span>
+                        <select id="weightYSelect" style="font-size:9px; padding:1px; max-width:70px;"><option value="1">w₂</option></select>
                     </span>
-                    <button id="autoSelectBtn" style="font-size:9px; padding:1px 4px; background:#007bff; border:2px solid #007bff; color:white;" title="Auto-select interesting weights">Auto</button>
+                    <button id="autoSelectBtn" style="font-size:10px; padding:1px 4px; background:#007bff; border:2px solid #007bff; color:white;" title="Auto-select interesting weights">Auto</button>
                 </div>
             </div>
             <canvas id="lossCanvas" class="chart" width="520" height="360"></canvas>
-            <div style="font-size:8px; color:#888; text-align:center; margin-top:2px;">🟢 Start 🔴 Current • <span style="color:#00f;">■</span>≤.001 <span style="color:#0aa;">■</span>.01 <span style="color:#0a0;">■</span>.1 <span style="color:#aa0;">■</span>1 <span style="color:#f00;">■</span>≥10</div>
+            <div style="font-size:9px; color:#555; text-align:center; margin-top:2px;">🟢 Start 🔴 Current • <span style="color:#00f;">■</span>≤.001 <span style="color:#0aa;">■</span>.01 <span style="color:#0a0;">■</span>.1 <span style="color:#aa0;">■</span>1 <span style="color:#f00;">■</span>≥10</div>
         </div>
     </div>
     
@@ -2266,6 +2330,12 @@ function updateParameters() {
                 trainRangeControls.style.opacity = '1';
                 trainRangeControls.style.pointerEvents = 'auto';
             }
+            
+            // Sync mobile training range inputs
+            const trainXMinMobile = document.getElementById('trainXMinMobile');
+            const trainXMaxMobile = document.getElementById('trainXMaxMobile');
+            if (trainXMinMobile) trainXMinMobile.value = config.trainXMin;
+            if (trainXMaxMobile) trainXMaxMobile.value = config.trainXMax;
             
             // Enable Phase 3
             const phase3 = document.getElementById('phase3Panel');
@@ -4899,24 +4969,68 @@ function drawTrainingTrace() {
         noiseLabel.textContent = config.noise.toFixed(2);
 
         const numLayersSlider = document.getElementById('numLayers');
-        const numLayersValue = document.getElementById('numLayersValue');
+        const numLayersDisplay = document.getElementById('numLayersDisplay');
+        const networkLayersDisplay = document.getElementById('networkLayersDisplay');
         numLayersSlider.addEventListener('input', () => {
             network.numLayers = parseInt(numLayersSlider.value, 10);
-            numLayersValue.textContent = network.numLayers.toString();
-            reset();  // Auto-reset when network architecture changes
+            if (numLayersDisplay) numLayersDisplay.textContent = network.numLayers.toString();
+            if (networkLayersDisplay) networkLayersDisplay.textContent = network.numLayers.toString();
+            resetModel();
+            updateUI();
         });
         network.numLayers = parseInt(numLayersSlider.value, 10);
-        numLayersValue.textContent = network.numLayers.toString();
+        if (numLayersDisplay) numLayersDisplay.textContent = network.numLayers.toString();
 
         const hiddenSizeSlider = document.getElementById('hiddenSize');
-        const hiddenSizeValue = document.getElementById('hiddenSizeValue');
+        const hiddenSizeDisplay = document.getElementById('hiddenSizeDisplay');
+        const networkSizeDisplay = document.getElementById('networkSizeDisplay');
         hiddenSizeSlider.addEventListener('input', () => {
             network.hiddenSize = parseInt(hiddenSizeSlider.value, 10);
-            hiddenSizeValue.textContent = network.hiddenSize.toString();
-            reset();  // Auto-reset when network architecture changes
+            if (hiddenSizeDisplay) hiddenSizeDisplay.textContent = network.hiddenSize.toString();
+            if (networkSizeDisplay) networkSizeDisplay.textContent = network.hiddenSize.toString();
+            resetModel();
+            updateUI();
         });
         network.hiddenSize = parseInt(hiddenSizeSlider.value, 10);
-        hiddenSizeValue.textContent = network.hiddenSize.toString();
+        if (hiddenSizeDisplay) hiddenSizeDisplay.textContent = network.hiddenSize.toString();
+        
+        // Mobile training range controls
+        const trainXMinMobile = document.getElementById('trainXMinMobile');
+        const trainXMaxMobile = document.getElementById('trainXMaxMobile');
+        const applyTrainRangeMobile = document.getElementById('applyTrainRangeMobile');
+        if (applyTrainRangeMobile) {
+            applyTrainRangeMobile.addEventListener('click', () => {
+                if (!dataset.generated) return;
+                const newMin = parseFloat(trainXMinMobile.value);
+                const newMax = parseFloat(trainXMaxMobile.value);
+                if (!isNaN(newMin) && !isNaN(newMax) && newMin < newMax) {
+                    config.trainXMin = Math.max(config.dataXMin, newMin);
+                    config.trainXMax = Math.min(config.dataXMax, newMax);
+                    updateTrainingRangeFromConfig();
+                    updateTrainingHandlePositions();
+                    drawFitPlot();
+                    updateUI();
+                }
+            });
+        }
+        
+        // Mobile zoom control
+        const zoomSliderMobile = document.getElementById('zoomSliderMobile');
+        const zoomValueMobile = document.getElementById('zoomValueMobile');
+        if (zoomSliderMobile) {
+            zoomSliderMobile.addEventListener('input', () => {
+                const maxSteps = history.steps.length;
+                const zoomVal = parseInt(zoomSliderMobile.value, 10);
+                if (zoomVal >= maxSteps) {
+                    traceViewState.maxStep = Infinity;
+                    zoomValueMobile.textContent = 'All';
+                } else {
+                    traceViewState.maxStep = zoomVal;
+                    zoomValueMobile.textContent = zoomVal.toString();
+                }
+                drawTrainingTrace();
+            });
+        }
 
         const xMinSlider = document.getElementById('xMin');
         const xMaxSlider = document.getElementById('xMax');
@@ -5241,6 +5355,12 @@ function drawTrainingTrace() {
             // Also allow clicking on the header
             if (equationsHeader) {
                 equationsHeader.addEventListener('click', toggleEquations);
+            }
+            
+            // Start collapsed on mobile/tablet (sidebar is at bottom, want it visible)
+            if (window.innerWidth <= 768) {
+                equationsDiv.style.display = 'none';
+                toggleEquationsBtn.textContent = '▶ Expand';
             }
         }
 

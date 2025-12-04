@@ -6,7 +6,7 @@ Watch a neural network learn in real-time through a structured three-phase workf
 
 ## 🎯 Try It Now
 
-**[Launch LearnCurve →](https://rowenchris.github.io/MLdemo/)**
+**[Launch LearnCurve →](https://rowenchris.github.io/LearnCurve/)**
 
 ---
 
