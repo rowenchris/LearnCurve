@@ -1083,17 +1083,24 @@
     }
 
     function createCompositeCanvas() {
-        // Get all three canvases
+        // Get all four canvases (2x2 grid)
         const networkCanvas = document.getElementById('networkCanvas');
         const fitCanvas = document.getElementById('fitCanvas');
         const traceCanvas = document.getElementById('traceCanvas');
+        const lossCanvas = document.getElementById('lossCanvas');
         
-        // Create composite canvas: network on left, fit and trace stacked on right
+        // Create composite canvas: 2x2 grid layout
+        // Top row: Network Design | Examples vs Model
+        // Bottom row: Training Trace | Loss Landscape
         const padding = 10;
-        const leftWidth = networkCanvas.width;
-        const rightWidth = Math.max(fitCanvas.width, traceCanvas.width);
+        const titleHeight = 18;
+        const leftWidth = Math.max(networkCanvas.width, traceCanvas.width);
+        const rightWidth = Math.max(fitCanvas.width, lossCanvas.width);
+        const topHeight = Math.max(networkCanvas.height, fitCanvas.height);
+        const bottomHeight = Math.max(traceCanvas.height, lossCanvas.height);
+        
         const totalWidth = leftWidth + rightWidth + padding * 3;
-        const totalHeight = Math.max(networkCanvas.height, fitCanvas.height + traceCanvas.height + padding) + padding * 2;
+        const totalHeight = topHeight + bottomHeight + titleHeight * 2 + padding * 4;
         
         const composite = document.createElement('canvas');
         composite.width = totalWidth;
@@ -1104,22 +1111,27 @@
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, totalWidth, totalHeight);
         
-        // Draw network canvas (left side)
-        ctx.drawImage(networkCanvas, padding, padding);
-        
-        // Draw fit canvas (top right)
-        ctx.drawImage(fitCanvas, leftWidth + padding * 2, padding);
-        
-        // Draw trace canvas (bottom right)
-        ctx.drawImage(traceCanvas, leftWidth + padding * 2, fitCanvas.height + padding * 2);
-        
-        // Add title
+        // Add titles
         ctx.fillStyle = '#333';
         ctx.font = 'bold 14px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText('Network', padding, padding - 2);
-        ctx.fillText('Fit: f(x) vs ŷ(x)', leftWidth + padding * 2, padding - 2);
-        ctx.fillText('Training Trace', leftWidth + padding * 2, fitCanvas.height + padding * 2 - 2);
+        
+        // Top-left: Network Design
+        ctx.fillText('Network Design', padding, padding + 12);
+        ctx.drawImage(networkCanvas, padding, padding + titleHeight);
+        
+        // Top-right: Examples vs Model
+        ctx.fillText('Examples vs Model', leftWidth + padding * 2, padding + 12);
+        ctx.drawImage(fitCanvas, leftWidth + padding * 2, padding + titleHeight);
+        
+        // Bottom-left: Training Trace
+        const bottomY = padding + titleHeight + topHeight + padding;
+        ctx.fillText('Training Trace', padding, bottomY + 12);
+        ctx.drawImage(traceCanvas, padding, bottomY + titleHeight);
+        
+        // Bottom-right: Loss Landscape
+        ctx.fillText('Loss Landscape', leftWidth + padding * 2, bottomY + 12);
+        ctx.drawImage(lossCanvas, leftWidth + padding * 2, bottomY + titleHeight);
         
         return composite;
     }
