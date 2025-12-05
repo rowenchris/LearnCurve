@@ -1174,9 +1174,8 @@
             const scanResult = scanForConvergence();
             gifBtn.textContent = 'Recording...';
             
-            // Phase 2: Reset and record with adaptive keyframes
-            reset();
-            
+            // Phase 2: Reset model and record with adaptive keyframes
+            // (scanResult already restored state, startAdaptiveCapture will reset model)
             setTimeout(() => {
                 startAdaptiveCapture(scanResult, () => {
                     gifBtn.textContent = originalText;
@@ -1191,9 +1190,10 @@
         const savedNetwork = JSON.parse(JSON.stringify(network));
         const savedHistory = JSON.parse(JSON.stringify(history));
         const savedTrainingState = JSON.parse(JSON.stringify(trainingState));
+        const savedDataset = JSON.parse(JSON.stringify(dataset));
         
-        // Reset for scan
-        reset();
+        // Reset model only (preserve dataset)
+        resetModel();
         
         const losses = [];
         const maxScanSteps = 500;
@@ -1255,6 +1255,7 @@
         network = savedNetwork;
         history = savedHistory;
         trainingState = savedTrainingState;
+        dataset = savedDataset;
         
         return { losses, keyframes, convergencePoint };
     }
@@ -1330,8 +1331,8 @@
     function startAdaptiveCapture(scanResult, onComplete) {
         const { keyframes } = scanResult;
         
-        // Reset to fresh state with same random seed
-        reset();
+        // Reset model to fresh state (preserve dataset)
+        resetModel();
         
         const composite = createCompositeCanvas();
         
