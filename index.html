@@ -157,8 +157,7 @@
             border: 1px solid #ddd;
             background: white;
             display: block;
-            margin: 10px auto;
-            max-width: 100%;
+            width: 100%;
             height: auto;
         }
 
@@ -233,6 +232,294 @@
             gap: 4px;
             font-size: 12px;
         }
+
+        /* ===== UNIFIED LABELED SLIDERS ===== */
+        .labeled-slider {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            min-width: 0;
+        }
+        
+        .labeled-slider .slider-label {
+            font-weight: 600;
+            color: #000;
+            min-width: 38px;
+            flex-shrink: 0;
+        }
+        
+        .labeled-slider .slider-min,
+        .labeled-slider .slider-max {
+            font-size: 10px;
+            color: #000;
+            min-width: 14px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .labeled-slider .slider-track {
+            position: relative;
+            flex: 1 1 auto;
+            min-width: 40px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .labeled-slider input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(to right, #0d6efd 0%, #0d6efd var(--fill-percent, 50%), #ddd var(--fill-percent, 50%), #ddd 100%);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        .labeled-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 34px;
+            height: 18px;
+            background: #0d6efd;
+            border-radius: 4px;
+            cursor: grab;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        .labeled-slider input[type="range"]::-moz-range-thumb {
+            width: 34px;
+            height: 18px;
+            background: #0d6efd;
+            border-radius: 4px;
+            cursor: grab;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        .labeled-slider input[type="range"]:active::-webkit-slider-thumb {
+            cursor: grabbing;
+            background: #0b5ed7;
+        }
+        
+        .labeled-slider .slider-value {
+            position: absolute;
+            top: 50%;
+            left: var(--thumb-position, 50%);
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            pointer-events: none;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.4);
+            z-index: 2;
+            white-space: nowrap;
+            line-height: 1;
+        }
+        
+        /* Two-thumb range slider */
+        .range-slider-container {
+            position: relative;
+            flex: 1;
+            min-width: 80px;
+            height: 24px;
+        }
+        
+        .range-slider-container .range-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 6px;
+            transform: translateY(-50%);
+            background: #ddd;
+            border-radius: 3px;
+        }
+        
+        .range-slider-container .range-fill {
+            position: absolute;
+            top: 50%;
+            height: 6px;
+            transform: translateY(-50%);
+            background: #0d6efd;
+            border-radius: 3px;
+        }
+        
+        .range-slider-container input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 24px;
+            transform: translateY(-50%);
+            background: transparent;
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        .range-slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 34px;
+            height: 16px;
+            background: #0d6efd;
+            border-radius: 3px;
+            cursor: grab;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            pointer-events: auto;
+        }
+        
+        .range-slider-container input[type="range"]::-moz-range-thumb {
+            width: 34px;
+            height: 16px;
+            background: #0d6efd;
+            border-radius: 3px;
+            cursor: grab;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            pointer-events: auto;
+        }
+        
+        .range-slider-container .range-value {
+            position: absolute;
+            top: calc(50% + 2px);
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            pointer-events: none;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.4);
+            z-index: 3;
+            white-space: nowrap;
+            width: 34px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        /* Slider control strip layout */
+        .slider-controls-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 24px;
+            padding: 4px 10px;
+            background: transparent;
+            margin-top: 4px;
+            align-items: center;
+        }
+        
+        .slider-controls-strip .labeled-slider {
+            flex: 1;
+            min-width: 140px;
+            max-width: none;
+        }
+        
+        /* Network sliders - distribute across panel width */
+        #networkSliders {
+            justify-content: space-between;
+            padding: 2px 0;
+            margin-top: 12px;
+            flex-wrap: nowrap;
+        }
+        
+        #networkSliders .labeled-slider {
+            flex: 1 1 45%;
+            min-width: 120px;
+            max-width: 49%;
+        }
+        
+        /* Train range slider - centered label below, hide min/max (graph shows scale) */
+        #trainRangeSliderStrip {
+            flex: 1;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+            gap: 0;
+            /* Match canvas plot area: ~50px margin on each side of 520px canvas = 9.6% */
+            /* Adjust for panel padding (6px) and canvas display scaling */
+            padding: 0 calc(9.6% - 2px);
+            margin-top: 0;
+        }
+        
+        #trainRangeSliderStrip .labeled-slider {
+            max-width: 100%;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        #trainRangeSliderStrip .slider-min,
+        #trainRangeSliderStrip .slider-max {
+            display: none;
+        }
+        
+        #trainRangeSliderStrip .range-slider-container {
+            width: 100%;
+            order: 1;
+        }
+        
+        #trainRangeSliderStrip .slider-label {
+            text-align: center;
+            min-width: auto;
+            order: 2;
+            margin-top: 4px;
+            color: #333;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        /* View slider styling - bright blue like others */
+        .labeled-slider.view-slider input[type="range"] {
+            background: linear-gradient(to right, #0d6efd 0%, #0d6efd var(--fill-percent, 100%), #ddd var(--fill-percent, 100%), #ddd 100%);
+        }
+        
+        .labeled-slider.view-slider input[type="range"]::-webkit-slider-thumb {
+            background: #0d6efd;
+        }
+        
+        .labeled-slider.view-slider input[type="range"]::-moz-range-thumb {
+            background: linear-gradient(to bottom, #28a745, #1e7e34);
+        }
+        
+        /* Disabled state */
+        .labeled-slider.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        /* Mobile touch targets */
+        @media (max-width: 768px) {
+            .labeled-slider input[type="range"]::-webkit-slider-thumb {
+                width: 36px;
+                height: 28px;
+            }
+            .labeled-slider input[type="range"]::-moz-range-thumb {
+                width: 36px;
+                height: 28px;
+            }
+            .range-slider-container input[type="range"]::-webkit-slider-thumb {
+                width: 40px;
+                height: 24px;
+            }
+            .range-slider-container input[type="range"]::-moz-range-thumb {
+                width: 40px;
+                height: 24px;
+            }
+            .slider-controls-strip {
+                gap: 8px 12px;
+            }
+            .slider-controls-strip .labeled-slider {
+                min-width: 120px;
+            }
+        }
+        /* ===== END UNIFIED SLIDERS ===== */
 
         .equations-panel {
             grid-column: 1 / -1;  /* Span all columns */
@@ -456,23 +743,8 @@
                 font-size: 11px;
                 max-height: 250px;
             }
-            /* Hide drag handles on mobile - they don't work well with touch */
-            #sizeHandle, #layersHandle, #trainMinHandle, #trainMaxHandle, #traceViewHandle {
-                display: none !important;
-            }
-            /* Show mobile control containers */
-            .mobile-sliders {
-                display: flex !important;
-                flex-wrap: wrap;
-                gap: 8px;
-                padding: 6px 8px;
-                background: #f0f4f8;
-                border-radius: 4px;
-            }
-            /* Hide desktop-only train range controls header inputs on mobile */
-            #trainRangeControls {
-                display: none !important;
-            }
+            /* Old drag handles are now hidden everywhere - replaced by unified sliders */
+            /* Mobile slider controls now use same unified sliders as desktop */
             /* Make activation buttons stack */
             #networkActivation {
                 flex-direction: column;
@@ -610,8 +882,11 @@
                 
                 <!-- Stats -->
                 <span style="font-size:11px; color:#28a745;">Train Loss: <strong id="trainLossValue">—</strong></span>
-                <span style="font-size:11px; color:#007bff;"><span id="stepsPerSec">—</span> steps/second</span>
-                <span style="font-size:10px; color:#555;" title="Total arithmetic operations this training run (shows cost of training)">Total: <strong id="totalOpsDisplay" style="color:#6f42c1;">0</strong> ops</span>
+                <span style="font-size:11px; color:#007bff;"><span id="stepsPerSec">—</span> steps/sec</span>
+                <span style="color:#ddd;">|</span>
+                <span style="font-size:10px; color:#555;" title="Arithmetic operations this training run">
+                    Ops: <span style="color:#28a745;" id="totalAddsDisplay">0</span>+ <span style="color:#dc3545;" id="totalMulsDisplay">0</span>× = <strong id="totalOpsDisplay" style="color:#6f42c1;">0</strong>
+                </span>
             </div>
             <!-- Hidden elements for backwards compatibility -->
             <span id="epochCount" style="display:none;">0</span>
@@ -659,42 +934,43 @@
                     <span style="color:#dc3545; margin-left:4px;">Back:</span><span id="opsBackAdds">0</span>+ <span id="opsBackMuls">0</span>×
                 </div>
             </div>
-            <div style="position:relative; margin-bottom:8px; margin-right:20px;">
-                <canvas id="networkCanvas" width="520" height="300" style="width:100%;"></canvas>
-                <div id="sizeHandle" style="position:absolute; right:-22px; top:50%; transform:translateY(-50%); width:22px; height:55px; background:linear-gradient(to bottom, #007bff, #0056b3); border-radius:3px; cursor:ns-resize; display:flex; flex-direction:column; align-items:center; justify-content:space-evenly; color:white; font-size:9px; transition: transform 0.15s ease-out; z-index:10;" title="Drag to change neurons per layer"><span>▲</span><span style="writing-mode:vertical-rl; text-orientation:mixed; font-size:9px;">Width</span><span>▼</span></div>
+            <div>
+                <canvas id="networkCanvas" width="520" height="280" style="width:100%;"></canvas>
             </div>
-            <div style="text-align:center;">
-                <div id="layersHandle" style="display:inline-flex; height:18px; width:76px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; align-items:center; justify-content:center; color:white; font-size:9px; transition: transform 0.15s ease-out;" title="Drag to change number of layers">◀ Layers ▶</div>
-            </div>
-            <!-- Mobile controls (shown via CSS on small screens) -->
-            <div id="networkMobileControls" class="mobile-sliders" style="display:none; margin-top:8px;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <label style="font-size:11px; min-width:45px;">Layers:</label>
-                    <input type="range" id="numLayers" min="1" max="4" step="1" value="1" style="width:80px;">
-                    <span id="numLayersDisplay" style="font-size:11px; min-width:16px;">1</span>
+            <!-- Unified Network Sliders -->
+            <div class="slider-controls-strip" id="networkSliders">
+                <div class="labeled-slider" title="Number of hidden layers">
+                    <span class="slider-label">Layers</span>
+                    <span class="slider-min">1</span>
+                    <div class="slider-track">
+                        <input type="range" id="layersSlider" min="1" max="5" step="1" value="1">
+                        <span class="slider-value" id="layersValue">1</span>
+                    </div>
+                    <span class="slider-max">5</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <label style="font-size:11px; min-width:45px;">Width:</label>
-                    <input type="range" id="hiddenSize" min="2" max="16" step="1" value="3" style="width:80px;">
-                    <span id="hiddenSizeDisplay" style="font-size:11px; min-width:16px;">3</span>
+                <div class="labeled-slider" title="Neurons per hidden layer">
+                    <span class="slider-label">Width</span>
+                    <span class="slider-min">1</span>
+                    <div class="slider-track">
+                        <input type="range" id="widthSlider" min="1" max="32" step="1" value="3">
+                        <span class="slider-value" id="widthValue">3</span>
+                    </div>
+                    <span class="slider-max">32</span>
                 </div>
             </div>
+            <!-- Hidden elements for backward compatibility -->
+            <div id="sizeHandle" style="display:none;"></div>
+            <div id="layersHandle" style="display:none;"></div>
+            <div id="networkMobileControls" style="display:none;"></div>
             <span id="networkLayersDisplay" style="display:none;">1</span>
             <span id="networkSizeDisplay" style="display:none;">3</span>
             <div id="networkActivation" style="display:none;"></div>
         </div>
 
         <!-- Top Right: Fit Plot -->
-        <div class="panel" style="padding:6px;">
+        <div class="panel" style="padding:6px; display:flex; flex-direction:column;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
                 <h2 style="margin:0; font-size:13px; border:none; padding:0;">Examples vs Model</h2>
-                <div id="trainRangeControls" style="display:flex; gap:6px; font-size:10px; align-items:center; opacity:0.5; pointer-events:none;">
-                    <label style="color:#17a2b8; font-weight:bold;" title="Restrict which x-values are used for training. Points outside this range test extrapolation.">Train x:</label>
-                    <input type="number" id="trainXMinInput" value="-2" step="0.5" style="width:40px; font-size:10px; padding:2px; border:1px solid #17a2b8;" title="Min x for training">
-                    <span style="font-size:10px;">to</span>
-                    <input type="number" id="trainXMaxInput" value="2" step="0.5" style="width:40px; font-size:10px; padding:2px; border:1px solid #17a2b8;" title="Max x for training">
-                </div>
-                <span id="trainPointCount" style="display:none;">—</span>
                 <div id="revealControls" style="display:flex; gap:6px; font-size:10px; opacity:0.5; pointer-events:none;">
                     <label style="display:flex; align-items:center; gap:2px; cursor:pointer;" title="Show held-out examples">
                         <input type="checkbox" id="showHeldOut"> Held-Out
@@ -704,23 +980,35 @@
                     </label>
                 </div>
             </div>
-            <div style="position:relative;">
-                <canvas id="fitCanvas" class="chart" width="520" height="340" style="width:100%;"></canvas>
-                <div id="trainMinHandle" style="position:absolute; left:50px; bottom:2px; width:24px; height:12px; background:#17a2b8; border-radius:2px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:7px; opacity:0.5; pointer-events:none;" title="Drag to restrict training range (test extrapolation)">◀▶</div>
-                <div id="trainMaxHandle" style="position:absolute; right:50px; bottom:2px; width:24px; height:12px; background:#17a2b8; border-radius:2px; cursor:ew-resize; display:flex; align-items:center; justify-content:center; color:white; font-size:7px; opacity:0.5; pointer-events:none;" title="Drag to restrict training range (test extrapolation)">◀▶</div>
+            <div>
+                <canvas id="fitCanvas" class="chart" width="520" height="280" style="width:100%;"></canvas>
             </div>
-            <span id="xMinDisplay" style="display:none;">-2.0</span>
-            <span id="xMaxDisplay" style="display:none;">2.0</span>
-            <!-- Mobile training range controls -->
-            <div id="trainRangeMobileControls" class="mobile-sliders" style="display:none; margin-top:4px;">
-                <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
-                    <label style="font-size:10px; color:#17a2b8; font-weight:bold;">Train Range:</label>
-                    <input type="number" id="trainXMinMobile" step="0.5" style="width:50px; font-size:11px; padding:2px;">
-                    <span style="font-size:10px;">to</span>
-                    <input type="number" id="trainXMaxMobile" step="0.5" style="width:50px; font-size:11px; padding:2px;">
-                    <button id="applyTrainRangeMobile" style="font-size:10px; padding:2px 6px;">Apply</button>
+            <!-- Unified Train Range Slider -->
+            <div class="slider-controls-strip" id="trainRangeSliderStrip" style="opacity:0.5; pointer-events:none;">
+                <div class="labeled-slider" style="flex:1; max-width:100%;" title="Restrict training data to this x-range. Points outside test extrapolation.">
+                    <span class="slider-label">Training Range</span>
+                    <span class="slider-min" id="trainRangeMinLabel">-3</span>
+                    <div class="range-slider-container" id="trainRangeContainer">
+                        <div class="range-track"></div>
+                        <div class="range-fill" id="trainRangeFill"></div>
+                        <input type="range" id="trainMinSlider" min="-3" max="3" step="0.1" value="-2.8">
+                        <input type="range" id="trainMaxSlider" min="-3" max="3" step="0.1" value="2.8">
+                        <span class="range-value" id="trainMinValue" style="left:25%;">-2</span>
+                        <span class="range-value" id="trainMaxValue" style="left:75%;">2</span>
+                    </div>
+                    <span class="slider-max" id="trainRangeMaxLabel">3</span>
                 </div>
             </div>
+            <!-- Hidden elements for backward compatibility -->
+            <div id="trainMinHandle" style="display:none;"></div>
+            <div id="trainMaxHandle" style="display:none;"></div>
+            <div id="trainRangeControls" style="display:none;"></div>
+            <div id="trainRangeMobileControls" style="display:none;"></div>
+            <input type="number" id="trainXMinInput" value="-2.8" style="display:none;">
+            <input type="number" id="trainXMaxInput" value="2.8" style="display:none;">
+            <span id="xMinDisplay" style="display:none;">-2.0</span>
+            <span id="xMaxDisplay" style="display:none;">2.0</span>
+            <span id="trainPointCount" style="display:none;">—</span>
         </div>
 
         <!-- Bottom Left: Training Trace -->
@@ -738,18 +1026,24 @@
                     <span style="white-space:nowrap;" title="Loss change from start to now">ΔLoss:<strong id="deltaLossValue" style="color:#28a745; min-width:45px;">—</strong></span>
                 </div>
             </div>
-            <div style="position:relative;">
-                <canvas id="traceCanvas" class="chart" width="520" height="360" style="width:100%;"></canvas>
-                <div id="traceViewHandle" style="position:absolute; bottom:4px; left:230px; width:66px; height:16px; background:linear-gradient(to right, #007bff, #0056b3); border-radius:3px; cursor:ew-resize; display:none; align-items:center; justify-content:center; color:white; font-size:9px; opacity:0.9; z-index:10;" title="Drag left/right to zoom into early training steps (when paused)">◀ Zoom ▶</div>
+            <div>
+                <canvas id="traceCanvas" class="chart" width="520" height="340" style="width:100%;"></canvas>
             </div>
-            <!-- Mobile zoom control -->
-            <div id="zoomMobileControls" class="mobile-sliders" style="display:none; margin-top:4px;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <label style="font-size:10px;">Zoom (show first N steps):</label>
-                    <input type="range" id="zoomSliderMobile" min="50" max="5000" step="50" value="5000" style="width:100px;">
-                    <span id="zoomValueMobile" style="font-size:10px; min-width:40px;">All</span>
+            <!-- Unified View Slider -->
+            <div class="slider-controls-strip" id="viewSliderStrip" style="opacity:0.5; pointer-events:none;">
+                <div class="labeled-slider view-slider" style="flex:1; max-width:300px;" title="Show training steps from 0 to this value. Slide left to focus on initial convergence.">
+                    <span class="slider-label" style="min-width:35px;">View</span>
+                    <span class="slider-min">10</span>
+                    <div class="slider-track">
+                        <input type="range" id="viewSlider" min="10" max="1000" step="10" value="1000">
+                        <span class="slider-value" id="viewValue">All</span>
+                    </div>
+                    <span class="slider-max">All</span>
                 </div>
             </div>
+            <!-- Hidden elements for backward compatibility -->
+            <div id="traceViewHandle" style="display:none;"></div>
+            <div id="zoomMobileControls" style="display:none;"></div>
         </div>
 
         <!-- Bottom Right: Loss Landscape -->
@@ -765,8 +1059,10 @@
                     <button id="autoSelectBtn" style="font-size:10px; padding:1px 4px; background:#007bff; border:2px solid #007bff; color:white;" title="Auto-select interesting weights">Auto</button>
                 </div>
             </div>
-            <canvas id="lossCanvas" class="chart" width="520" height="360"></canvas>
-            <div style="font-size:9px; color:#555; text-align:center; margin-top:2px;">🟢 Start 🔴 Current • <span style="color:#00f;">■</span>≤.001 <span style="color:#0aa;">■</span>.01 <span style="color:#0a0;">■</span>.1 <span style="color:#aa0;">■</span>1 <span style="color:#f00;">■</span>≥10</div>
+            <div>
+                <canvas id="lossCanvas" class="chart" width="520" height="340" style="width:100%;"></canvas>
+            </div>
+            <div id="lossLegend" style="font-size:9px; color:#333; font-weight:500; text-align:center; margin-top:2px;">🟢 Start 🔴 Current • <span style="background:linear-gradient(to right, #00f, #0aa, #0a0, #aa0, #f00); padding:1px 20px; border-radius:2px; margin-right:8px;"></span>Loss: <span id="lossScaleMin">low</span> → <span id="lossScaleMax">high</span></div>
         </div>
     </div>
     
@@ -863,9 +1159,9 @@
         // Data generation range (full range)
         dataXMin: -3,
         dataXMax: 3,
-        // Training range (can be subset of data range)
-        trainXMin: -2,
-        trainXMax: 2,
+        // Training range (can be subset of data range) - default to ~95% of data range
+        trainXMin: -2.8,
+        trainXMax: 2.8,
         // Legacy compatibility
         xMin: -3,
         xMax: 3,
@@ -908,6 +1204,20 @@
         pointsInRange: 0,
         pointsOutRange: 0
     };
+    
+    // Loss landscape color scale calibration
+    // Calibrated at start of training for consistent colors throughout the run
+    let lossColorScale = {
+        calibrated: false,
+        minLoss: 0.0001,    // Best expected loss (blue)
+        maxLoss: 10,        // Worst expected loss (red)
+        noiseFloor: 0.0004  // Theoretical minimum based on noise
+    };
+    
+    // Trace view state - controls which steps are visible
+    let traceViewState = {
+        maxStep: Infinity   // Show steps 0 to this value, Infinity = show all
+    };
 
     let network = {
         numLayers: 1,
@@ -940,8 +1250,8 @@
         recentSamples: []
     };
     
-    // Training trace view control - null means show all, otherwise show steps 0 to this value
-    let traceViewEndStep = null;
+    // Old variable - now replaced by traceViewState.maxStep
+    // let traceViewEndStep = null;
 
     let gifCapture = {
         recording: false,
@@ -2099,6 +2409,7 @@ function updateParameters() {
         // Update UI
         updatePhaseUI();
         updateTrainingHandlePositions();
+        updateTrainRangeSliderBounds();
         
         const outsideCount = allTrainCandidates.filter(p => !p.inTrainRange).length;
         console.log(`Generated ${totalSamples} total points:`);
@@ -2267,6 +2578,119 @@ function updateParameters() {
             trainMinHandle.style.pointerEvents = 'none';
             trainMaxHandle.style.opacity = '0.5';
             trainMaxHandle.style.pointerEvents = 'none';
+        }
+    }
+    
+    // Update train range slider bounds when data is generated
+    function updateTrainRangeSliderBounds() {
+        const trainMinSlider = document.getElementById('trainMinSlider');
+        const trainMaxSlider = document.getElementById('trainMaxSlider');
+        const trainRangeSliderStrip = document.getElementById('trainRangeSliderStrip');
+        const trainRangeMinLabel = document.getElementById('trainRangeMinLabel');
+        const trainRangeMaxLabel = document.getElementById('trainRangeMaxLabel');
+        
+        if (!trainMinSlider || !trainMaxSlider) return;
+        
+        // Set slider bounds to data range
+        trainMinSlider.min = config.dataXMin.toString();
+        trainMinSlider.max = config.dataXMax.toString();
+        trainMaxSlider.min = config.dataXMin.toString();
+        trainMaxSlider.max = config.dataXMax.toString();
+        
+        // Set slider values to current training range
+        trainMinSlider.value = config.trainXMin.toString();
+        trainMaxSlider.value = config.trainXMax.toString();
+        
+        // Update labels
+        if (trainRangeMinLabel) trainRangeMinLabel.textContent = config.dataXMin.toString();
+        if (trainRangeMaxLabel) trainRangeMaxLabel.textContent = config.dataXMax.toString();
+        
+        // Enable/disable based on data state
+        if (trainRangeSliderStrip) {
+            if (dataset.generated) {
+                trainRangeSliderStrip.style.opacity = '1';
+                trainRangeSliderStrip.style.pointerEvents = 'auto';
+            } else {
+                trainRangeSliderStrip.style.opacity = '0.5';
+                trainRangeSliderStrip.style.pointerEvents = 'none';
+            }
+        }
+        
+        // Trigger UI update
+        const trainMinValue = document.getElementById('trainMinValue');
+        const trainMaxValue = document.getElementById('trainMaxValue');
+        const trainRangeFill = document.getElementById('trainRangeFill');
+        
+        if (trainMinValue && trainMaxValue && trainRangeFill) {
+            const min = parseFloat(trainMinSlider.min);
+            const max = parseFloat(trainMinSlider.max);
+            const minVal = parseFloat(trainMinSlider.value);
+            const maxVal = parseFloat(trainMaxSlider.value);
+            
+            trainMinValue.textContent = minVal.toFixed(1);
+            trainMaxValue.textContent = maxVal.toFixed(1);
+            
+            // Use consistent positioning formula accounting for thumb width (34px)
+            const minPercent = (minVal - min) / (max - min);
+            const maxPercent = (maxVal - min) / (max - min);
+            trainMinValue.style.left = `calc(17px + (100% - 34px) * ${minPercent})`;
+            trainMaxValue.style.left = `calc(17px + (100% - 34px) * ${maxPercent})`;
+            trainRangeFill.style.left = `calc(17px + (100% - 34px) * ${minPercent})`;
+            trainRangeFill.style.width = `calc((100% - 34px) * ${maxPercent - minPercent})`;
+        }
+    }
+    
+    // Update view slider max based on training progress
+    function updateViewSliderMax() {
+        const viewSlider = document.getElementById('viewSlider');
+        const viewValue = document.getElementById('viewValue');
+        const viewSliderStrip = document.getElementById('viewSliderStrip');
+        
+        if (!viewSlider) return;
+        
+        const totalSteps = history.steps.length;
+        
+        // Enable slider when we have enough data
+        if (viewSliderStrip) {
+            if (totalSteps > 50) {
+                viewSliderStrip.style.opacity = '1';
+                viewSliderStrip.style.pointerEvents = 'auto';
+            } else {
+                viewSliderStrip.style.opacity = '0.5';
+                viewSliderStrip.style.pointerEvents = 'none';
+            }
+        }
+        
+        // Update max to current step count (minimum 100 for usability)
+        const newMax = Math.max(100, totalSteps);
+        viewSlider.max = newMax.toString();
+        
+        // If slider is at max (showing "All"), keep it at max
+        if (traceViewState.maxStep === Infinity || parseInt(viewSlider.value, 10) >= newMax - 10) {
+            viewSlider.value = newMax.toString();
+            if (viewValue) viewValue.textContent = 'All';
+        }
+    }
+    
+    // Update loss scale legend based on calibrated values
+    function updateLossScaleLegend() {
+        const minEl = document.getElementById('lossScaleMin');
+        const maxEl = document.getElementById('lossScaleMax');
+        
+        if (minEl && lossColorScale.calibrated) {
+            if (lossColorScale.minLoss < 0.001) {
+                minEl.textContent = lossColorScale.minLoss.toExponential(0);
+            } else {
+                minEl.textContent = lossColorScale.minLoss.toFixed(3);
+            }
+        }
+        
+        if (maxEl && lossColorScale.calibrated) {
+            if (lossColorScale.maxLoss >= 10) {
+                maxEl.textContent = lossColorScale.maxLoss.toFixed(0);
+            } else {
+                maxEl.textContent = lossColorScale.maxLoss.toFixed(1);
+            }
         }
     }
     
@@ -2504,6 +2928,10 @@ function updateParameters() {
         trainingState.stepsSinceLastUpdate = 0;
         trainingState.recentSamples = [];
         
+        // Reset Run button text
+        const runBtn = document.getElementById('runBtn');
+        if (runBtn) runBtn.textContent = 'Run';
+        
         // Reset epoch tracking
         dataset.epoch = 0;
         dataset.stepInEpoch = 0;
@@ -2518,6 +2946,15 @@ function updateParameters() {
         history.avgLoss = [];
         history.weights = [];
         
+        // Reset trace view to show all
+        traceViewState.maxStep = Infinity;
+        const resetViewSlider = document.getElementById('viewSlider');
+        if (resetViewSlider) {
+            resetViewSlider.value = resetViewSlider.max;
+            const viewValue = document.getElementById('viewValue');
+            if (viewValue) viewValue.textContent = 'All';
+        }
+        
         // Reset evaluation state - must re-evaluate after model reset
         revealOptions.evaluated = false;
         
@@ -2529,10 +2966,16 @@ function updateParameters() {
         lossSurfaceCache = null;
         lossSurfaceTrail = [];
         
+        // Reset color scale calibration - will recalibrate on next computeLossSurface
+        lossColorScale.calibrated = false;
+        
         if (lossLandscapeAutoMode) {
             autoSelectInterestingWeights();
         }
         computeLossSurface();
+        
+        // Update loss legend with new calibration
+        updateLossScaleLegend();
         
         lossSurfaceStartPosition = {
             x: getWeightByIndex(lossSurfaceWeightIndices[0]),
@@ -2564,6 +3007,12 @@ function updateParameters() {
         
         updatePhaseUI();
         updateUI();
+        
+        // Force redraw all charts to initial state
+        drawNetwork();
+        drawFitPlot();
+        drawTrainingTrace();
+        drawLossSurface();
     }
 
     function forward(x) {
@@ -3426,10 +3875,10 @@ function updateParameters() {
         const ctx = canvas.getContext('2d');
         const w = canvas.width;
         const h = canvas.height;
-        const paddingLeft = 50;
-        const paddingRight = 50;
-        const paddingTop = 30;
-        const paddingBottom = 38;
+        const paddingLeft = 60;
+        const paddingRight = 60;
+        const paddingTop = 40;
+        const paddingBottom = 40;
 
         ctx.clearRect(0, 0, w, h);
 
@@ -3627,7 +4076,12 @@ function updateParameters() {
             });
         }
 
-        // Draw model prediction curve
+        // Draw model prediction curve - clipped to plot area
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(paddingLeft, paddingTop, plotWidth, plotHeight);
+        ctx.clip();
+        
         if (comparisonMode) {
             // Model A - blue
             ctx.strokeStyle = '#007bff';
@@ -3665,6 +4119,7 @@ function updateParameters() {
             });
             ctx.stroke();
         }
+        ctx.restore();  // Remove clipping
 
         // Axis labels
         ctx.font = '11px sans-serif';
@@ -4038,9 +4493,9 @@ function drawTrainingTrace() {
             viewHandle.style.display = 'none';
         }
         
-        // Reset view when running
+        // Reset view when running (show all)
         if (trainingState.running) {
-            traceViewEndStep = null;
+            traceViewState.maxStep = Infinity;
         }
     }
 
@@ -4051,7 +4506,7 @@ function drawTrainingTrace() {
             paddingTop, paddingBottom,
             savedRuns.A, savedRuns.B,
             showLoss, showAvgLoss, useLogScale,
-            traceViewEndStep  // Pass the view end step
+            traceViewState.maxStep  // Pass the view end step
         );
         return;
     }
@@ -4059,13 +4514,13 @@ function drawTrainingTrace() {
     // Draw axes even when no data yet
     const hasData = history.steps.length > 0;
     
-    // Calculate view window: always start from 0, end based on traceViewEndStep (when paused)
+    // Calculate view window: always start from 0, end based on traceViewState.maxStep
     let viewStartIdx = 0;
     let viewEndIdx = history.steps.length;
     
-    // If we have a view end step set, use it
-    if (traceViewEndStep !== null && traceViewEndStep < history.steps.length) {
-        viewEndIdx = Math.max(10, traceViewEndStep);
+    // If we have a view max step set (not Infinity), use it
+    if (traceViewState.maxStep !== Infinity && traceViewState.maxStep < history.steps.length) {
+        viewEndIdx = Math.max(10, traceViewState.maxStep);
     }
     
     // Get sliced data for the view
@@ -4107,7 +4562,7 @@ function drawTrainingTrace() {
     if (showLoss && history.testLoss.length > 0 && revealOptions.evaluated) {
         // Filter test loss to view window
         const viewTestLoss = history.testLoss.filter(t => 
-            t.step >= stepMin && (traceViewEndStep === null || t.step <= traceViewEndStep)
+            t.step >= stepMin && (traceViewState.maxStep === Infinity || t.step <= traceViewState.maxStep)
         );
         if (viewTestLoss.length > 0) {
             series.push({
@@ -4121,23 +4576,45 @@ function drawTrainingTrace() {
         }
     }
 
-    // Y axis range for loss (supports log scale) - ALWAYS starts from 0 in linear mode
-    let yMin = 0;  // Loss always starts from 0
+    // Y axis range for loss (supports log scale) - ALWAYS based on ALL loss data for stable axis
+    // Calculate from raw data, not just displayed series, so toggling curves doesn't change axis
+    let yMin = 0;  // Loss always starts from 0 in linear mode
     let yMax = -Infinity;
-    series.forEach(s => {
-        s.data.forEach(v => {
-            if (!Number.isFinite(v) || (useLogScale && v <= 0)) return;
-            const val = useLogScale ? Math.log10(v) : v;
-            yMax = Math.max(yMax, val);
-        });
+    
+    // Always include training loss in axis calculation
+    viewLoss.forEach(v => {
+        if (!Number.isFinite(v) || (useLogScale && v <= 0)) return;
+        const val = useLogScale ? Math.log10(v) : v;
+        yMax = Math.max(yMax, val);
     });
+    
+    // Always include average loss in axis calculation
+    viewAvgLoss.forEach(v => {
+        if (!Number.isFinite(v) || v === null || (useLogScale && v <= 0)) return;
+        const val = useLogScale ? Math.log10(v) : v;
+        yMax = Math.max(yMax, val);
+    });
+    
+    // Include test loss if available
+    if (history.testLoss.length > 0) {
+        history.testLoss.forEach(t => {
+            if (t.step >= stepMin && (traceViewState.maxStep === Infinity || t.step <= traceViewState.maxStep)) {
+                if (!Number.isFinite(t.loss) || (useLogScale && t.loss <= 0)) return;
+                const val = useLogScale ? Math.log10(t.loss) : t.loss;
+                yMax = Math.max(yMax, val);
+            }
+        });
+    }
+    
     if (useLogScale) {
         // For log scale, find the minimum non-zero value
         yMin = Infinity;
-        series.forEach(s => {
-            s.data.forEach(v => {
-                if (v > 0) yMin = Math.min(yMin, Math.log10(v));
-            });
+        viewLoss.forEach(v => { if (v > 0) yMin = Math.min(yMin, Math.log10(v)); });
+        viewAvgLoss.forEach(v => { if (v > 0 && v !== null) yMin = Math.min(yMin, Math.log10(v)); });
+        history.testLoss.forEach(t => {
+            if (t.step >= stepMin && (traceViewState.maxStep === Infinity || t.step <= traceViewState.maxStep)) {
+                if (t.loss > 0) yMin = Math.min(yMin, Math.log10(t.loss));
+            }
         });
         if (!Number.isFinite(yMin)) yMin = -4;
     }
@@ -4332,6 +4809,64 @@ function drawTrainingTrace() {
         ctx.font = 'bold 10px sans-serif';
         ctx.fillText('Weights', 0, 0);
         ctx.restore();
+    }
+    
+    // Draw legend above the plot area (in the top margin)
+    const legendY = 20;  // Above the plot, in the margin
+    let legendX = paddingLeft;
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left';
+    
+    // Train Loss (green solid line)
+    ctx.strokeStyle = '#28a745';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(legendX, legendY);
+    ctx.lineTo(legendX + 14, legendY);
+    ctx.stroke();
+    ctx.fillStyle = '#333';
+    ctx.fillText('Train', legendX + 17, legendY + 4);
+    legendX += 52;
+    
+    // Average Loss (blue solid line)
+    ctx.strokeStyle = '#007bff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(legendX, legendY);
+    ctx.lineTo(legendX + 14, legendY);
+    ctx.stroke();
+    ctx.fillStyle = '#333';
+    ctx.fillText('Avg', legendX + 17, legendY + 4);
+    legendX += 42;
+    
+    // Test Loss (orange dashed line) - only if evaluated
+    if (revealOptions.evaluated && history.testLoss.length > 0) {
+        ctx.strokeStyle = '#ff9800';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(legendX, legendY);
+        ctx.lineTo(legendX + 14, legendY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#333';
+        ctx.fillText('Test', legendX + 17, legendY + 4);
+        legendX += 42;
+    }
+    
+    // Weights (purple line) - only if showing weights
+    if (showWeights) {
+        ctx.strokeStyle = '#9467bd';
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        ctx.moveTo(legendX, legendY);
+        ctx.lineTo(legendX + 14, legendY);
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+        ctx.fillStyle = '#333';
+        ctx.fillText('Weights (first 8)', legendX + 17, legendY + 4);
     }
 }
 
@@ -4553,11 +5088,13 @@ function drawTrainingTrace() {
         minY -= padY;
         maxY += padY;
         
-        // Sample training points for loss calculation
-        const numSamples = 20;
+        // Always use evenly-spaced samples from the clean target function
+        // This ensures the loss landscape is stable and shows the "true" loss surface
+        // (using training data with noise would cause visual jumps)
         const samples = [];
+        const numSamples = 20;
         for (let i = 0; i < numSamples; i++) {
-            const x = config.xMin + Math.random() * (config.xMax - config.xMin);
+            const x = config.xMin + (i + 0.5) * (config.xMax - config.xMin) / numSamples;
             let y;
             try { y = config.targetFunc(x); } catch { y = 0; }
             samples.push({ x, y });
@@ -4585,7 +5122,7 @@ function drawTrainingTrace() {
                     const error = fwd.yhat - sample.y;
                     totalLoss += 0.5 * error * error;
                 }
-                const avgLoss = totalLoss / numSamples;
+                const avgLoss = totalLoss / samples.length;
                 
                 row.push(avgLoss);
                 if (avgLoss < minLoss) minLoss = avgLoss;
@@ -4602,6 +5139,79 @@ function drawTrainingTrace() {
             grid, minLoss, maxLoss, minX, maxX, minY, maxY, resolution,
             currentX: savedWX, currentY: savedWY
         };
+        
+        // Calibrate color scale on first compute (before training starts)
+        if (!lossColorScale.calibrated) {
+            calibrateLossColorScale(grid, minLoss, maxLoss);
+        }
+    }
+    
+    // Calibrate loss color scale based on initial loss surface + random probes
+    function calibrateLossColorScale(grid, gridMinLoss, gridMaxLoss) {
+        console.log('Calibrating loss color scale...');
+        
+        // 1. Get range from the 2D grid we just computed (3600 points)
+        let surfaceMin = gridMinLoss;
+        let surfaceMax = gridMaxLoss;
+        
+        // 2. Do additional random weight probes to estimate global range
+        const numProbes = 50;
+        const probeLosses = [];
+        
+        // Save current weights
+        const savedWeights = network.weights.map(layer => layer.slice());
+        const savedBiases = network.biases.map(layer => layer.slice());
+        
+        // Use evenly-spaced samples from clean target function (consistent with computeLossSurface)
+        const samples = [];
+        const numSamples = 20;
+        for (let i = 0; i < numSamples; i++) {
+            const x = config.xMin + (i + 0.5) * (config.xMax - config.xMin) / numSamples;
+            let y;
+            try { y = config.targetFunc(x); } catch { y = 0; }
+            samples.push({ x, y });
+        }
+        
+        // Probe random weight configurations
+        for (let probe = 0; probe < numProbes; probe++) {
+            // Random weights in typical initialization range
+            initializeNetwork();  // This initializes with random weights
+            
+            // Compute loss
+            let totalLoss = 0;
+            for (const sample of samples) {
+                const fwd = forward(sample.x);
+                const error = fwd.yhat - sample.y;
+                totalLoss += 0.5 * error * error;
+            }
+            const avgLoss = totalLoss / numSamples;
+            probeLosses.push(avgLoss);
+        }
+        
+        // Restore weights
+        network.weights = savedWeights;
+        network.biases = savedBiases;
+        
+        // Combine grid and probe statistics
+        const allMin = Math.min(surfaceMin, Math.min(...probeLosses));
+        const allMax = Math.max(surfaceMax, Math.max(...probeLosses));
+        const probeMean = probeLosses.reduce((a, b) => a + b, 0) / probeLosses.length;
+        
+        // 3. Estimate noise floor from config
+        const noiseFloor = config.noise * config.noise;
+        
+        // 4. Set calibrated color scale
+        // Min: expect training to find something better than random, but not below noise
+        lossColorScale.minLoss = Math.max(noiseFloor / 2, allMin / 10);
+        // Max: the worst we saw in our samples
+        lossColorScale.maxLoss = allMax * 1.2;
+        lossColorScale.noiseFloor = noiseFloor;
+        lossColorScale.calibrated = true;
+        
+        console.log(`Loss color scale calibrated: ${lossColorScale.minLoss.toExponential(2)} to ${lossColorScale.maxLoss.toFixed(2)}`);
+        console.log(`  Grid range: ${surfaceMin.toExponential(2)} to ${surfaceMax.toFixed(2)}`);
+        console.log(`  Probe range: ${Math.min(...probeLosses).toExponential(2)} to ${Math.max(...probeLosses).toFixed(2)} (mean: ${probeMean.toFixed(3)})`);
+        console.log(`  Noise floor: ${noiseFloor.toExponential(2)}`);
     }
     
     function drawLossSurface() {
@@ -4611,10 +5221,10 @@ function drawTrainingTrace() {
         const ctx = canvas.getContext('2d');
         const w = canvas.width;
         const h = canvas.height;
-        const paddingLeft = 45;
-        const paddingRight = 35;
-        const paddingTop = 20;
-        const paddingBottom = 25;
+        const paddingLeft = 60;
+        const paddingRight = 60;
+        const paddingTop = 40;
+        const paddingBottom = 40;
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
@@ -4642,20 +5252,20 @@ function drawTrainingTrace() {
         const cellW = plotW / resolution;
         const cellH = plotH / resolution;
         
-        // Fixed logarithmic color scale for consistent comparisons
-        // Maps loss 0.001 (deep blue) to 10.0 (deep red)
-        const fixedMinLog = Math.log10(0.001);  // -3
-        const fixedMaxLog = Math.log10(10);      // 1
-        const fixedLogRange = fixedMaxLog - fixedMinLog;  // 4 decades
+        // Calibrated logarithmic color scale - set at start of training and locked
+        // Uses lossColorScale.minLoss (blue) to lossColorScale.maxLoss (red)
+        const calibratedMinLog = Math.log10(Math.max(1e-6, lossColorScale.minLoss));
+        const calibratedMaxLog = Math.log10(Math.max(lossColorScale.minLoss * 10, lossColorScale.maxLoss));
+        const calibratedLogRange = calibratedMaxLog - calibratedMinLog;
         
         for (let iy = 0; iy < resolution; iy++) {
             for (let ix = 0; ix < resolution; ix++) {
                 const loss = grid[iy][ix];
                 
-                // Fixed log scale normalization (0 = loss 0.001, 1 = loss 10)
-                const clampedLoss = Math.max(0.001, Math.min(10, loss));
+                // Calibrated log scale normalization
+                const clampedLoss = Math.max(lossColorScale.minLoss, Math.min(lossColorScale.maxLoss, loss));
                 const logLoss = Math.log10(clampedLoss);
-                const normLoss = (logLoss - fixedMinLog) / fixedLogRange;
+                const normLoss = Math.max(0, Math.min(1, (logLoss - calibratedMinLog) / calibratedLogRange));
                 
                 // Smooth HSL-based gradient with more color resolution
                 // Hue: 240 (blue) → 180 (cyan) → 120 (green) → 60 (yellow) → 0 (red)
@@ -4858,19 +5468,25 @@ function drawTrainingTrace() {
             document.getElementById('totalAdds').textContent = trainingState.totalAdds.toLocaleString();
             document.getElementById('totalMuls').textContent = trainingState.totalMuls.toLocaleString();
             
+            // Format ops count helper
+            function formatOps(count) {
+                if (count >= 1e9) return (count / 1e9).toFixed(1) + 'B';
+                if (count >= 1e6) return (count / 1e6).toFixed(1) + 'M';
+                if (count >= 1e3) return (count / 1e3).toFixed(1) + 'K';
+                return count.toString();
+            }
+            
+            // Update individual adds/muls displays
+            const totalAddsDisplay = document.getElementById('totalAddsDisplay');
+            const totalMulsDisplay = document.getElementById('totalMulsDisplay');
+            if (totalAddsDisplay) totalAddsDisplay.textContent = formatOps(trainingState.totalAdds);
+            if (totalMulsDisplay) totalMulsDisplay.textContent = formatOps(trainingState.totalMuls);
+            
             // Update total ops display
             const totalOps = trainingState.totalAdds + trainingState.totalMuls;
             const totalOpsDisplay = document.getElementById('totalOpsDisplay');
             if (totalOpsDisplay) {
-                if (totalOps >= 1e9) {
-                    totalOpsDisplay.textContent = (totalOps / 1e9).toFixed(1) + 'B';
-                } else if (totalOps >= 1e6) {
-                    totalOpsDisplay.textContent = (totalOps / 1e6).toFixed(1) + 'M';
-                } else if (totalOps >= 1e3) {
-                    totalOpsDisplay.textContent = (totalOps / 1e3).toFixed(1) + 'K';
-                } else {
-                    totalOpsDisplay.textContent = totalOps.toString();
-                }
+                totalOpsDisplay.textContent = formatOps(totalOps);
             }
             
             // Update epoch and step counters
@@ -4929,6 +5545,9 @@ function drawTrainingTrace() {
                     deltaLossEl.style.color = '#666';
                 }
             }
+
+            // Update view slider max based on training progress
+            try { updateViewSliderMax(); } catch(e) { /* ignore */ }
 
             try { drawNetwork(); } catch(e) { console.error('drawNetwork error:', e); }
             try { drawFitPlot(); } catch(e) { console.error('drawFitPlot error:', e); }
@@ -4995,69 +5614,177 @@ function drawTrainingTrace() {
         config.noise = parseFloat(noiseSlider.value);
         noiseLabel.textContent = config.noise.toFixed(2);
 
-        const numLayersSlider = document.getElementById('numLayers');
-        const numLayersDisplay = document.getElementById('numLayersDisplay');
-        const networkLayersDisplay = document.getElementById('networkLayersDisplay');
-        numLayersSlider.addEventListener('input', () => {
-            network.numLayers = parseInt(numLayersSlider.value, 10);
-            if (numLayersDisplay) numLayersDisplay.textContent = network.numLayers.toString();
-            if (networkLayersDisplay) networkLayersDisplay.textContent = network.numLayers.toString();
-            resetModel();
-            updateUI();
-        });
-        network.numLayers = parseInt(numLayersSlider.value, 10);
-        if (numLayersDisplay) numLayersDisplay.textContent = network.numLayers.toString();
-
-        const hiddenSizeSlider = document.getElementById('hiddenSize');
-        const hiddenSizeDisplay = document.getElementById('hiddenSizeDisplay');
-        const networkSizeDisplay = document.getElementById('networkSizeDisplay');
-        hiddenSizeSlider.addEventListener('input', () => {
-            network.hiddenSize = parseInt(hiddenSizeSlider.value, 10);
-            if (hiddenSizeDisplay) hiddenSizeDisplay.textContent = network.hiddenSize.toString();
-            if (networkSizeDisplay) networkSizeDisplay.textContent = network.hiddenSize.toString();
-            resetModel();
-            updateUI();
-        });
-        network.hiddenSize = parseInt(hiddenSizeSlider.value, 10);
-        if (hiddenSizeDisplay) hiddenSizeDisplay.textContent = network.hiddenSize.toString();
+        // ===== UNIFIED SLIDERS =====
         
-        // Mobile training range controls
-        const trainXMinMobile = document.getElementById('trainXMinMobile');
-        const trainXMaxMobile = document.getElementById('trainXMaxMobile');
-        const applyTrainRangeMobile = document.getElementById('applyTrainRangeMobile');
-        if (applyTrainRangeMobile) {
-            applyTrainRangeMobile.addEventListener('click', () => {
-                if (!dataset.generated) return;
-                const newMin = parseFloat(trainXMinMobile.value);
-                const newMax = parseFloat(trainXMaxMobile.value);
-                if (!isNaN(newMin) && !isNaN(newMax) && newMin < newMax) {
-                    config.trainXMin = Math.max(config.dataXMin, newMin);
-                    config.trainXMax = Math.min(config.dataXMax, newMax);
+        // Helper: Update slider value label position
+        function updateSliderValuePosition(slider, valueEl) {
+            const min = parseFloat(slider.min);
+            const max = parseFloat(slider.max);
+            const val = parseFloat(slider.value);
+            const percent = ((val - min) / (max - min)) * 100;
+            // Thumb doesn't go to 0% or 100% - it's constrained by thumb width (30px)
+            // Interpolate position from 15px at 0% to (100% - 15px) at 100%
+            valueEl.style.left = `calc(15px + (100% - 30px) * ${percent / 100})`;
+            // Also update fill for non-range sliders
+            slider.style.setProperty('--fill-percent', percent + '%');
+            // Set thumb position on parent track element
+            const track = slider.parentElement;
+            if (track) track.style.setProperty('--thumb-position', percent + '%');
+        }
+        
+        // Layers Slider
+        const layersSlider = document.getElementById('layersSlider');
+        const layersValue = document.getElementById('layersValue');
+        if (layersSlider && layersValue) {
+            console.log('Setting up layers slider, current network.numLayers:', network.numLayers);
+            layersSlider.oninput = function() {
+                const newVal = parseInt(this.value, 10);
+                console.log('Layers slider changed to:', newVal, 'from network.numLayers:', network.numLayers);
+                network.numLayers = newVal;
+                layersValue.textContent = newVal.toString();
+                updateSliderValuePosition(this, layersValue);
+                console.log('Calling resetModel for layers change...');
+                try {
+                    resetModel();
+                    console.log('resetModel completed, network.numLayers is now:', network.numLayers);
+                } catch(e) {
+                    console.error('resetModel error (layers):', e);
+                }
+            };
+            // Initialize slider to match network state
+            layersSlider.value = network.numLayers;
+            layersValue.textContent = network.numLayers.toString();
+            updateSliderValuePosition(layersSlider, layersValue);
+        } else {
+            console.error('Layers slider or value element not found!');
+        }
+        
+        // Width Slider
+        const widthSlider = document.getElementById('widthSlider');
+        const widthValue = document.getElementById('widthValue');
+        if (widthSlider && widthValue) {
+            console.log('Setting up width slider, current network.hiddenSize:', network.hiddenSize);
+            widthSlider.oninput = function() {
+                const newVal = parseInt(this.value, 10);
+                console.log('Width slider changed to:', newVal, 'from network.hiddenSize:', network.hiddenSize);
+                network.hiddenSize = newVal;
+                widthValue.textContent = newVal.toString();
+                updateSliderValuePosition(this, widthValue);
+                console.log('Calling resetModel for width change...');
+                try {
+                    resetModel();
+                    console.log('resetModel completed, network.hiddenSize is now:', network.hiddenSize);
+                } catch(e) {
+                    console.error('resetModel error (width):', e);
+                }
+            };
+            // Initialize
+            widthSlider.value = network.hiddenSize;
+            widthValue.textContent = network.hiddenSize.toString();
+            updateSliderValuePosition(widthSlider, widthValue);
+        } else {
+            console.error('Width slider or value element not found!');
+        }
+        
+        // Train Range Sliders (two-thumb)
+        const trainMinSlider = document.getElementById('trainMinSlider');
+        const trainMaxSlider = document.getElementById('trainMaxSlider');
+        const trainMinValue = document.getElementById('trainMinValue');
+        const trainMaxValue = document.getElementById('trainMaxValue');
+        const trainRangeFill = document.getElementById('trainRangeFill');
+        
+        function updateTrainRangeUI() {
+            if (!trainMinSlider || !trainMaxSlider) return;
+            
+            const min = parseFloat(trainMinSlider.min);
+            const max = parseFloat(trainMinSlider.max);
+            const minVal = parseFloat(trainMinSlider.value);
+            const maxVal = parseFloat(trainMaxSlider.value);
+            
+            // Thumb is 34px wide, so half-width is 17px
+            // Interpolate position from 17px at 0% to (100% - 17px) at 100%
+            const minPercent = ((minVal - min) / (max - min));
+            const maxPercent = ((maxVal - min) / (max - min));
+            
+            // Update value labels - position them on the thumb center
+            if (trainMinValue) {
+                trainMinValue.textContent = minVal.toFixed(1);
+                trainMinValue.style.left = `calc(17px + (100% - 34px) * ${minPercent})`;
+            }
+            if (trainMaxValue) {
+                trainMaxValue.textContent = maxVal.toFixed(1);
+                trainMaxValue.style.left = `calc(17px + (100% - 34px) * ${maxPercent})`;
+            }
+            
+            // Update fill bar - same positioning formula
+            if (trainRangeFill) {
+                const leftPos = `calc(17px + (100% - 34px) * ${minPercent})`;
+                const rightPos = `calc(17px + (100% - 34px) * ${maxPercent})`;
+                trainRangeFill.style.left = leftPos;
+                trainRangeFill.style.width = `calc((100% - 34px) * ${maxPercent - minPercent})`;
+            }
+        }
+        
+        if (trainMinSlider && trainMaxSlider) {
+            trainMinSlider.addEventListener('input', () => {
+                // Ensure min doesn't exceed max
+                const maxVal = parseFloat(trainMaxSlider.value);
+                if (parseFloat(trainMinSlider.value) > maxVal - 0.2) {
+                    trainMinSlider.value = (maxVal - 0.2).toString();
+                }
+                config.trainXMin = parseFloat(trainMinSlider.value);
+                updateTrainRangeUI();
+                if (dataset.generated) {
                     updateTrainingRangeFromConfig();
-                    updateTrainingHandlePositions();
+                    drawFitPlot();
+                    updateUI();
+                }
+            });
+            
+            trainMaxSlider.addEventListener('input', () => {
+                // Ensure max doesn't go below min
+                const minVal = parseFloat(trainMinSlider.value);
+                if (parseFloat(trainMaxSlider.value) < minVal + 0.2) {
+                    trainMaxSlider.value = (minVal + 0.2).toString();
+                }
+                config.trainXMax = parseFloat(trainMaxSlider.value);
+                updateTrainRangeUI();
+                if (dataset.generated) {
+                    updateTrainingRangeFromConfig();
                     drawFitPlot();
                     updateUI();
                 }
             });
         }
         
-        // Mobile zoom control
-        const zoomSliderMobile = document.getElementById('zoomSliderMobile');
-        const zoomValueMobile = document.getElementById('zoomValueMobile');
-        if (zoomSliderMobile) {
-            zoomSliderMobile.addEventListener('input', () => {
-                const maxSteps = history.steps.length;
-                const zoomVal = parseInt(zoomSliderMobile.value, 10);
-                if (zoomVal >= maxSteps) {
+        // View Slider (training trace zoom)
+        const viewSlider = document.getElementById('viewSlider');
+        const viewValue = document.getElementById('viewValue');
+        
+        if (viewSlider && viewValue) {
+            viewSlider.addEventListener('input', () => {
+                const sliderVal = parseInt(viewSlider.value, 10);
+                const maxPossible = parseInt(viewSlider.max, 10);
+                
+                if (sliderVal >= maxPossible) {
                     traceViewState.maxStep = Infinity;
-                    zoomValueMobile.textContent = 'All';
+                    viewValue.textContent = 'All';
                 } else {
-                    traceViewState.maxStep = zoomVal;
-                    zoomValueMobile.textContent = zoomVal.toString();
+                    traceViewState.maxStep = sliderVal;
+                    viewValue.textContent = sliderVal.toString();
                 }
+                updateSliderValuePosition(viewSlider, viewValue);
                 drawTrainingTrace();
             });
+            // Initialize
+            updateSliderValuePosition(viewSlider, viewValue);
         }
+        
+        // Legacy backward compatibility (old mobile sliders - hidden)
+        const numLayersSlider = document.getElementById('numLayers');
+        const numLayersDisplay = document.getElementById('numLayersDisplay');
+        const hiddenSizeSlider = document.getElementById('hiddenSize');
+        const hiddenSizeDisplay = document.getElementById('hiddenSizeDisplay');
 
         const xMinSlider = document.getElementById('xMin');
         const xMaxSlider = document.getElementById('xMax');
@@ -5219,11 +5946,8 @@ function drawTrainingTrace() {
             generateDataBtn.addEventListener('click', () => {
                 compileTargetFunc();
                 
-                // Set training range to 95% of data range (hints at restriction possibility)
-                const dataRange = config.dataXMax - config.dataXMin;
-                const margin = dataRange * 0.025;  // 2.5% margin on each side
-                config.trainXMin = Math.round((config.dataXMin + margin) * 100) / 100;
-                config.trainXMax = Math.round((config.dataXMax - margin) * 100) / 100;
+                // Keep training range at config defaults (symmetric -2.8 to 2.8)
+                // Don't recalculate - just use what's already set in config
                 document.getElementById('trainXMinInput').value = config.trainXMin;
                 document.getElementById('trainXMaxInput').value = config.trainXMax;
                 
@@ -5598,117 +6322,9 @@ function drawTrainingTrace() {
             });
         });
         
-        // Drag handles for layers (horizontal) and size (vertical)
-        // Time-based: each tick changes value by 1
-        // getLimits returns { canDecrease, canIncrease } to block movement at extremes
-        setupDragHandle('layersHandle', 'horizontal', (delta) => {
-            const change = delta > 0 ? 1 : -1;
-            const newVal = Math.max(1, Math.min(4, network.numLayers + change));
-            if (newVal !== network.numLayers) {
-                network.numLayers = newVal;
-                document.getElementById('numLayers').value = newVal;
-                document.getElementById('numLayersValue').textContent = newVal;
-                document.getElementById('networkLayersDisplay').textContent = newVal;
-                resetModel();
-                updateUI();
-            }
-        }, () => ({
-            canDecrease: network.numLayers > 1,  // Can't go below 1 layer
-            canIncrease: network.numLayers < 4   // Can't go above 4 layers
-        }));
-        
-        setupDragHandle('sizeHandle', 'vertical', (delta) => {
-            // Vertical: negative delta (drag up) = increase size
-            const change = delta > 0 ? -1 : 1;
-            const newVal = Math.max(2, Math.min(16, network.hiddenSize + change));
-            if (newVal !== network.hiddenSize) {
-                network.hiddenSize = newVal;
-                document.getElementById('hiddenSize').value = newVal;
-                document.getElementById('hiddenSizeValue').textContent = newVal;
-                document.getElementById('networkSizeDisplay').textContent = newVal;
-                resetModel();
-                updateUI();
-            }
-        }, () => ({
-            canDecrease: network.hiddenSize > 2,   // Can't go below 2 neurons
-            canIncrease: network.hiddenSize < 16   // Can't go above 16 neurons
-        }));
-        
-        // Training range handles - restrict training to subset of data range
-        // These handles position relative to the data range boundaries
-        // Handles can slide inward to restrict training, or back outward to the full data range
-        setupDragHandle('trainMinHandle', 'horizontal', (delta) => {
-            if (!dataset.generated) return;
-            const change = delta > 0 ? 0.2 : -0.2;
-            const newVal = config.trainXMin + change;
-            // Can slide from data min to (trainXMax - 0.5)
-            const clampedVal = Math.max(config.dataXMin, Math.min(config.trainXMax - 0.5, newVal));
-            config.trainXMin = Math.round(clampedVal * 10) / 10;
-            updateTrainingRangeFromConfig();
-            updateTrainingHandlePositions();
-            drawFitPlot();
-        }, () => ({
-            canDecrease: config.trainXMin > config.dataXMin,           // Can move back toward data min
-            canIncrease: config.trainXMin < config.trainXMax - 0.5     // Can't overlap with trainMax
-        }));
-        
-        setupDragHandle('trainMaxHandle', 'horizontal', (delta) => {
-            if (!dataset.generated) return;
-            const change = delta > 0 ? 0.2 : -0.2;
-            const newVal = config.trainXMax + change;
-            // Can slide from (trainXMin + 0.5) to data max
-            const clampedVal = Math.max(config.trainXMin + 0.5, Math.min(config.dataXMax, newVal));
-            config.trainXMax = Math.round(clampedVal * 10) / 10;
-            updateTrainingRangeFromConfig();
-            updateTrainingHandlePositions();
-            drawFitPlot();
-        }, () => ({
-            canDecrease: config.trainXMax > config.trainXMin + 0.5,    // Can't overlap with trainMin
-            canIncrease: config.trainXMax < config.dataXMax            // Can move back toward data max
-        }));
-        
-        // Training Trace view handle - controls how much of the history to show
-        setupDragHandle('traceViewHandle', 'horizontal', (delta) => {
-            // Get total steps - works for both normal and comparison modes
-            let totalSteps;
-            const inCompMode = comparisonModeActive && savedRuns.A && savedRuns.B;
-            if (inCompMode) {
-                totalSteps = Math.max(
-                    savedRuns.A.steps.length > 0 ? savedRuns.A.steps[savedRuns.A.steps.length - 1] : 0,
-                    savedRuns.B.steps.length > 0 ? savedRuns.B.steps[savedRuns.B.steps.length - 1] : 0
-                );
-            } else {
-                totalSteps = history.steps.length > 0 ? history.steps[history.steps.length - 1] : 0;
-            }
-            if (totalSteps < 10) return;
-            
-            // Each tick changes by ~5% of total steps
-            const stepChange = Math.max(10, Math.floor(totalSteps * 0.05));
-            const change = delta > 0 ? stepChange : -stepChange;
-            
-            if (traceViewEndStep === null) {
-                traceViewEndStep = totalSteps;
-            }
-            
-            traceViewEndStep = Math.max(100, Math.min(totalSteps, traceViewEndStep + change));
-            drawTrainingTrace();
-        }, () => {
-            // Get total steps for bounds check
-            let totalSteps;
-            const inCompMode = comparisonModeActive && savedRuns.A && savedRuns.B;
-            if (inCompMode) {
-                totalSteps = Math.max(
-                    savedRuns.A.steps.length > 0 ? savedRuns.A.steps[savedRuns.A.steps.length - 1] : 0,
-                    savedRuns.B.steps.length > 0 ? savedRuns.B.steps[savedRuns.B.steps.length - 1] : 0
-                );
-            } else {
-                totalSteps = history.steps.length > 0 ? history.steps[history.steps.length - 1] : 0;
-            }
-            return {
-                canDecrease: traceViewEndStep === null || traceViewEndStep > 100,
-                canIncrease: traceViewEndStep === null || traceViewEndStep < totalSteps
-            };
-        });
+        // OLD DRAG HANDLES - Now replaced by unified sliders
+        // The drag handles are hidden but we keep setupDragHandle function for potential future use
+        // All control is now done via the new sliders: layersSlider, widthSlider, trainMinSlider/trainMaxSlider, viewSlider
         
         // Update displays on init
         document.getElementById('networkLayersDisplay').textContent = network.numLayers;
@@ -5838,33 +6454,36 @@ function drawTrainingTrace() {
             initializeNetwork();
             setupControls();
             populateWeightSelectors();
-            reset();
-            console.log('LearnCurve: reset complete, drawing UI...');
             
-            // Force initial draw of all UI components after reset
-            requestAnimationFrame(() => {
-                try {
-                    drawNetwork();
-                    drawFitPlot();
-                    drawTrainingTrace();
-                    updateEquations();
-                    console.log('LearnCurve: initial draw complete');
-                    
-                    // Auto-compute loss surface
-                    requestAnimationFrame(() => {
-                        try {
-                            autoSelectInterestingWeights();
-                            computeLossSurface();
-                            drawLossSurface();
-                            console.log('LearnCurve: loss surface computed');
-                        } catch(e) {
-                            console.error('Loss surface error:', e);
-                        }
-                    });
-                } catch(e) {
-                    console.error('Initial draw error:', e);
-                }
-            });
+            // Compute loss surface first (needs initialized network)
+            console.log('LearnCurve: computing initial loss surface...');
+            try {
+                autoSelectInterestingWeights();
+                computeLossSurface();
+                console.log('LearnCurve: loss surface computed, cache:', lossSurfaceCache ? 'ready' : 'null');
+            } catch(e) {
+                console.error('Initial loss surface error:', e);
+            }
+            
+            console.log('LearnCurve: setup complete, drawing initial UI...');
+            
+            // Draw all charts immediately (don't wait for requestAnimationFrame)
+            try {
+                console.log('LearnCurve: drawing all charts...');
+                drawNetwork();
+                drawFitPlot();
+                drawTrainingTrace();
+                drawLossSurface();
+                updateEquations();
+                
+                // Update phase UI at the end
+                updatePhaseUI();
+                updateUI();
+                
+                console.log('LearnCurve: initialization complete');
+            } catch(e) {
+                console.error('Initial draw error:', e);
+            }
         } catch(e) {
             console.error('Init error:', e);
         }
@@ -5876,3 +6495,4 @@ function drawTrainingTrace() {
 </script>
 </body>
 </html>
+

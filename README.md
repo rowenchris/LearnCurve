@@ -44,8 +44,8 @@ LearnCurve guides you through the machine learning process:
 - **Train/Test Split**: Automatic 80/20 split with held-out test set
 
 ### 🧠 Network Design & Training (Phase 2)
-- Adjust hidden layers (1-4) and neurons per layer (2-16)
-- Drag handles for quick architecture changes
+- Adjust hidden layers (1-5) and neurons per layer (1-32)
+- Unified slider controls with labeled value displays
 - **Learning Rate**: Control step size (0.001 to 0.5)
 - **Optimizer**: Compare Simple (SGD) vs Adam
 - **Activation**: Choose between ReLU and Sigmoid
@@ -55,7 +55,7 @@ LearnCurve guides you through the machine learning process:
 ### 📊 Visualization
 - **Examples vs Model**: Prediction curve with training points; reveal held-out test data and original recipe
 - **Training Trace**: Loss over time with test loss overlay and zoom control
-- **Loss Landscape**: Fixed logarithmic color scale for consistent comparison
+- **Loss Landscape**: Auto-calibrated color scale with optimization path trail
 - **Equations Panel**: Forward and backward pass math explained
 
 ### 🔬 Evaluation & Comparison (Phase 3)
@@ -130,7 +130,7 @@ python3 -m http.server 8000
 
 - **Pure HTML/CSS/JavaScript** – zero dependencies
 - **No build step** – single self-contained file
-- **~5700 lines** of code
+- **~6500 lines** of code
 - **Responsive design** – works on desktop (sidebar hidden on mobile)
 - **Gradient clipping** – numerically stable training
 
