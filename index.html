@@ -3888,7 +3888,7 @@ function updateParameters() {
 
         const hasRunA = !!savedRuns.A;
         const hasRunB = !!savedRuns.B;
-        const comparisonMode = hasRunA && hasRunB;
+        const comparisonMode = hasRunA && hasRunB && comparisonModeActive;
 
         // Generate model prediction curve
         const numPoints = 200;
