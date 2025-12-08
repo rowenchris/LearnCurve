@@ -28,8 +28,8 @@ LearnCurve guides you through the machine learning process:
 |-------|-------------|
 | **Network Design** | Animated diagram showing neurons, weights, and biases with operation counts |
 | **Examples vs Model** | Training points (blue) vs model prediction (blue curve), with optional held-out data and recipe overlay |
-| **Training Trace** | Loss curves (training + test) with rolling average and ΔLoss indicator |
-| **Loss Landscape** | 2D heatmap showing optimization path through weight space |
+| **Training Trace** | Error curves (training + test) with rolling average and ΔError indicator |
+| **Error Landscape** | 2D heatmap showing optimization path through weight space |
 
 **Goal:** Train the network until the blue prediction curve matches the data!
 
@@ -46,16 +46,16 @@ LearnCurve guides you through the machine learning process:
 ### 🧠 Network Design & Training (Phase 2)
 - Adjust hidden layers (1-5) and neurons per layer (1-32)
 - Unified slider controls with labeled value displays
-- **Learning Rate**: Control step size (0.001 to 0.5)
+- **Learning Rate (η)**: Control step size (0.001 to 0.5)
 - **Optimizer**: Compare Simple (SGD) vs Adam
-- **Activation**: Choose between ReLU and Sigmoid
+- **Activation (σ)**: Choose between ReLU and Sigmoid
 - **Training Range**: Restrict training to test extrapolation
 - Watch weights and biases update in real-time
 
 ### 📊 Visualization
 - **Examples vs Model**: Prediction curve with training points; reveal held-out test data and original recipe
-- **Training Trace**: Loss over time with test loss overlay and zoom control
-- **Loss Landscape**: Auto-calibrated color scale with optimization path trail
+- **Training Trace**: Error over time with test error overlay and zoom control
+- **Error Landscape**: Auto-calibrated color scale with optimization path trail
 - **Equations Panel**: Forward and backward pass math explained
 
 ### 🔬 Evaluation & Comparison (Phase 3)
@@ -77,6 +77,46 @@ LearnCurve guides you through the machine learning process:
 
 ---
 
+## 📐 Mathematical Notation
+
+LearnCurve uses student-friendly notation aligned with standard machine learning education:
+
+| Symbol | Meaning |
+|--------|---------|
+| `x` | Input value |
+| `t` | Target (true value from data recipe) |
+| `y` | Model prediction |
+| `w_j` | Weights (connecting neurons) |
+| `b_j`, `c` | Biases |
+| `h_j` | Hidden neuron activations |
+| `z_j` | Pre-activation (weighted sum) |
+| `σ` | Activation function (ReLU or Sigmoid) |
+| `E` | Error: E = ½(y − t)² |
+| `η` | Learning rate |
+
+### Forward Pass
+```
+z_j = w_j·x + b_j       (weighted sum)
+h_j = σ(z_j)            (activation)
+y = w₁h₁ + w₂h₂ + ... + c  (output)
+E = ½(y − t)²           (error)
+```
+
+### Backward Pass (Gradients)
+```
+dE/dy = y − t           (error derivative)
+dE/dw_j = (dE/dy)·h_j   (output weight gradient)
+dE/dh_j = (dE/dy)·w_j   (hidden activation gradient)
+dE/dz_j = (dE/dh_j)·σ'(z_j)  (chain rule)
+```
+
+### Weight Update (SGD)
+```
+w ← w − η · dE/dw
+```
+
+---
+
 ## 🎓 Who Is This For?
 
 Students learning machine learning who have:
@@ -87,9 +127,9 @@ Students learning machine learning who have:
 ### Concepts Demonstrated
 1. **Training vs Test Data** – Why we hold out data for evaluation
 2. **Forward Pass** – How inputs flow through layers (weighted sums + activations)
-3. **Loss Function** – Measuring prediction error (MSE)
+3. **Error Function** – Measuring prediction error (MSE): E = ½(y − t)²
 4. **Backpropagation** – Computing gradients via chain rule
-5. **Gradient Descent** – Adjusting weights to minimize loss
+5. **Gradient Descent** – Adjusting weights to minimize error
 6. **Epochs** – Multiple passes through training data
 7. **Overfitting** – When models memorize instead of generalize
 8. **Interpolation vs Extrapolation** – Performance inside vs outside training range
@@ -108,7 +148,7 @@ Students learning machine learning who have:
 | 1 layer vs 4 layers | Depth vs training speed trade-off |
 | 3 neurons vs 16 neurons | Width vs expressiveness |
 | Restrict training range | See extrapolation failures |
-| Watch Loss Landscape | See gradient descent navigate the surface |
+| Watch Error Landscape | See gradient descent navigate the surface |
 
 ---
 

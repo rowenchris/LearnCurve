@@ -855,7 +855,7 @@
             <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:4px;">
                 <!-- Learning Rate -->
                 <div style="display:flex; align-items:center; gap:3px;">
-                    <label style="font-size:10px; color:#333;">Learning Rate:</label>
+                    <label style="font-size:10px; color:#333;">Learning Rate (η):</label>
                     <input type="range" id="learningRate" min="-3" max="-0.3" step="0.01" value="-1" style="width:50px;">
                     <span class="value" id="learningRateValue" style="font-size:10px; min-width:32px;">0.100</span>
                 </div>
@@ -863,13 +863,13 @@
                 <!-- Optimizer -->
                 <div id="optimizerButtons" style="display:flex; align-items:center; gap:3px;">
                     <label style="font-size:10px; color:#333;">Optimizer:</label>
-                    <button class="opt-btn" data-opt="sgd" style="padding:2px 6px; font-size:10px; border:2px solid #007bff; background:#007bff; color:white; border-radius:3px; cursor:pointer;" title="Simple Gradient Descent&#10;&#10;w ← w − η · ∂L/∂w&#10;&#10;Each weight moves opposite to its gradient, proportional to learning rate η.&#10;&#10;Recommended learning rate: 0.05-0.2&#10;Simple but can be slow or oscillate.">Simple</button>
+                    <button class="opt-btn" data-opt="sgd" style="padding:2px 6px; font-size:10px; border:2px solid #007bff; background:#007bff; color:white; border-radius:3px; cursor:pointer;" title="Simple Gradient Descent&#10;&#10;w ← w − η · dE/dw&#10;&#10;Each weight moves opposite to its gradient, proportional to learning rate η.&#10;&#10;Recommended learning rate: 0.05-0.2&#10;Simple but can be slow or oscillate.">Simple</button>
                     <button class="opt-btn" data-opt="adam" style="padding:2px 6px; font-size:10px; border:2px solid #ccc; background:#fff; color:#333; border-radius:3px; cursor:pointer;" title="Adam Optimizer&#10;&#10;Combines two ideas:&#10;• Momentum: smooth out noisy gradients&#10;• Adaptive rates: bigger steps for rare gradients&#10;&#10;Recommended learning rate: 0.001-0.02&#10;(Lower than Simple because Adam amplifies updates)&#10;&#10;Usually learns faster and more reliably.">Adam</button>
                 </div>
                 
-                <!-- Activation -->
+                <!-- Activation σ -->
                 <div id="activationButtons" style="display:flex; align-items:center; gap:3px;">
-                    <label style="font-size:10px; color:#333;">Activation:</label>
+                    <label style="font-size:10px; color:#333;">Activation (σ):</label>
                     <button class="act-btn" data-act="relu" style="padding:2px 6px; font-size:10px; border:2px solid #007bff; background:#007bff; color:white; border-radius:3px; cursor:pointer; display:flex; align-items:center; gap:2px;">
                         <svg width="14" height="10" viewBox="0 0 20 14"><path d="M1 10 L10 10 L19 2" stroke="currentColor" stroke-width="2" fill="none"/></svg>ReLU
                     </button>
@@ -881,7 +881,7 @@
                 <span style="color:#ddd;">|</span>
                 
                 <!-- Stats -->
-                <span style="font-size:11px; color:#28a745;">Train Loss: <strong id="trainLossValue">—</strong></span>
+                <span style="font-size:11px; color:#28a745;">Train Error: <strong id="trainLossValue">—</strong></span>
                 <span style="font-size:11px; color:#007bff;"><span id="stepsPerSec">—</span> steps/sec</span>
                 <span style="color:#ddd;">|</span>
                 <span style="font-size:10px; color:#555;" title="Arithmetic operations this training run">
@@ -1016,14 +1016,14 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:3px;">
                 <h2 style="margin:0; font-size:13px; border:none; padding:0;">Training Trace</h2>
                 <div style="display:flex; gap:5px; font-size:10px; align-items:center; flex-wrap:wrap;">
-                    <label style="display:flex; align-items:center; gap:1px;" title="Show loss curve"><input type="checkbox" id="traceLoss" checked>Loss</label>
+                    <label style="display:flex; align-items:center; gap:1px;" title="Show error curve"><input type="checkbox" id="traceLoss" checked>Error</label>
                     <label style="display:flex; align-items:center; gap:1px;" title="Show weight trajectories"><input type="checkbox" id="traceWeights" checked>Weights</label>
                     <label style="display:flex; align-items:center; gap:1px;" title="Logarithmic scale"><input type="checkbox" id="traceLogScale">Log</label>
                     <span style="color:#ddd;">|</span>
-                    <label style="display:flex; align-items:center; gap:1px;" title="Rolling average loss"><input type="checkbox" id="traceAvgLoss" checked>Average</label>
+                    <label style="display:flex; align-items:center; gap:1px;" title="Rolling average error"><input type="checkbox" id="traceAvgLoss" checked>Average</label>
                     <input type="range" id="avgWindowSlider" min="10" max="1000" step="10" value="100" style="width:35px;" title="Averaging window size"><span id="avgWindowValue" style="color:#007bff; min-width:22px;">100</span>
                     <span style="color:#ddd;">|</span>
-                    <span style="white-space:nowrap;" title="Loss change from start to now">ΔLoss:<strong id="deltaLossValue" style="color:#28a745; min-width:45px;">—</strong></span>
+                    <span style="white-space:nowrap;" title="Error change from start to now">ΔError:<strong id="deltaLossValue" style="color:#28a745; min-width:45px;">—</strong></span>
                 </div>
             </div>
             <div>
@@ -1046,10 +1046,10 @@
             <div id="zoomMobileControls" style="display:none;"></div>
         </div>
 
-        <!-- Bottom Right: Loss Landscape -->
+        <!-- Bottom Right: Error Landscape -->
         <div class="panel" style="padding:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
-                <h2 style="margin:0; font-size:13px; border:none; padding:0;">Loss Landscape</h2>
+                <h2 style="margin:0; font-size:13px; border:none; padding:0;">Error Landscape</h2>
                 <div style="display:flex; gap:3px; font-size:10px; align-items:center;">
                     <span id="weightSelectContainer" style="display:flex; gap:2px; align-items:center; opacity:0.5;" title="Click to manually select weights">
                         <select id="weightXSelect" style="font-size:9px; padding:1px; max-width:70px;"><option value="0">w₁</option></select>
@@ -1062,7 +1062,7 @@
             <div>
                 <canvas id="lossCanvas" class="chart" width="520" height="340" style="width:100%;"></canvas>
             </div>
-            <div id="lossLegend" style="font-size:9px; color:#333; font-weight:500; text-align:center; margin-top:2px;">🟢 Start 🔴 Current • <span style="background:linear-gradient(to right, #00f, #0aa, #0a0, #aa0, #f00); padding:1px 20px; border-radius:2px; margin-right:8px;"></span>Loss: <span id="lossScaleMin">low</span> → <span id="lossScaleMax">high</span></div>
+            <div id="lossLegend" style="font-size:9px; color:#333; font-weight:500; text-align:center; margin-top:2px;">🟢 Start 🔴 Current • <span style="background:linear-gradient(to right, #00f, #0aa, #0a0, #aa0, #f00); padding:1px 20px; border-radius:2px; margin-right:8px;"></span>Error: <span id="lossScaleMin">low</span> → <span id="lossScaleMax">high</span></div>
         </div>
     </div>
     
@@ -1115,26 +1115,26 @@
             <p style="margin:0 0 2px 0;"><strong style="color:#007bff;">Noise</strong> — Random variation (real data is messy)</p>
             <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Step</strong> — Update from one example</p>
             <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Epoch</strong> — Full pass through training data</p>
-            <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Loss</strong> — Model error (lower = better)</p>
-            <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Learning Rate</strong> — Step size for parameter updates</p>
-            <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Optimizer</strong> — Weight update algorithm</p>
-            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Weights</strong> — Multipliers on connections</p>
-            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Biases</strong> — Offset added at each neuron</p>
-            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Gradient</strong> — Steepest uphill direction</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Error (E)</strong> — Prediction error (lower = better)</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Learning Rate (η)</strong> — Step size for updates</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Activation (σ)</strong> — Nonlinear function (ReLU/Sigmoid)</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Weights (w)</strong> — Multipliers on connections</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Biases (b, c)</strong> — Offset added at each neuron</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Gradient (dE/dw)</strong> — Steepest uphill direction</p>
             <p style="margin:0 0 2px 0;"><strong style="color:#dc3545;">Overfitting</strong> — Memorizing instead of learning</p>
             <p style="margin:0 0 6px 0;"><strong style="color:#dc3545;">Extrapolation</strong> — Predicting outside training range</p>
         </div>
         
         <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">The Math</h4>
-        <p style="margin:0 0 3px 0;"><strong>Forward:</strong> Each layer: weighted sum → activation → output.</p>
-        <p style="margin:0 0 3px 0;"><strong>Loss:</strong> ½(predicted − actual)² penalizes big errors.</p>
-        <p style="margin:0 0 3px 0;"><strong>Backward:</strong> Trace error via <em>chain rule</em> to find each weight's effect.</p>
+        <p style="margin:0 0 3px 0;"><strong>Forward:</strong> z = w·x + b → h = σ(z) → y</p>
+        <p style="margin:0 0 3px 0;"><strong>Error:</strong> E = ½(y − t)² where t = target</p>
+        <p style="margin:0 0 3px 0;"><strong>Backward:</strong> Chain rule finds dE/dw</p>
         <p style="margin:0 0 3px 0; font-size:11px; color:#666; font-style:italic; padding-left:6px;">d[f(g(x))]/dx = f'(g(x)) · g'(x)</p>
-        <p style="margin:0 0 6px 0;"><strong>Update:</strong> Step opposite to gradient (downhill).</p>
+        <p style="margin:0 0 6px 0;"><strong>Update:</strong> w ← w − η · dE/dw (downhill step)</p>
         
         <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">Optimizers</h4>
-        <p style="margin:0 0 3px 0;"><strong>Simple (SGD)</strong> — Basic: weight -= rate × gradient</p>
-        <p style="margin:0 0 6px 0;"><strong>Adam</strong> — Adapts rate per-weight. Usually faster.</p>
+        <p style="margin:0 0 3px 0;"><strong>Simple (SGD)</strong> — w ← w − η · dE/dw</p>
+        <p style="margin:0 0 6px 0;"><strong>Adam</strong> — Adapts η per-weight. Usually faster.</p>
         
         <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">Try These</h4>
         <p style="margin:0 0 2px 0;">📈 <strong>Simple:</strong> <code>x</code>, <code>x^2</code>, <code>x^3-3*x</code></p>
@@ -1145,7 +1145,7 @@
         <p style="margin:0;">📊 Increase noise → learning breaks down</p>
         
         <div style="margin-top:8px; padding-top:6px; border-top:1px solid #ddd; font-size:12px; color:#888; text-align:center;">
-            💡 <em>ML = adjusting numbers to minimize error!</em>
+            💡 <em>ML = adjusting w to minimize E!</em>
         </div>
     </div>
 </div><!-- end container -->
@@ -1401,7 +1401,7 @@
         
         // Create composite canvas: 2x2 grid layout
         // Top row: Network Design | Examples vs Model
-        // Bottom row: Training Trace | Loss Landscape
+        // Bottom row: Training Trace | Error Landscape
         const padding = 10;
         const titleHeight = 18;
         const leftWidth = Math.max(networkCanvas.width, traceCanvas.width);
@@ -1439,8 +1439,8 @@
         ctx.fillText('Training Trace', padding, bottomY + 12);
         ctx.drawImage(traceCanvas, padding, bottomY + titleHeight);
         
-        // Bottom-right: Loss Landscape
-        ctx.fillText('Loss Landscape', leftWidth + padding * 2, bottomY + 12);
+        // Bottom-right: Error Landscape
+        ctx.fillText('Error Landscape', leftWidth + padding * 2, bottomY + 12);
         ctx.drawImage(lossCanvas, leftWidth + padding * 2, bottomY + titleHeight);
         
         return composite;
@@ -3491,8 +3491,8 @@ function updateParameters() {
             });
         }
         
-        // Draw nodes
-        const actSymbol = config.activation === 'relu' ? 'ReLU' : 'σ';
+        // Draw nodes - always use σ for activation symbol (standard ML notation)
+        const actSymbol = 'σ';
         
         // Determine if we can show full equations (small networks only)
         const canShowFullEq = numLayers <= 2 && hiddenSize <= 4;
@@ -3532,23 +3532,23 @@ function updateParameters() {
                     ctx.stroke();
                     
                     if (canShowFullEq) {
-                        // Full equation: ŷ = v1*h1 + v2*h2 + ... + b
+                        // Full equation: y = w1*h1 + w2*h2 + ... + c
                         const outputWeights = network.weights[network.weights.length - 1];
                         const outputBias = network.biases[network.biases.length - 1][0];
                         let eqParts = [];
                         for (let i = 0; i < hiddenSize && i < 4; i++) {
-                            const w = outputWeights[i];
+                            const wt = outputWeights[i];
                             if (i === 0) {
-                                eqParts.push(`${fmtWFirst(w)}·h${numLayers}${i+1}`);
+                                eqParts.push(`${fmtWFirst(wt)}·h${i+1}`);
                             } else {
-                                eqParts.push(`${fmtW(w)}·h${numLayers}${i+1}`);
+                                eqParts.push(`${fmtW(wt)}·h${i+1}`);
                             }
                         }
                         if (hiddenSize > 4) eqParts.push('...');
                         
                         ctx.fillStyle = '#000';
                         ctx.font = 'bold 18px sans-serif';
-                        ctx.fillText('ŷ', layer.x, node.y - 8);
+                        ctx.fillText('y', layer.x, node.y - 8);
                         ctx.font = `${smallFont - 1}px sans-serif`;
                         ctx.fillStyle = '#333';
                         // Show equation on two lines if needed
@@ -3561,10 +3561,10 @@ function updateParameters() {
                     } else {
                         ctx.fillStyle = '#000';
                         ctx.font = 'bold 18px sans-serif';
-                        ctx.fillText('ŷ', layer.x, node.y - 6);
+                        ctx.fillText('y', layer.x, node.y - 6);
                         ctx.font = `${smallFont}px sans-serif`;
                         ctx.fillStyle = '#555';
-                        ctx.fillText('Σv·h+b', layer.x, node.y + 8);
+                        ctx.fillText('Σw·h+c', layer.x, node.y + 8);
                     }
                 } else {
                     // Hidden node - oval with equation
@@ -3659,7 +3659,7 @@ function updateParameters() {
         ctx.textAlign = 'center';
         ctx.fillText('x', layers[0].x, layers[0].nodes[0].y - 12);
         
-        // Show current values: x, y, ŷ, and loss
+        // Show current values: x, t (target), y (prediction), and E (error)
         if (trainingState.recentSamples.length > 0) {
             const lastSample = trainingState.recentSamples[trainingState.recentSamples.length - 1];
             const lastLoss = history.loss.length > 0 ? history.loss[history.loss.length - 1] : null;
@@ -3668,17 +3668,17 @@ function updateParameters() {
             ctx.textAlign = 'left';
             ctx.fillStyle = '#333';
             
-            // Left side: input and target
+            // Left side: input and target (t for target)
             ctx.fillText(`x = ${lastSample.x.toFixed(3)}`, 8, 18);
-            ctx.fillText(`y = ${lastSample.y.toFixed(3)}`, 8, 32);
+            ctx.fillText(`t = ${lastSample.y.toFixed(3)}`, 8, 32);
             
-            // Right side: prediction and loss
+            // Right side: prediction (y) and error (E)
             ctx.textAlign = 'right';
             if (history.loss.length > 0) {
                 const fwd = forward(lastSample.x);
-                ctx.fillText(`ŷ = ${fwd.yhat.toFixed(3)}`, w - 8, 18);
+                ctx.fillText(`y = ${fwd.yhat.toFixed(3)}`, w - 8, 18);
                 ctx.fillStyle = lastLoss < 0.01 ? '#28a745' : '#dc3545';
-                ctx.fillText(`L = ½(ŷ-y)² = ${lastLoss.toFixed(4)}`, w - 8, 32);
+                ctx.fillText(`E = ½(y−t)² = ${lastLoss.toFixed(4)}`, w - 8, 32);
             }
         }
         
@@ -3801,42 +3801,38 @@ function updateParameters() {
         // Subscript numbers for cleaner notation
         const sub = (n) => ['₀','₁','₂','₃','₄'][n] || n;
         
-        // Activation derivative in calculus terms
+        // Activation derivative in calculus terms (using σ for activation)
         const actDeriv = {
-            'relu': "f'(z) = 1 if z > 0, else 0  <em style='color:#888'>(no saturation!)</em>",
-            'sigmoid': "f'(z) = f(z) · (1 − f(z))  <em style='color:#888'>(can vanish near 0 or 1)</em>"
+            'relu': "σ'(z) = 1 if z > 0, else 0  <em style='color:#888'>(no saturation!)</em>",
+            'sigmoid': "σ'(z) = σ(z) · (1 − σ(z))  <em style='color:#888'>(can vanish near 0 or 1)</em>"
         };
         
         let forwardHtml = `
             <strong>Setup:</strong> ${L} hidden layer${L>1?'s':''}, ${H} neurons each<br>
-            <strong>Activation:</strong> f = ${actName}<br><br>
+            <strong>Activation:</strong> σ = ${actName}<br><br>
         `;
         
-        // Layer-by-layer forward with subscripts
-        forwardHtml += `<span style="color:#2E86AB">h${sub(0)}</span> = x  <em style="color:#888">(input)</em><br>`;
-        for (let l = 1; l <= L; l++) {
-            const prevH = l === 1 ? 'x' : `h${sub(l-1)}`;
-            forwardHtml += `<span style="color:#F18F01">z${sub(l)}</span> = W${sub(l)} · ${prevH} + b${sub(l)}  <em style="color:#888">(weighted sum)</em><br>`;
-            forwardHtml += `<span style="color:#28a745">h${sub(l)}</span> = f(z${sub(l)})  <em style="color:#888">(apply activation)</em><br>`;
-        }
-        forwardHtml += `<br><span style="color:#6f42c1">ŷ</span> = v · h${sub(L)} + c  <em style="color:#888">(output layer)</em>`;
+        // Layer-by-layer forward with subscripts (using scalar notation)
+        forwardHtml += `<span style="color:#F18F01">z</span><sub>j</sub> = w<sub>j</sub>·x + b<sub>j</sub>  <em style="color:#888">(weighted sum)</em><br>`;
+        forwardHtml += `<span style="color:#28a745">h</span><sub>j</sub> = σ(z<sub>j</sub>)  <em style="color:#888">(activation)</em><br>`;
+        forwardHtml += `<br><span style="color:#6f42c1">y</span> = w₁h₁ + w₂h₂ + ... + c  <em style="color:#888">(output)</em><br>`;
+        forwardHtml += `<span style="color:#dc3545">E</span> = ½(y − t)²  <em style="color:#888">(error)</em>`;
         
-        // Backward pass with calculus notation
+        // Backward pass with calculus notation (using E for error, y for prediction, t for target)
         let backwardHtml = `
-            <strong>Loss function:</strong> L = ½(ŷ − y)²<br><br>
-            <strong>Chain rule from output:</strong><br>
-            <span style="color:#dc3545">∂L/∂ŷ</span> = ŷ − y  <em style="color:#888">(prediction error)</em><br>
-            ∂L/∂v = (∂L/∂ŷ) · h${sub(L)}<br>
-            ∂L/∂c = ∂L/∂ŷ<br><br>
-            <strong>Chain rule through layers:</strong><br>
+            <strong>Loss derivative:</strong><br>
+            <span style="color:#dc3545">dE/dy</span> = y − t<br><br>
+            <strong>Output layer:</strong><br>
+            dE/dw<sub>j</sub> = (dE/dy) · h<sub>j</sub><br>
+            dE/dc = dE/dy<br><br>
+            <strong>Hidden layer:</strong><br>
+            dE/dh<sub>j</sub> = (dE/dy) · w<sub>j</sub><br>
+            dh<sub>j</sub>/dz<sub>j</sub> = σ'(z<sub>j</sub>)<br>
+            <span style="color:#dc3545">dE/dz<sub>j</sub></span> = (dE/dh<sub>j</sub>)(dh<sub>j</sub>/dz<sub>j</sub>)<br><br>
+            <strong>Hidden weights:</strong><br>
+            dE/dw<sub>j</sub> = (dE/dz<sub>j</sub>) · x<br>
+            dE/db<sub>j</sub> = dE/dz<sub>j</sub><br>
         `;
-        
-        for (let l = L; l >= 1; l--) {
-            const upstream = l === L ? '(∂L/∂ŷ) · v' : `(∂L/∂h${sub(l+1)}) · W${sub(l+1)}`;
-            const prevH = l === 1 ? 'x' : `h${sub(l-1)}`;
-            backwardHtml += `<span style="color:#dc3545">∂L/∂h${sub(l)}</span> = ${upstream} · f'(z${sub(l)})<br>`;
-            backwardHtml += `∂L/∂W${sub(l)} = (∂L/∂h${sub(l)}) · ${prevH},  ∂L/∂b${sub(l)} = ∂L/∂h${sub(l)}<br>`;
-        }
         
         backwardHtml += `<br><strong>Activation derivative:</strong><br>${actDeriv[act]}`;
         
@@ -3844,11 +3840,11 @@ function updateParameters() {
         const optName = config.optimizer === 'sgd' ? 'Simple (SGD)' : 'Adam';
         const optExplain = config.optimizer === 'sgd' 
             ? `<strong>Weight Update:</strong><br>
-               w ← w − η · ∂L/∂w<br>
-               <em style="color:#888">Each weight changes proportionally to its gradient.</em>`
+               w ← w − η · dE/dw<br>
+               <em style="color:#888">Each weight takes a small downhill step.</em>`
             : `<strong>Weight Update:</strong><br>
-               m ← 0.9·m + 0.1·∇L <em style="color:#888">(momentum)</em><br>
-               v ← 0.999·v + 0.001·(∇L)² <em style="color:#888">(adapt)</em><br>
+               m ← 0.9·m + 0.1·∇E <em style="color:#888">(momentum)</em><br>
+               v ← 0.999·v + 0.001·(∇E)² <em style="color:#888">(adapt)</em><br>
                w ← w − η · m / √v<br>
                <em style="color:#888">Momentum smooths updates; adaptive rates help rare gradients.</em>`;
         
@@ -4278,14 +4274,14 @@ function updateParameters() {
 
     if (showLoss) {
         series.push({
-            name: 'Loss A',
+            name: 'Error A',
             steps: filteredRunA.steps,
             data: filteredRunA.loss,
             color: '#dc3545',
             lineWidth: 2
         });
         series.push({
-            name: 'Loss B',
+            name: 'Error B',
             steps: filteredRunB.steps,
             data: filteredRunB.loss,
             color: '#ff9800',
@@ -4407,7 +4403,7 @@ function updateParameters() {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#dc3545';
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillText(useLogScale ? 'Loss (log₁₀)' : 'Loss (linear)', 0, 0);
+    ctx.fillText(useLogScale ? 'Error (log₁₀)' : 'Error (linear)', 0, 0);
     ctx.restore();
 
     ctx.fillStyle = '#333';
@@ -4532,7 +4528,7 @@ function drawTrainingTrace() {
 
     if (showLoss) {
         series.push({
-            name: 'Train Loss',
+            name: 'Train Error',
             steps: viewSteps,
             data: viewLoss,
             color: '#28a745',  // Green for training (matches train points)
@@ -4542,7 +4538,7 @@ function drawTrainingTrace() {
 
     if (showAvgLoss) {
         series.push({
-            name: 'Avg Loss',
+            name: 'Avg Error',
             steps: viewSteps,
             data: viewAvgLoss,
             color: '#007bff',
@@ -4566,7 +4562,7 @@ function drawTrainingTrace() {
         );
         if (viewTestLoss.length > 0) {
             series.push({
-                name: 'Test Loss',
+                name: 'Test Error',
                 steps: viewTestLoss.map(t => t.step),
                 data: viewTestLoss.map(t => t.loss),
                 color: '#ff9800',  // Orange for test (matches test points)
@@ -4727,7 +4723,7 @@ function drawTrainingTrace() {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#dc3545';
     ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(useLogScale ? 'Loss (log₁₀)' : 'Loss (linear)', 0, 0);
+    ctx.fillText(useLogScale ? 'Error (log₁₀)' : 'Error (linear)', 0, 0);
     ctx.restore();
 
     ctx.fillStyle = '#333';
@@ -4884,27 +4880,33 @@ function drawTrainingTrace() {
         const selectY = document.getElementById('weightYSelect');
         if (!selectX || !selectY) return;
         
+        // Helper to convert number to subscript
+        const toSub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
+        
         // Build list of all weights with descriptive names and categories
         const weightNames = [];
         let idx = 0;
         
         // First layer: input -> hidden (category: 'input')
+        // Using w_j notation: weight from x to hidden neuron j
         for (let i = 0; i < network.hiddenSize; i++) {
-            weightNames.push({ idx: idx++, name: `w(x→h₁${i+1})`, category: 'input', neuron: i });
+            const neuronIdx = i + 1;
+            weightNames.push({ idx: idx++, name: `w${toSub(neuronIdx)}(x→h${toSub(neuronIdx)})`, category: 'input', neuron: i });
         }
         
         // Hidden -> hidden layers (category: 'hidden')
         for (let l = 1; l < network.numLayers; l++) {
             for (let i = 0; i < network.hiddenSize; i++) {
                 for (let j = 0; j < network.hiddenSize; j++) {
-                    weightNames.push({ idx: idx++, name: `w(h${l}${j+1}→h${l+1}${i+1})`, category: 'hidden', layer: l });
+                    weightNames.push({ idx: idx++, name: `w(h${toSub(l)}${toSub(j+1)}→h${toSub(l+1)}${toSub(i+1)})`, category: 'hidden', layer: l });
                 }
             }
         }
         
-        // Output layer (category: 'output')
+        // Output layer (category: 'output') - w_j for output weights connecting h_j to y
         for (let i = 0; i < network.hiddenSize; i++) {
-            weightNames.push({ idx: idx++, name: `v(h${network.numLayers}${i+1}→ŷ)`, category: 'output', neuron: i });
+            const neuronIdx = i + 1;
+            weightNames.push({ idx: idx++, name: `w${toSub(neuronIdx)}(h${toSub(neuronIdx)}→y)`, category: 'output', neuron: i });
         }
         
         // Populate selectors
