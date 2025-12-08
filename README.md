@@ -104,15 +104,15 @@ E = ½(y − t)²           (error)
 
 ### Backward Pass (Gradients)
 ```
-dE/dy = y − t           (error derivative)
-dE/dw_j = (dE/dy)·h_j   (output weight gradient)
-dE/dh_j = (dE/dy)·w_j   (hidden activation gradient)
-dE/dz_j = (dE/dh_j)·σ'(z_j)  (chain rule)
+∂E/∂y = y − t           (error derivative)
+∂E/∂w_j = (∂E/∂y)·h_j   (output weight gradient)
+∂E/∂h_j = (∂E/∂y)·w_j   (hidden activation gradient)
+∂E/∂z_j = (∂E/∂h_j)·σ'(z_j)  (chain rule)
 ```
 
 ### Weight Update (SGD)
 ```
-w ← w − η · dE/dw
+w ← w − η · ∂E/∂w
 ```
 
 ---

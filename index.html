@@ -863,7 +863,7 @@
                 <!-- Optimizer -->
                 <div id="optimizerButtons" style="display:flex; align-items:center; gap:3px;">
                     <label style="font-size:10px; color:#333;">Optimizer:</label>
-                    <button class="opt-btn" data-opt="sgd" style="padding:2px 6px; font-size:10px; border:2px solid #007bff; background:#007bff; color:white; border-radius:3px; cursor:pointer;" title="Simple Gradient Descent&#10;&#10;w ← w − η · dE/dw&#10;&#10;Each weight moves opposite to its gradient, proportional to learning rate η.&#10;&#10;Recommended learning rate: 0.05-0.2&#10;Simple but can be slow or oscillate.">Simple</button>
+                    <button class="opt-btn" data-opt="sgd" style="padding:2px 6px; font-size:10px; border:2px solid #007bff; background:#007bff; color:white; border-radius:3px; cursor:pointer;" title="Simple Gradient Descent&#10;&#10;w ← w − η · ∂E/∂w&#10;&#10;Each weight moves opposite to its gradient, proportional to learning rate η.&#10;&#10;Recommended learning rate: 0.05-0.2&#10;Simple but can be slow or oscillate.">Simple</button>
                     <button class="opt-btn" data-opt="adam" style="padding:2px 6px; font-size:10px; border:2px solid #ccc; background:#fff; color:#333; border-radius:3px; cursor:pointer;" title="Adam Optimizer&#10;&#10;Combines two ideas:&#10;• Momentum: smooth out noisy gradients&#10;• Adaptive rates: bigger steps for rare gradients&#10;&#10;Recommended learning rate: 0.001-0.02&#10;(Lower than Simple because Adam amplifies updates)&#10;&#10;Usually learns faster and more reliably.">Adam</button>
                 </div>
                 
@@ -1120,7 +1120,7 @@
             <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Activation (σ)</strong> — Nonlinear function (ReLU/Sigmoid)</p>
             <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Weights (w)</strong> — Multipliers on connections</p>
             <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Biases (b, c)</strong> — Offset added at each neuron</p>
-            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Gradient (dE/dw)</strong> — Steepest uphill direction</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Gradient (∂E/∂w)</strong> — Steepest uphill direction</p>
             <p style="margin:0 0 2px 0;"><strong style="color:#dc3545;">Overfitting</strong> — Memorizing instead of learning</p>
             <p style="margin:0 0 6px 0;"><strong style="color:#dc3545;">Extrapolation</strong> — Predicting outside training range</p>
         </div>
@@ -1128,12 +1128,12 @@
         <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">The Math</h4>
         <p style="margin:0 0 3px 0;"><strong>Forward:</strong> z = w·x + b → h = σ(z) → y</p>
         <p style="margin:0 0 3px 0;"><strong>Error:</strong> E = ½(y − t)² where t = target</p>
-        <p style="margin:0 0 3px 0;"><strong>Backward:</strong> Chain rule finds dE/dw</p>
-        <p style="margin:0 0 3px 0; font-size:11px; color:#666; font-style:italic; padding-left:6px;">d[f(g(x))]/dx = f'(g(x)) · g'(x)</p>
-        <p style="margin:0 0 6px 0;"><strong>Update:</strong> w ← w − η · dE/dw (downhill step)</p>
+        <p style="margin:0 0 3px 0;"><strong>Backward:</strong> Chain rule finds ∂E/∂w</p>
+        <p style="margin:0 0 3px 0; font-size:11px; color:#666; font-style:italic; padding-left:6px;">∂[f(g(x))]/∂x = f'(g(x)) · g'(x)</p>
+        <p style="margin:0 0 6px 0;"><strong>Update:</strong> w ← w − η · ∂E/∂w (downhill step)</p>
         
         <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">Optimizers</h4>
-        <p style="margin:0 0 3px 0;"><strong>Simple (SGD)</strong> — w ← w − η · dE/dw</p>
+        <p style="margin:0 0 3px 0;"><strong>Simple (SGD)</strong> — w ← w − η · ∂E/∂w</p>
         <p style="margin:0 0 6px 0;"><strong>Adam</strong> — Adapts η per-weight. Usually faster.</p>
         
         <h4 style="margin:0 0 4px 0; color:#333; font-size:14px; border-bottom:1px solid #ddd; padding-bottom:2px;">Try These</h4>
@@ -3365,8 +3365,8 @@ function updateParameters() {
         const inputOutputGap = hiddenLayerSpacing * 0.5;  // 50% of hidden layer spacing
         
         const nodeRadius = 20;
-        const fontSize = 13;
-        const smallFont = 10;
+        const fontSize = 14;
+        const smallFont = 11;
         const weightFont = 9;  // Smaller font for weights
         
         // Calculate positions for each layer
@@ -3531,17 +3531,26 @@ function updateParameters() {
                     ctx.fill();
                     ctx.stroke();
                     
+                    // Helper for subscript digits in output equation
+                    const toSubOut = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
+                    const toSupOut = (n) => String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('');
+                    
                     if (canShowFullEq) {
-                        // Full equation: y = w1*h1 + w2*h2 + ... + c
+                        // Full equation: y = w₁·h₁ + w₂·h₂ + ... + c
                         const outputWeights = network.weights[network.weights.length - 1];
                         const outputBias = network.biases[network.biases.length - 1][0];
                         let eqParts = [];
                         for (let i = 0; i < hiddenSize && i < 4; i++) {
                             const wt = outputWeights[i];
+                            // For single hidden layer: h₁, h₂, h₃
+                            // For multiple layers: reference last hidden layer h^L_j
+                            const hRef = numLayers === 1 
+                                ? `h${toSubOut(i+1)}`
+                                : `h${toSupOut(numLayers)}${toSubOut(i+1)}`;
                             if (i === 0) {
-                                eqParts.push(`${fmtWFirst(wt)}·h${i+1}`);
+                                eqParts.push(`${fmtWFirst(wt)}·${hRef}`);
                             } else {
-                                eqParts.push(`${fmtW(wt)}·h${i+1}`);
+                                eqParts.push(`${fmtW(wt)}·${hRef}`);
                             }
                         }
                         if (hiddenSize > 4) eqParts.push('...');
@@ -3576,9 +3585,19 @@ function updateParameters() {
                     ctx.fill();
                     ctx.stroke();
                     
+                    // Helper for subscript digits
+                    const toSub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
+                    
+                    // For single hidden layer, just use h₁, h₂, h₃
+                    // For multiple layers, use h with layer superscript: h¹₁, h²₁
+                    const toSup = (n) => String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('');
+                    const hLabel = numLayers === 1 
+                        ? `h${toSub(nodeIdx + 1)}`
+                        : `h${toSup(layerIdx)}${toSub(nodeIdx + 1)}`;
+                    
                     if (canShowFullEq) {
-                        // Full equation: ReLU(w1*x + b) for first layer
-                        // or ReLU(w1*h1 + w2*h2 + ... + b) for subsequent layers
+                        // Full equation: σ(w·x + b) for first layer
+                        // or σ(w₁·h₁ + w₂·h₂ + ... + b) for subsequent layers
                         let eqStr = '';
                         if (layerIdx === 1) {
                             // First hidden layer: input is x
@@ -3586,17 +3605,18 @@ function updateParameters() {
                             const b = network.biases[0][nodeIdx];
                             eqStr = `${actSymbol}(${fmtWFirst(w)}·x${fmtW(b)})`;
                         } else {
-                            // Subsequent hidden layers
+                            // Subsequent hidden layers - reference previous layer's h values
                             const prevLayerSize = hiddenSize;
                             const layerWeights = network.weights[layerIdx - 1];
                             const bias = network.biases[layerIdx - 1][nodeIdx];
                             let terms = [];
                             for (let i = 0; i < prevLayerSize && i < 3; i++) {
                                 const w = layerWeights[i] ? layerWeights[i][nodeIdx] : layerWeights[nodeIdx];
+                                const prevH = numLayers === 1 ? `h${toSub(i+1)}` : `h${toSup(layerIdx-1)}${toSub(i+1)}`;
                                 if (i === 0) {
-                                    terms.push(`${fmtWFirst(w)}·h${layerIdx-1}${i+1}`);
+                                    terms.push(`${fmtWFirst(w)}·${prevH}`);
                                 } else {
-                                    terms.push(`${fmtW(w)}·h${layerIdx-1}${i+1}`);
+                                    terms.push(`${fmtW(w)}·${prevH}`);
                                 }
                             }
                             if (prevLayerSize > 3) terms.push('...');
@@ -3605,7 +3625,7 @@ function updateParameters() {
                         
                         ctx.fillStyle = '#000';
                         ctx.font = `bold ${fontSize - 1}px sans-serif`;
-                        ctx.fillText(`h${layerIdx}${nodeIdx+1}`, layer.x, node.y - 6);
+                        ctx.fillText(hLabel, layer.x, node.y - 6);
                         ctx.font = `${smallFont - 1}px sans-serif`;
                         ctx.fillStyle = '#333';
                         // Truncate if too long
@@ -3618,7 +3638,7 @@ function updateParameters() {
                     } else {
                         ctx.fillStyle = '#000';
                         ctx.font = `bold ${fontSize}px sans-serif`;
-                        ctx.fillText(`h${layerIdx}${nodeIdx+1}`, layer.x, node.y - 4);
+                        ctx.fillText(hLabel, layer.x, node.y - 4);
                         ctx.font = `${smallFont}px sans-serif`;
                         ctx.fillStyle = '#555';
                         ctx.fillText(`${actSymbol}(z)`, layer.x, node.y + 8);
@@ -3821,17 +3841,17 @@ function updateParameters() {
         // Backward pass with calculus notation (using E for error, y for prediction, t for target)
         let backwardHtml = `
             <strong>Loss derivative:</strong><br>
-            <span style="color:#dc3545">dE/dy</span> = y − t<br><br>
+            <span style="color:#dc3545">∂E/∂y</span> = y − t<br><br>
             <strong>Output layer:</strong><br>
-            dE/dw<sub>j</sub> = (dE/dy) · h<sub>j</sub><br>
-            dE/dc = dE/dy<br><br>
+            ∂E/∂w<sub>j</sub> = (∂E/∂y) · h<sub>j</sub><br>
+            ∂E/∂c = ∂E/∂y<br><br>
             <strong>Hidden layer:</strong><br>
-            dE/dh<sub>j</sub> = (dE/dy) · w<sub>j</sub><br>
-            dh<sub>j</sub>/dz<sub>j</sub> = σ'(z<sub>j</sub>)<br>
-            <span style="color:#dc3545">dE/dz<sub>j</sub></span> = (dE/dh<sub>j</sub>)(dh<sub>j</sub>/dz<sub>j</sub>)<br><br>
+            ∂E/∂h<sub>j</sub> = (∂E/∂y) · w<sub>j</sub><br>
+            ∂h<sub>j</sub>/∂z<sub>j</sub> = σ'(z<sub>j</sub>)<br>
+            <span style="color:#dc3545">∂E/∂z<sub>j</sub></span> = (∂E/∂h<sub>j</sub>)(∂h<sub>j</sub>/∂z<sub>j</sub>)<br><br>
             <strong>Hidden weights:</strong><br>
-            dE/dw<sub>j</sub> = (dE/dz<sub>j</sub>) · x<br>
-            dE/db<sub>j</sub> = dE/dz<sub>j</sub><br>
+            ∂E/∂w<sub>j</sub> = (∂E/∂z<sub>j</sub>) · x<br>
+            ∂E/∂b<sub>j</sub> = ∂E/∂z<sub>j</sub><br>
         `;
         
         backwardHtml += `<br><strong>Activation derivative:</strong><br>${actDeriv[act]}`;
@@ -3840,7 +3860,7 @@ function updateParameters() {
         const optName = config.optimizer === 'sgd' ? 'Simple (SGD)' : 'Adam';
         const optExplain = config.optimizer === 'sgd' 
             ? `<strong>Weight Update:</strong><br>
-               w ← w − η · dE/dw<br>
+               w ← w − η · ∂E/∂w<br>
                <em style="color:#888">Each weight takes a small downhill step.</em>`
             : `<strong>Weight Update:</strong><br>
                m ← 0.9·m + 0.1·∇E <em style="color:#888">(momentum)</em><br>
