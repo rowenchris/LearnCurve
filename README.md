@@ -86,19 +86,21 @@ LearnCurve uses student-friendly notation aligned with standard machine learning
 | `x` | Input value |
 | `t` | Target (true value from data recipe) |
 | `y` | Model prediction |
-| `w_j` | Weights (connecting neurons) |
-| `b_j`, `c` | Biases |
-| `h_j` | Hidden neuron activations |
-| `z_j` | Pre-activation (weighted sum) |
+| `w_ij` | Weights to hidden layer (layer i, neuron j) |
+| `w_j` | Weights to output (neuron j) |
+| `b_ij` | Hidden layer biases (layer i, neuron j) |
+| `b` | Output bias |
+| `h_ij` | Hidden neuron activations (layer i, neuron j) |
+| `z_ij` | Pre-activation (weighted sum) |
 | `σ` | Activation function (ReLU or Sigmoid) |
 | `E` | Error: E = ½(y − t)² |
 | `η` | Learning rate |
 
 ### Forward Pass
 ```
-z_j = w_j·x + b_j       (weighted sum)
-h_j = σ(z_j)            (activation)
-y = w₁h₁ + w₂h₂ + ... + c  (output)
+z_ij = w_ij·x + b_ij    (weighted sum, hidden layer)
+h_ij = σ(z_ij)          (activation)
+y = w₁h₁ + w₂h₂ + ... + b  (output)
 E = ½(y − t)²           (error)
 ```
 
@@ -106,8 +108,8 @@ E = ½(y − t)²           (error)
 ```
 ∂E/∂y = y − t           (error derivative)
 ∂E/∂w_j = (∂E/∂y)·h_j   (output weight gradient)
-∂E/∂h_j = (∂E/∂y)·w_j   (hidden activation gradient)
-∂E/∂z_j = (∂E/∂h_j)·σ'(z_j)  (chain rule)
+∂E/∂h_ij = (∂E/∂y)·w_j  (hidden activation gradient)
+∂E/∂z_ij = (∂E/∂h_ij)·σ'(z_ij)  (chain rule)
 ```
 
 ### Weight Update (SGD)

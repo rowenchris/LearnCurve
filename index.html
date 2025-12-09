@@ -1119,7 +1119,7 @@
             <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Learning Rate (η)</strong> — Step size for updates</p>
             <p style="margin:0 0 2px 0;"><strong style="color:#28a745;">Activation (σ)</strong> — Nonlinear function (ReLU/Sigmoid)</p>
             <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Weights (w)</strong> — Multipliers on connections</p>
-            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Biases (b, c)</strong> — Offset added at each neuron</p>
+            <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Biases (b<sub>ij</sub>, b)</strong> — Offset added at each neuron</p>
             <p style="margin:0 0 2px 0;"><strong style="color:#6f42c1;">Gradient (∂E/∂w)</strong> — Steepest uphill direction</p>
             <p style="margin:0 0 2px 0;"><strong style="color:#dc3545;">Overfitting</strong> — Memorizing instead of learning</p>
             <p style="margin:0 0 6px 0;"><strong style="color:#dc3545;">Extrapolation</strong> — Predicting outside training range</p>
@@ -3372,8 +3372,11 @@ function updateParameters() {
         // Calculate positions for each layer
         const layers = [];
         
+        // Vertical center offset - move network up slightly to avoid caption overlap
+        const yCenter = h/2 - 8;
+        
         // Input layer - at left margin
-        layers.push({x: marginLeft, nodes: [{y: h/2}]});
+        layers.push({x: marginLeft, nodes: [{y: yCenter}]});
         
         // Hidden layers - spread across the middle
         const hiddenStartX = marginLeft + inputOutputGap;
@@ -3381,7 +3384,7 @@ function updateParameters() {
             const x = hiddenStartX + hiddenLayerSpacing * l;
             const nodes = [];
             const spacing = Math.min(70, (h - 80) / (hiddenSize - 1 || 1));
-            const startY = h/2 - (hiddenSize - 1) * spacing / 2;
+            const startY = yCenter - (hiddenSize - 1) * spacing / 2;
             for (let i = 0; i < hiddenSize; i++) {
                 nodes.push({y: startY + i * spacing});
             }
@@ -3389,7 +3392,7 @@ function updateParameters() {
         }
         
         // Output layer - at right margin
-        layers.push({x: w - marginRight, nodes: [{y: h/2}]});
+        layers.push({x: w - marginRight, nodes: [{y: yCenter}]});
         
         // Draw connections with weights
         ctx.font = `${weightFont}px sans-serif`;
@@ -3533,20 +3536,19 @@ function updateParameters() {
                     
                     // Helper for subscript digits in output equation
                     const toSubOut = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
-                    const toSupOut = (n) => String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('');
                     
                     if (canShowFullEq) {
-                        // Full equation: y = w₁·h₁ + w₂·h₂ + ... + c
+                        // Full equation: y = w₁·h₁ + w₂·h₂ + ... + c (output weights use single subscript w_j)
                         const outputWeights = network.weights[network.weights.length - 1];
                         const outputBias = network.biases[network.biases.length - 1][0];
                         let eqParts = [];
                         for (let i = 0; i < hiddenSize && i < 4; i++) {
                             const wt = outputWeights[i];
-                            // For single hidden layer: h₁, h₂, h₃
-                            // For multiple layers: reference last hidden layer h^L_j
+                            // For single hidden layer: h_j
+                            // For multiple layers: h_ij where i=numLayers (last layer), j=neuron
                             const hRef = numLayers === 1 
                                 ? `h${toSubOut(i+1)}`
-                                : `h${toSupOut(numLayers)}${toSubOut(i+1)}`;
+                                : `h${toSubOut(numLayers)}${toSubOut(i+1)}`;
                             if (i === 0) {
                                 eqParts.push(`${fmtWFirst(wt)}·${hRef}`);
                             } else {
@@ -3573,7 +3575,7 @@ function updateParameters() {
                         ctx.fillText('y', layer.x, node.y - 6);
                         ctx.font = `${smallFont}px sans-serif`;
                         ctx.fillStyle = '#555';
-                        ctx.fillText('Σw·h+c', layer.x, node.y + 8);
+                        ctx.fillText('Σwⱼ·hⱼ+b', layer.x, node.y + 8);
                     }
                 } else {
                     // Hidden node - oval with equation
@@ -3588,16 +3590,15 @@ function updateParameters() {
                     // Helper for subscript digits
                     const toSub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
                     
-                    // For single hidden layer, just use h₁, h₂, h₃
-                    // For multiple layers, use h with layer superscript: h¹₁, h²₁
-                    const toSup = (n) => String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('');
+                    // Notation: h_ij where i=layer, j=neuron (both subscripts)
+                    // For single hidden layer, just h_j (neuron position only)
                     const hLabel = numLayers === 1 
                         ? `h${toSub(nodeIdx + 1)}`
-                        : `h${toSup(layerIdx)}${toSub(nodeIdx + 1)}`;
+                        : `h${toSub(layerIdx)}${toSub(nodeIdx + 1)}`;
                     
                     if (canShowFullEq) {
                         // Full equation: σ(w·x + b) for first layer
-                        // or σ(w₁·h₁ + w₂·h₂ + ... + b) for subsequent layers
+                        // or σ(w₁·h₁₁ + w₂·h₁₂ + ... + b) for subsequent layers
                         let eqStr = '';
                         if (layerIdx === 1) {
                             // First hidden layer: input is x
@@ -3605,14 +3606,15 @@ function updateParameters() {
                             const b = network.biases[0][nodeIdx];
                             eqStr = `${actSymbol}(${fmtWFirst(w)}·x${fmtW(b)})`;
                         } else {
-                            // Subsequent hidden layers - reference previous layer's h values
+                            // Subsequent hidden layers - reference previous layer's h values (h_ij notation)
                             const prevLayerSize = hiddenSize;
                             const layerWeights = network.weights[layerIdx - 1];
                             const bias = network.biases[layerIdx - 1][nodeIdx];
                             let terms = [];
                             for (let i = 0; i < prevLayerSize && i < 3; i++) {
                                 const w = layerWeights[i] ? layerWeights[i][nodeIdx] : layerWeights[nodeIdx];
-                                const prevH = numLayers === 1 ? `h${toSub(i+1)}` : `h${toSup(layerIdx-1)}${toSub(i+1)}`;
+                                // Previous layer h values: h_ij where i=layerIdx-1, j=neuron
+                                const prevH = numLayers === 1 ? `h${toSub(i+1)}` : `h${toSub(layerIdx-1)}${toSub(i+1)}`;
                                 if (i === 0) {
                                     terms.push(`${fmtWFirst(w)}·${prevH}`);
                                 } else {
@@ -3648,6 +3650,9 @@ function updateParameters() {
         });
         
         // Draw bias values for all non-input nodes
+        // Helper for subscript digits in bias labels
+        const toBiasSub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
+        
         ctx.font = '8px sans-serif';
         ctx.textAlign = 'center';
         layers.forEach((layer, layerIdx) => {
@@ -3655,17 +3660,24 @@ function updateParameters() {
             
             layer.nodes.forEach((node, nodeIdx) => {
                 let bias = 0;
+                let biasLabel = 'b';
+                
                 if (layerIdx < layers.length - 1) {
-                    // Hidden layer bias
+                    // Hidden layer bias: b_ij (layer, neuron)
                     bias = network.biases[layerIdx - 1] ? network.biases[layerIdx - 1][nodeIdx] : 0;
+                    // For single layer: b_j, for multi-layer: b_ij
+                    biasLabel = numLayers === 1 
+                        ? `b${toBiasSub(nodeIdx + 1)}`
+                        : `b${toBiasSub(layerIdx)}${toBiasSub(nodeIdx + 1)}`;
                 } else {
-                    // Output layer bias
+                    // Output layer bias: just b (single bias for output)
                     bias = network.biases[network.biases.length - 1] ? network.biases[network.biases.length - 1][0] : 0;
+                    biasLabel = 'b';
                 }
                 
                 // Draw bias value below node (closer to bubble)
                 ctx.fillStyle = 'rgba(255,255,255,0.8)';
-                const biasText = `b=${bias.toFixed(1)}`;
+                const biasText = `${biasLabel}=${bias.toFixed(1)}`;
                 const textW = ctx.measureText(biasText).width;
                 ctx.fillRect(layer.x - textW/2 - 1, node.y + nodeRadius - 1, textW + 2, 10);
                 ctx.fillStyle = '#e67e22';
@@ -3707,11 +3719,12 @@ function updateParameters() {
         ctx.font = 'bold 12px sans-serif';
         ctx.textAlign = 'center';
         const optName = config.optimizer === 'sgd' ? 'Simple' : 'Adam';
+        const actName = config.activation === 'relu' ? 'ReLU' : 'Sigmoid';
         // Count total weights: first layer (H) + hidden layers ((L-1)*H*H) + output layer (H)
         const totalWeights = hiddenSize + (numLayers - 1) * hiddenSize * hiddenSize + hiddenSize;
         const totalBiases = numLayers * hiddenSize + 1;
         const totalParams = totalWeights + totalBiases;
-        ctx.fillText(`${numLayers} hidden layer${numLayers > 1 ? 's' : ''} × ${hiddenSize} neurons  •  ${totalParams} params  •  ${actSymbol}  •  ${optName}`, w/2, h - 6);
+        ctx.fillText(`${numLayers} hidden layer${numLayers > 1 ? 's' : ''} × ${hiddenSize} neurons  •  ${totalParams} params  •  σ = ${actName}  •  ${optName}`, w/2, h - 6);
         
         // Update HTML Ops/Step table (check elements exist first)
         const ops = computeOpsPerStep();
@@ -3833,9 +3846,10 @@ function updateParameters() {
         `;
         
         // Layer-by-layer forward with subscripts (using scalar notation)
-        forwardHtml += `<span style="color:#F18F01">z</span><sub>j</sub> = w<sub>j</sub>·x + b<sub>j</sub>  <em style="color:#888">(weighted sum)</em><br>`;
-        forwardHtml += `<span style="color:#28a745">h</span><sub>j</sub> = σ(z<sub>j</sub>)  <em style="color:#888">(activation)</em><br>`;
-        forwardHtml += `<br><span style="color:#6f42c1">y</span> = w₁h₁ + w₂h₂ + ... + c  <em style="color:#888">(output)</em><br>`;
+        // Hidden layer: b_ij (layer i, neuron j), Output layer: b_j
+        forwardHtml += `<span style="color:#F18F01">z</span><sub>ij</sub> = w<sub>ij</sub>·x + b<sub>ij</sub>  <em style="color:#888">(weighted sum)</em><br>`;
+        forwardHtml += `<span style="color:#28a745">h</span><sub>ij</sub> = σ(z<sub>ij</sub>)  <em style="color:#888">(activation)</em><br>`;
+        forwardHtml += `<br><span style="color:#6f42c1">y</span> = w₁h₁ + w₂h₂ + ... + b  <em style="color:#888">(output)</em><br>`;
         forwardHtml += `<span style="color:#dc3545">E</span> = ½(y − t)²  <em style="color:#888">(error)</em>`;
         
         // Backward pass with calculus notation (using E for error, y for prediction, t for target)
@@ -3844,14 +3858,14 @@ function updateParameters() {
             <span style="color:#dc3545">∂E/∂y</span> = y − t<br><br>
             <strong>Output layer:</strong><br>
             ∂E/∂w<sub>j</sub> = (∂E/∂y) · h<sub>j</sub><br>
-            ∂E/∂c = ∂E/∂y<br><br>
+            ∂E/∂b = ∂E/∂y<br><br>
             <strong>Hidden layer:</strong><br>
-            ∂E/∂h<sub>j</sub> = (∂E/∂y) · w<sub>j</sub><br>
-            ∂h<sub>j</sub>/∂z<sub>j</sub> = σ'(z<sub>j</sub>)<br>
-            <span style="color:#dc3545">∂E/∂z<sub>j</sub></span> = (∂E/∂h<sub>j</sub>)(∂h<sub>j</sub>/∂z<sub>j</sub>)<br><br>
+            ∂E/∂h<sub>ij</sub> = (∂E/∂y) · w<sub>j</sub><br>
+            ∂h<sub>ij</sub>/∂z<sub>ij</sub> = σ'(z<sub>ij</sub>)<br>
+            <span style="color:#dc3545">∂E/∂z<sub>ij</sub></span> = (∂E/∂h<sub>ij</sub>)(∂h<sub>ij</sub>/∂z<sub>ij</sub>)<br><br>
             <strong>Hidden weights:</strong><br>
-            ∂E/∂w<sub>j</sub> = (∂E/∂z<sub>j</sub>) · x<br>
-            ∂E/∂b<sub>j</sub> = ∂E/∂z<sub>j</sub><br>
+            ∂E/∂w<sub>ij</sub> = (∂E/∂z<sub>ij</sub>) · x<br>
+            ∂E/∂b<sub>ij</sub> = ∂E/∂z<sub>ij</sub><br>
         `;
         
         backwardHtml += `<br><strong>Activation derivative:</strong><br>${actDeriv[act]}`;
@@ -4908,13 +4922,16 @@ function drawTrainingTrace() {
         let idx = 0;
         
         // First layer: input -> hidden (category: 'input')
-        // Using w_j notation: weight from x to hidden neuron j
+        // w_ij notation: weight to hidden neuron h_1j (layer 1, neuron j)
         for (let i = 0; i < network.hiddenSize; i++) {
             const neuronIdx = i + 1;
-            weightNames.push({ idx: idx++, name: `w${toSub(neuronIdx)}(x→h${toSub(neuronIdx)})`, category: 'input', neuron: i });
+            // For single layer: w_j(x→h_j), for multi-layer: w(x→h_1j)
+            const hLabel = network.numLayers === 1 ? `h${toSub(neuronIdx)}` : `h${toSub(1)}${toSub(neuronIdx)}`;
+            weightNames.push({ idx: idx++, name: `w(x→${hLabel})`, category: 'input', neuron: i });
         }
         
         // Hidden -> hidden layers (category: 'hidden')
+        // w(h_ij→h_kl) notation
         for (let l = 1; l < network.numLayers; l++) {
             for (let i = 0; i < network.hiddenSize; i++) {
                 for (let j = 0; j < network.hiddenSize; j++) {
@@ -4923,10 +4940,13 @@ function drawTrainingTrace() {
             }
         }
         
-        // Output layer (category: 'output') - w_j for output weights connecting h_j to y
+        // Output layer (category: 'output') - w_j for output weights (single subscript for last layer)
         for (let i = 0; i < network.hiddenSize; i++) {
             const neuronIdx = i + 1;
-            weightNames.push({ idx: idx++, name: `w${toSub(neuronIdx)}(h${toSub(neuronIdx)}→y)`, category: 'output', neuron: i });
+            // Reference last hidden layer with h_ij notation
+            const lastLayer = network.numLayers;
+            const hLabel = network.numLayers === 1 ? `h${toSub(neuronIdx)}` : `h${toSub(lastLayer)}${toSub(neuronIdx)}`;
+            weightNames.push({ idx: idx++, name: `w${toSub(neuronIdx)}(${hLabel}→y)`, category: 'output', neuron: i });
         }
         
         // Populate selectors
