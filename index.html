@@ -535,24 +535,34 @@
         
         .equations {
             font-size: 11px;
-            line-height: 1.3;
+            line-height: 1.4;
             flex: 1;
-            min-height: 150px;
+            min-height: 120px;
             overflow-y: auto;
             display: grid;
-            grid-template-columns: 1fr 1fr;  /* 2 columns: Forward | Backward */
-            gap: 12px;
+            grid-template-columns: 1fr 1fr 1fr;  /* 3 columns: Forward | Backward | Optimizer */
+            gap: 8px;
         }
 
         .equation-block {
-            padding: 4px 6px;
+            padding: 6px 8px;
+            background: #fafafa;
+            border-radius: 4px;
+            border: 1px solid #eee;
         }
 
         .equation-title {
             font-weight: bold;
             color: #007bff;
-            margin-bottom: 4px;
-            font-size: 14px;
+            margin-bottom: 6px;
+            font-size: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 3px;
+        }
+        
+        .equation-block .math {
+            font-family: 'Georgia', serif;
+            font-size: 11px;
         }
 
         .math {
@@ -972,9 +982,8 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
                 <h2 style="margin:0; font-size:13px; border:none; padding:0;">Examples vs Model</h2>
                 <div id="revealControls" style="display:flex; gap:6px; font-size:10px; opacity:0.5; pointer-events:none;">
-                    <label style="display:flex; align-items:center; gap:2px; cursor:pointer;" title="Show held-out examples">
-                        <input type="checkbox" id="showHeldOut"> Held-Out
-                    </label>
+                    <!-- Hidden checkbox for backwards compatibility -->
+                    <input type="checkbox" id="showHeldOut" style="display:none;" checked>
                     <label style="display:flex; align-items:center; gap:2px; cursor:pointer;" title="Show original recipe curve">
                         <input type="checkbox" id="showRecipe"> Recipe
                     </label>
@@ -1189,9 +1198,12 @@
         totalEpochs: 0          // Total epochs completed
     };
     
+    // Cached Y range for fit plot - set once when data is generated, stays fixed during training
+    let fitPlotYRange = { min: -1.5, max: 1.5, initialized: false };
+    
     // Reveal controls for assessment
     let revealOptions = {
-        showHeldOut: false,     // Show held-out (test) examples
+        showHeldOut: true,      // Always show held-out (test) examples
         showRecipe: false,      // Show original data recipe curve
         evaluated: false        // Has evaluation been run?
     };
@@ -1205,8 +1217,8 @@
         pointsOutRange: 0
     };
     
-    // Loss landscape color scale calibration
-    // Calibrated at start of training for consistent colors throughout the run
+    // Loss landscape color scale - set once during initial surface computation
+    // With percentile-based approach, the surface shows "achievable" loss which is stable
     let lossColorScale = {
         calibrated: false,
         minLoss: 0.0001,    // Best expected loss (blue)
@@ -2399,12 +2411,36 @@ function updateParameters() {
             pointsOutRange: testOutRange
         };
         
+        // Reset color scale when new data is generated
+        lossColorScale.calibrated = false;
+        
         // Initialize shuffle order for first epoch
         shuffleTrainingOrder();
         
         // Update x range for Fit Plot to show full data range
         config.xMin = config.dataXMin;
         config.xMax = config.dataXMax;
+        
+        // Calculate and cache Y range for fit plot (stays fixed during training)
+        const allDataY = [...allTrainCandidates.map(p => p.y), ...allTestPoints.map(p => p.y)];
+        // Also sample the target function across the display range
+        const funcYSamples = [];
+        for (let i = 0; i <= 50; i++) {
+            const x = config.dataXMin + (i / 50) * (config.dataXMax - config.dataXMin);
+            try {
+                const y = config.targetFunc(x);
+                if (Number.isFinite(y)) funcYSamples.push(y);
+            } catch {}
+        }
+        const allY = [...allDataY, ...funcYSamples];
+        if (allY.length > 0) {
+            const yMin = Math.min(...allY);
+            const yMax = Math.max(...allY);
+            const yPad = (yMax - yMin) * 0.2 || 0.5;  // 20% padding
+            fitPlotYRange.min = yMin - yPad;
+            fitPlotYRange.max = yMax + yPad;
+            fitPlotYRange.initialized = true;
+        }
         
         // Update UI
         updatePhaseUI();
@@ -2456,11 +2492,7 @@ function updateParameters() {
         };
         
         revealOptions.evaluated = true;
-        revealOptions.showHeldOut = true;  // Automatically reveal held-out points
-        
-        // Update the checkbox
-        const showHeldOutCheckbox = document.getElementById('showHeldOut');
-        if (showHeldOutCheckbox) showHeldOutCheckbox.checked = true;
+        // Held-out points are now always visible
         
         // Record in history
         history.testLoss.push({ 
@@ -2672,6 +2704,9 @@ function updateParameters() {
         }
     }
     
+    // Color scale is now set once during initial surface computation
+    // No blending or recalibration needed with percentile-based approach
+    
     // Update loss scale legend based on calibrated values
     function updateLossScaleLegend() {
         const minEl = document.getElementById('lossScaleMin');
@@ -2848,12 +2883,10 @@ function updateParameters() {
                 revealControls.style.pointerEvents = 'none';
             }
             
-            // Reset reveal options
-            revealOptions.showHeldOut = false;
+            // Reset reveal options (keep showHeldOut always true)
+            revealOptions.showHeldOut = true;
             revealOptions.showRecipe = false;
-            const showHeldOutCheckbox = document.getElementById('showHeldOut');
             const showRecipeCheckbox = document.getElementById('showRecipe');
-            if (showHeldOutCheckbox) showHeldOutCheckbox.checked = false;
             if (showRecipeCheckbox) showRecipeCheckbox.checked = false;
         }
     }
@@ -2919,6 +2952,8 @@ function updateParameters() {
     
     // Reset just the model (keep data)
     function resetModel() {
+        const resetStart = performance.now();
+        console.log('resetModel: starting...');
         trainingState.running = false;
         trainingState.animating = false;
         trainingState.step = 0;
@@ -2959,29 +2994,52 @@ function updateParameters() {
         revealOptions.evaluated = false;
         
         exitComparisonMode();
+        console.log(`  pre-init: ${(performance.now() - resetStart).toFixed(0)}ms`);
         initializeNetwork();
+        console.log(`  initializeNetwork: ${(performance.now() - resetStart).toFixed(0)}ms`);
         
-        // Repopulate weight selectors and recompute loss surface
+        // Repopulate weight selectors
         populateWeightSelectors();
-        lossSurfaceCache = null;
+        console.log(`  populateWeightSelectors: ${(performance.now() - resetStart).toFixed(0)}ms`);
+        
+        // DON'T clear the loss surface cache on reset - the map is independent of initial position
+        // Only clear trail and view bounds for fresh visualization
+        lossSurfaceViewBounds = null;  // Reset zoom on fresh start
         lossSurfaceTrail = [];
         
-        // Reset color scale calibration - will recalibrate on next computeLossSurface
-        lossColorScale.calibrated = false;
+        // Don't reset color scale on model reset - keep it stable
+        // Only reset when data is regenerated (handled in generateDataset)
         
         if (lossLandscapeAutoMode) {
             autoSelectInterestingWeights();
         }
-        computeLossSurface();
         
-        // Update loss legend with new calibration
-        updateLossScaleLegend();
+        // Make w1 and w2 start with LARGER random values for more dramatic visualization
+        // This doesn't hurt convergence much but shows more interesting trajectories
+        const largeInitScale = 4.0;  // ±4 instead of ±1
+        setWeightByIndex(lossSurfaceWeightIndices[0], (Math.random() - 0.5) * 2 * largeInitScale);
+        setWeightByIndex(lossSurfaceWeightIndices[1], (Math.random() - 0.5) * 2 * largeInitScale);
         
+        // Record start position
         lossSurfaceStartPosition = {
             x: getWeightByIndex(lossSurfaceWeightIndices[0]),
             y: getWeightByIndex(lossSurfaceWeightIndices[1])
         };
         lossSurfaceTrail = [lossSurfaceStartPosition];
+        
+        // Only compute loss surface if we don't have one yet
+        // The loss map is independent of initial position - it shows "achievable loss" at each (w1,w2)
+        if (!lossSurfaceCache) {
+            console.log('resetModel: computing loss surface (first time)...');
+            const t0 = performance.now();
+            computeLossSurface();
+            console.log(`  computeLossSurface: ${(performance.now() - t0).toFixed(0)}ms`);
+        } else {
+            console.log('resetModel: reusing existing loss surface');
+        }
+        
+        drawLossSurface();
+        updateLossScaleLegend();
         
         // Compute initial losses if data exists
         if (dataset.generated) {
@@ -3005,14 +3063,19 @@ function updateParameters() {
             history.weights.push(flatWeights);
         }
         
+        const t3 = performance.now();
         updatePhaseUI();
         updateUI();
+        console.log(`  updatePhaseUI + updateUI: ${(performance.now() - t3).toFixed(0)}ms`);
         
         // Force redraw all charts to initial state
+        const t4 = performance.now();
         drawNetwork();
         drawFitPlot();
         drawTrainingTrace();
         drawLossSurface();
+        console.log(`  final draws: ${(performance.now() - t4).toFixed(0)}ms`);
+        console.log(`resetModel: TOTAL ${(performance.now() - resetStart).toFixed(0)}ms`);
     }
 
     function forward(x) {
@@ -3197,6 +3260,26 @@ function updateParameters() {
         if (dataset.generated && dataset.stepInEpoch === 0) {
             const testLoss = computeTestLoss();
             history.testLoss.push({ step: trainingState.step, loss: testLoss, epoch: dataset.epoch });
+            
+            // Update loss surface periodically during training
+            if (dataset.epoch > 0 && dataset.epoch % reprobeInterval === 0 && dataset.epoch !== lastReprobeEpoch) {
+                if (lossSurfaceCache) {
+                    lastReprobeEpoch = dataset.epoch;
+                    
+                    if (lossSurfaceCache.usedGreedy) {
+                        // Greedy mode: only re-probe blue cells (partial update)
+                        const blueThreshold = Math.pow(lossSurfaceCache.maxLoss, 0.3) * Math.pow(lossSurfaceCache.minLoss, 0.7);
+                        if (testLoss <= blueThreshold) {
+                            reprobeLossSurface();
+                        }
+                    } else {
+                        // Simple slice mode: full recomputation (surface depends on current weights)
+                        console.log(`Epoch ${dataset.epoch}: Recomputing loss surface (simple slice mode)`);
+                        computeLossSurface();
+                        drawLossSurface();
+                    }
+                }
+            }
         }
         
         // Record current weights (flatten all weights into a single array)
@@ -3245,23 +3328,13 @@ function updateParameters() {
             const wy = getWeightByIndex(lossSurfaceWeightIndices[1]);
             lossSurfaceTrail.push({ x: wx, y: wy });
             // No limit - keep full history for complete path visualization
+            
+            // No adaptive zoom - surface is computed once at start
+            // Trail may go off-edge, but that's fine for visualization
         }
         
         // Auto-refresh loss surface every N steps (if cache exists)
         if (lossSurfaceAutoUpdate && lossSurfaceCache && trainingState.step % lossSurfaceUpdateInterval === 0) {
-            // Check if current weights are outside the view - if so, recompute with expanded bounds
-            const wx = getWeightByIndex(lossSurfaceWeightIndices[0]);
-            const wy = getWeightByIndex(lossSurfaceWeightIndices[1]);
-            const { minX, maxX, minY, maxY } = lossSurfaceCache;
-            const margin = 0.1;  // 10% margin before triggering recompute
-            const rangeX = maxX - minX;
-            const rangeY = maxY - minY;
-            
-            if (wx < minX + rangeX * margin || wx > maxX - rangeX * margin ||
-                wy < minY + rangeY * margin || wy > maxY - rangeY * margin) {
-                // Weights near edge or outside - recompute with expanded view
-                computeLossSurface();
-            }
             drawLossSurface();
         }
         
@@ -3344,6 +3417,22 @@ function updateParameters() {
         
         const numLayers = network.numLayers;
         const hiddenSize = network.hiddenSize;
+        
+        // Check if weights match current network config (they may not during slider drag)
+        // If mismatched, draw structure but skip weight labels
+        let weightsValid = false;
+        try {
+            // Check first layer has correct size
+            if (network.weights && network.weights[0] && network.weights[0].length === hiddenSize) {
+                // Check output layer has correct size
+                const lastLayer = network.weights[network.weights.length - 1];
+                if (lastLayer && lastLayer.length === hiddenSize) {
+                    weightsValid = true;
+                }
+            }
+        } catch (e) {
+            weightsValid = false;
+        }
         
         // Animation state
         const isAnimating = animState !== null;
@@ -3453,7 +3542,8 @@ function updateParameters() {
                     ctx.lineTo(toLayer.x, toNode.y);
                     ctx.stroke();
                     
-                    // Draw weight value on connection with horizontal offset to prevent overlap
+                    // Draw weight value on connection (only if weights are valid/initialized)
+                    if (weightsValid) {
                     // Offset based on connection index, spreading weights along the line
                     // Use narrower range (0.35-0.65) to keep weights away from edges
                     const t = totalConnections > 1 ? 0.35 + 0.3 * (connectionIdx / (totalConnections - 1)) : 0.5;
@@ -3487,6 +3577,7 @@ function updateParameters() {
                             ctx.strokeStyle = '#007bff';
                             ctx.lineWidth = 1.5;
                             ctx.strokeRect(labelX - textWidth/2 - 3, labelY - 9, textWidth + 6, 13);
+                            }
                         }
                     }
                     connectionIdx++;
@@ -3830,69 +3921,193 @@ function updateParameters() {
         const H = network.hiddenSize;
         const act = config.activation;
         const actName = act === 'relu' ? 'ReLU' : 'Sigmoid';
+        const actSymbol = act === 'relu' ? 'ReLU' : 'σ';
         
-        // Subscript numbers for cleaner notation
-        const sub = (n) => ['₀','₁','₂','₃','₄'][n] || n;
+        // Subscript helper
+        const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[parseInt(d)] || d).join('');
         
-        // Activation derivative in calculus terms (using σ for activation)
-        const actDeriv = {
-            'relu': "σ'(z) = 1 if z > 0, else 0  <em style='color:#888'>(no saturation!)</em>",
-            'sigmoid': "σ'(z) = σ(z) · (1 − σ(z))  <em style='color:#888'>(can vanish near 0 or 1)</em>"
-        };
+        // Count total parameters
+        const totalParams = network.weights.reduce((sum, layer) => sum + layer.length, 0) +
+                           network.biases.reduce((sum, layer) => sum + layer.length, 0);
         
-        let forwardHtml = `
-            <strong>Setup:</strong> ${L} hidden layer${L>1?'s':''}, ${H} neurons each<br>
-            <strong>Activation:</strong> σ = ${actName}<br><br>
+        // Build architecture string: 1 → H → H → ... → 1
+        const archParts = ['1'];
+        for (let i = 0; i < L; i++) archParts.push(H.toString());
+        archParts.push('1');
+        const archStr = archParts.join(' → ');
+        
+        // Decide: use explicit layer-by-layer or compact parameterized form
+        const useExplicit = (L <= 2 && H <= 4);
+        
+        // Layer variable names: a, b, c, d, e... for layers 1, 2, 3, 4, 5...
+        const layerVars = ['a', 'b', 'c', 'd', 'e', 'f'];
+        
+        // ====== ARCHITECTURE BLOCK ======
+        let archHtml = `
+            <div style="background:#f8f9fa; padding:6px 10px; border-radius:4px; margin-bottom:8px; border-left:3px solid #007bff;">
+                <strong style="color:#007bff;">Network Architecture</strong><br>
+                <span style="font-family:monospace; font-size:13px;">${archStr}</span><br>
+                <span style="color:#666; font-size:10px;">
+                    ${L} hidden layer${L>1?'s':''} × ${H} neurons = <strong>${totalParams} parameters</strong>
+                </span>
+            </div>
         `;
         
-        // Layer-by-layer forward with subscripts (using scalar notation)
-        // Hidden layer: b_ij (layer i, neuron j), Output layer: b_j
-        forwardHtml += `<span style="color:#F18F01">z</span><sub>ij</sub> = w<sub>ij</sub>·x + b<sub>ij</sub>  <em style="color:#888">(weighted sum)</em><br>`;
-        forwardHtml += `<span style="color:#28a745">h</span><sub>ij</sub> = σ(z<sub>ij</sub>)  <em style="color:#888">(activation)</em><br>`;
-        forwardHtml += `<br><span style="color:#6f42c1">y</span> = w₁h₁ + w₂h₂ + ... + b  <em style="color:#888">(output)</em><br>`;
-        forwardHtml += `<span style="color:#dc3545">E</span> = ½(y − t)²  <em style="color:#888">(error)</em>`;
+        // ====== FORWARD PASS ======
+        let forwardHtml = '';
         
-        // Backward pass with calculus notation (using E for error, y for prediction, t for target)
-        let backwardHtml = `
-            <strong>Loss derivative:</strong><br>
-            <span style="color:#dc3545">∂E/∂y</span> = y − t<br><br>
-            <strong>Output layer:</strong><br>
-            ∂E/∂w<sub>j</sub> = (∂E/∂y) · h<sub>j</sub><br>
-            ∂E/∂b = ∂E/∂y<br><br>
-            <strong>Hidden layer:</strong><br>
-            ∂E/∂h<sub>ij</sub> = (∂E/∂y) · w<sub>j</sub><br>
-            ∂h<sub>ij</sub>/∂z<sub>ij</sub> = σ'(z<sub>ij</sub>)<br>
-            <span style="color:#dc3545">∂E/∂z<sub>ij</sub></span> = (∂E/∂h<sub>ij</sub>)(∂h<sub>ij</sub>/∂z<sub>ij</sub>)<br><br>
-            <strong>Hidden weights:</strong><br>
-            ∂E/∂w<sub>ij</sub> = (∂E/∂z<sub>ij</sub>) · x<br>
-            ∂E/∂b<sub>ij</sub> = ∂E/∂z<sub>ij</sub><br>
-        `;
+        // Activation function definition
+        const actDef = act === 'relu' 
+            ? `<span style="color:#28a745">${actSymbol}(z)</span> = max(0, z)`
+            : `<span style="color:#28a745">${actSymbol}(z)</span> = 1/(1+e<sup>−z</sup>)`;
         
-        backwardHtml += `<br><strong>Activation derivative:</strong><br>${actDeriv[act]}`;
+        forwardHtml += `<strong>Activation:</strong> ${actDef}<br><br>`;
         
-        // Optimizer explanation
-        const optName = config.optimizer === 'sgd' ? 'Simple (SGD)' : 'Adam';
-        const optExplain = config.optimizer === 'sgd' 
-            ? `<strong>Weight Update:</strong><br>
-               w ← w − η · ∂E/∂w<br>
-               <em style="color:#888">Each weight takes a small downhill step.</em>`
-            : `<strong>Weight Update:</strong><br>
-               m ← 0.9·m + 0.1·∇E <em style="color:#888">(momentum)</em><br>
-               v ← 0.999·v + 0.001·(∇E)² <em style="color:#888">(adapt)</em><br>
-               w ← w − η · m / √v<br>
-               <em style="color:#888">Momentum smooths updates; adaptive rates help rare gradients.</em>`;
+        if (useExplicit) {
+            // ====== EXPLICIT LAYER-BY-LAYER (small networks) ======
+            
+            // Layer 1: input → first hidden (using variable 'a')
+            const v1 = layerVars[0];
+            forwardHtml += `<strong style="color:#007bff;">Layer 1</strong> <span style="color:#888">(x → ${v1})</span><br>`;
+            for (let j = 1; j <= H; j++) {
+                forwardHtml += `&nbsp;&nbsp;${v1}${sub(j)} = ${actSymbol}(w${sub(j)}·x + b${sub(j)})<br>`;
+            }
+            
+            // Layer 2 if present
+            if (L >= 2) {
+                const vPrev = layerVars[0];
+                const vCurr = layerVars[1];
+                forwardHtml += `<br><strong style="color:#007bff;">Layer 2</strong> <span style="color:#888">(${vPrev} → ${vCurr})</span><br>`;
+                for (let j = 1; j <= H; j++) {
+                    forwardHtml += `&nbsp;&nbsp;${vCurr}${sub(j)} = ${actSymbol}(`;
+                    for (let k = 1; k <= H; k++) {
+                        forwardHtml += `w${sub(k)}${sub(j)}·${vPrev}${sub(k)}`;
+                        if (k < H) forwardHtml += ' + ';
+                    }
+                    forwardHtml += ` + b${sub(j)})<br>`;
+                }
+            }
+            
+            // Output layer
+            const vLast = layerVars[L - 1];
+            forwardHtml += `<br><strong style="color:#6f42c1;">Output</strong> <span style="color:#888">(${vLast} → y)</span><br>`;
+            forwardHtml += `&nbsp;&nbsp;<span style="color:#6f42c1">y</span> = `;
+            for (let j = 1; j <= H; j++) {
+                forwardHtml += `v${sub(j)}·${vLast}${sub(j)}`;
+                if (j < H) forwardHtml += ' + ';
+            }
+            forwardHtml += ` + c<br>`;
+            
+        } else {
+            // ====== PARAMETERIZED FORM (larger networks) ======
+            forwardHtml += `<strong style="color:#007bff;">Hidden layers</strong> <span style="color:#888">(ℓ = 1 to ${L})</span><br>`;
+            forwardHtml += `&nbsp;&nbsp;h<sup>ℓ</sup><sub>j</sub> = ${actSymbol}(Σ<sub>k</sub> w<sup>ℓ</sup><sub>kj</sub> · h<sup>ℓ−1</sup><sub>k</sub> + b<sup>ℓ</sup><sub>j</sub>)<br>`;
+            forwardHtml += `&nbsp;&nbsp;<em style="color:#888; font-size:10px;">where h<sup>0</sup> = x (input), j = 1..${H}</em><br>`;
+            
+            forwardHtml += `<br><strong style="color:#6f42c1;">Output</strong><br>`;
+            forwardHtml += `&nbsp;&nbsp;<span style="color:#6f42c1">y</span> = Σ<sub>j</sub> v<sub>j</sub> · h<sup>${L}</sup><sub>j</sub> + c<br>`;
+        }
         
+        // Error (same for both)
+        forwardHtml += `<br><strong style="color:#dc3545;">Error:</strong> E = ½(y − target)²`;
+        
+        // ====== BACKWARD PASS ======
+        let backwardHtml = '';
+        
+        // Activation derivative
+        const actDerivExplain = act === 'relu' 
+            ? `<span style="color:#28a745">${actSymbol}'(z)</span> = 1 if z &gt; 0, else 0`
+            : `<span style="color:#28a745">${actSymbol}'(z)</span> = ${actSymbol}·(1 − ${actSymbol})`;
+        
+        backwardHtml += `<strong>Activation derivative:</strong><br>${actDerivExplain}<br><br>`;
+        
+        if (useExplicit) {
+            // ====== EXPLICIT BACKWARD (small networks) ======
+            const vLast = layerVars[L - 1];
+            
+            // Output gradients
+            backwardHtml += `<strong style="color:#6f42c1;">Output gradients:</strong><br>`;
+            backwardHtml += `&nbsp;&nbsp;∂E/∂y = y − target<br>`;
+            for (let j = 1; j <= H; j++) {
+                backwardHtml += `&nbsp;&nbsp;∂E/∂v${sub(j)} = (y − target)·${vLast}${sub(j)}<br>`;
+            }
+            backwardHtml += `&nbsp;&nbsp;∂E/∂c = y − target<br>`;
+            
+            // Layer 2 gradients (if present)
+            if (L >= 2) {
+                const vCurr = layerVars[1];
+                backwardHtml += `<br><strong style="color:#007bff;">Layer 2 gradients:</strong><br>`;
+                backwardHtml += `&nbsp;&nbsp;∂E/∂${vCurr}<sub>j</sub> = (y − target)·v<sub>j</sub><br>`;
+                backwardHtml += `&nbsp;&nbsp;∂E/∂z<sub>j</sub> = (∂E/∂${vCurr}<sub>j</sub>)·${actSymbol}'(z<sub>j</sub>)<br>`;
+                backwardHtml += `&nbsp;&nbsp;∂E/∂w<sub>kj</sub> = (∂E/∂z<sub>j</sub>)·a<sub>k</sub><br>`;
+            }
+            
+            // Layer 1 gradients
+            const v1 = layerVars[0];
+            backwardHtml += `<br><strong style="color:#007bff;">Layer 1 gradients:</strong><br>`;
+            if (L >= 2) {
+                backwardHtml += `&nbsp;&nbsp;∂E/∂${v1}<sub>j</sub> = Σ<sub>k</sub>(∂E/∂b<sub>k</sub>)·w<sub>jk</sub><br>`;
+            } else {
+                backwardHtml += `&nbsp;&nbsp;∂E/∂${v1}<sub>j</sub> = (y − target)·v<sub>j</sub><br>`;
+            }
+            backwardHtml += `&nbsp;&nbsp;∂E/∂z<sub>j</sub> = (∂E/∂${v1}<sub>j</sub>)·${actSymbol}'(z<sub>j</sub>)<br>`;
+            backwardHtml += `&nbsp;&nbsp;∂E/∂w<sub>j</sub> = (∂E/∂z<sub>j</sub>)·x<br>`;
+            
+        } else {
+            // ====== PARAMETERIZED BACKWARD (larger networks) ======
+            backwardHtml += `<strong style="color:#6f42c1;">Output gradients:</strong><br>`;
+            backwardHtml += `&nbsp;&nbsp;∂E/∂y = y − target<br>`;
+            backwardHtml += `&nbsp;&nbsp;∂E/∂v<sub>j</sub> = (y − target)·h<sup>${L}</sup><sub>j</sub><br>`;
+            backwardHtml += `&nbsp;&nbsp;∂E/∂c = y − target<br>`;
+            
+            backwardHtml += `<br><strong style="color:#007bff;">Hidden layer gradients</strong> <span style="color:#888">(ℓ = ${L} down to 1)</span><br>`;
+            backwardHtml += `&nbsp;&nbsp;δ<sup>ℓ</sup><sub>j</sub> = (Σ<sub>k</sub> δ<sup>ℓ+1</sup><sub>k</sub>·w<sup>ℓ+1</sup><sub>jk</sub>) · ${actSymbol}'(z<sup>ℓ</sup><sub>j</sub>)<br>`;
+            backwardHtml += `&nbsp;&nbsp;<em style="color:#888; font-size:10px;">where δ<sup>${L+1}</sup> = y − target</em><br>`;
+            
+            backwardHtml += `<br><strong>Weight gradients:</strong><br>`;
+            backwardHtml += `&nbsp;&nbsp;∂E/∂w<sup>ℓ</sup><sub>kj</sub> = δ<sup>ℓ</sup><sub>j</sub> · h<sup>ℓ−1</sup><sub>k</sub><br>`;
+            backwardHtml += `&nbsp;&nbsp;∂E/∂b<sup>ℓ</sup><sub>j</sub> = δ<sup>ℓ</sup><sub>j</sub><br>`;
+        }
+        
+        // ====== OPTIMIZER ======
+        const optName = config.optimizer === 'sgd' ? 'SGD' : 'Adam';
+        const lr = config.learningRate;
+        
+        let optHtml = '';
+        if (config.optimizer === 'sgd') {
+            optHtml = `
+                <strong>Gradient Descent:</strong><br>
+                &nbsp;&nbsp;w ← w − η·∂E/∂w<br>
+                &nbsp;&nbsp;b ← b − η·∂E/∂b<br><br>
+                <em style="color:#888; font-size:10px;">Learning rate η = ${lr}</em><br>
+                <em style="color:#888; font-size:10px;">Each step moves downhill on the error surface.</em>
+            `;
+        } else {
+            optHtml = `
+                <strong>Adam (Adaptive Moments):</strong><br>
+                &nbsp;&nbsp;m ← 0.9·m + 0.1·∇E<br>
+                &nbsp;&nbsp;v ← 0.999·v + 0.001·(∇E)²<br>
+                &nbsp;&nbsp;w ← w − η·m/√(v + ε)<br><br>
+                <em style="color:#888; font-size:10px;">η = ${lr}, m = momentum, v = adaptive scale</em>
+            `;
+        }
+        
+        // ====== ASSEMBLE HTML ======
         const html = `
+            <div class="equation-block" style="grid-column: 1 / -1;">
+                ${archHtml}
+            </div>
             <div class="equation-block">
-                <div class="equation-title">Forward</div>
+                <div class="equation-title">Forward Pass</div>
                 <div class="math">${forwardHtml}</div>
             </div>
             <div class="equation-block">
-                <div class="equation-title">Backward (Gradients)</div>
+                <div class="equation-title">Backward Pass</div>
                 <div class="math">${backwardHtml}</div>
-                <br>
-                <div class="equation-title" style="margin-top:8px;">Update: ${optName}</div>
-                <div class="math">${optExplain}</div>
+            </div>
+            <div class="equation-block">
+                <div class="equation-title">Optimizer: ${optName}</div>
+                <div class="math">${optHtml}</div>
             </div>
         `;
         
@@ -3911,6 +4126,15 @@ function updateParameters() {
         const paddingBottom = 40;
 
         ctx.clearRect(0, 0, w, h);
+        
+        // Show placeholder if no training data yet
+        if (!dataset.generated || dataset.train.length === 0) {
+            ctx.fillStyle = '#888';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Generate training data to see examples', w/2, h/2);
+            return;
+        }
 
         const xMin = config.xMin;
         const xMax = config.xMax;
@@ -3943,45 +4167,74 @@ function updateParameters() {
         }
 
         // Collect all Y values for axis range calculation
-        let allY = [];
+        // PRIORITY: Actual data points must always fit in the plot
+        let dataY = [];  // Y values from actual data points
+        let funcY = [];  // Y values from target function (filtered for sanity)
         
-        // Always include target function range for consistent axis
+        // Include ALL training and test data points first (these MUST fit)
+        if (dataset.generated) {
+            dataset.train.forEach(p => dataY.push(p.y));
+            dataset.test.forEach(p => dataY.push(p.y));
+        }
+        
+        // Sample target function - but filter out extreme values (asymptotes, etc.)
+        const rawFuncY = [];
         for (let i = 0; i <= 50; i++) {
             const x = xMin + (i / 50) * xRange;
-            try { allY.push(config.targetFunc(x)); } catch { /* ignore */ }
+            try { 
+                const y = config.targetFunc(x);
+                if (Number.isFinite(y)) rawFuncY.push(y);
+            } catch { /* ignore */ }
         }
         
-        // Include training and test data points in range
-        if (dataset.generated) {
-            dataset.train.forEach(p => allY.push(p.y));
-            dataset.test.forEach(p => allY.push(p.y));
-        }
-        
-        // Include model predictions if they're not too extreme
-        const modelYs = comparisonMode 
-            ? [...modelPointsA.map(p => p.y), ...modelPointsB.map(p => p.y)]
-            : modelPoints.map(p => p.y);
-        const dataYMin = allY.length > 0 ? Math.min(...allY) : -1;
-        const dataYMax = allY.length > 0 ? Math.max(...allY) : 1;
-        const dataYRange = dataYMax - dataYMin || 1;
-        
-        // Only include model Y values if they're within reasonable range (5x data range)
-        modelYs.forEach(y => {
-            if (Number.isFinite(y) && y >= dataYMin - dataYRange * 2 && y <= dataYMax + dataYRange * 2) {
-                allY.push(y);
+        // Filter out outliers from target function (use IQR method)
+        if (rawFuncY.length > 0) {
+            const sorted = [...rawFuncY].sort((a, b) => a - b);
+            const q1 = sorted[Math.floor(sorted.length * 0.25)];
+            const q3 = sorted[Math.floor(sorted.length * 0.75)];
+            const iqr = q3 - q1;
+            const lowerBound = q1 - 3 * iqr;  // 3x IQR for generous bounds
+            const upperBound = q3 + 3 * iqr;
+            rawFuncY.forEach(y => {
+                if (y >= lowerBound && y <= upperBound) {
+                    funcY.push(y);
+                }
+            });
+            // If filtering removed everything, use median ± reasonable range
+            if (funcY.length === 0) {
+                const median = sorted[Math.floor(sorted.length / 2)];
+                funcY.push(median - 2, median + 2);
             }
-        });
-
-        let yMin = Math.min(...allY);
-        let yMax = Math.max(...allY);
-        if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) {
-            yMin = -1;
-            yMax = 1;
         }
-        // Add 10% padding
-        const yPad = (yMax - yMin) * 0.1 || 0.5;
-        yMin -= yPad;
-        yMax += yPad;
+        
+        // Use cached Y range if available (stable during training)
+        // Otherwise calculate from current data
+        let yMin, yMax;
+        
+        if (fitPlotYRange.initialized) {
+            // Use stable cached range
+            yMin = fitPlotYRange.min;
+            yMax = fitPlotYRange.max;
+        } else {
+            // Fallback: calculate from data (only before data generation)
+            const dataYMin = dataY.length > 0 ? Math.min(...dataY) : (funcY.length > 0 ? Math.min(...funcY) : -1);
+            const dataYMax = dataY.length > 0 ? Math.max(...dataY) : (funcY.length > 0 ? Math.max(...funcY) : 1);
+            
+            let allY = [...dataY, ...funcY];
+            if (allY.length === 0) allY = [-1, 1];
+            
+            yMin = Math.min(...allY);
+            yMax = Math.max(...allY);
+            if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) {
+                yMin = -1;
+                yMax = 1;
+            }
+            
+            const yPad = (yMax - yMin) * 0.15 || 0.5;
+            yMin -= yPad;
+            yMax += yPad;
+        }
+        
         const yRange = yMax - yMin || 1;
 
         const plotWidth = w - paddingLeft - paddingRight;
@@ -4024,8 +4277,13 @@ function updateParameters() {
             ctx.fillText(yVal.toFixed(2), paddingLeft - 8, cy + 3);
         }
 
-        // Draw data recipe curve (only if revealing or no data yet)
+        // Draw data recipe curve (only if revealing or no data yet) - CLIPPED to plot area
         if (!dataset.generated || revealOptions.showRecipe) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(paddingLeft, paddingTop, plotWidth, plotHeight);
+            ctx.clip();
+            
             const recipeAlpha = dataset.generated ? 0.4 : 0.3;
             ctx.strokeStyle = `rgba(40, 167, 69, ${recipeAlpha})`;
             ctx.lineWidth = 2;
@@ -4042,6 +4300,7 @@ function updateParameters() {
             }
             ctx.stroke();
             ctx.setLineDash([]);
+            ctx.restore();
         }
 
         // Draw training examples (filled circles) - always shown when data exists
@@ -4076,30 +4335,21 @@ function updateParameters() {
             ctx.setLineDash([]);
         }
 
-        // Draw held-out examples - only if revealed
-        if (dataset.generated && dataset.test.length > 0 && revealOptions.showHeldOut) {
+        // Draw held-out examples - always visible (yellow-orange triangles)
+        if (dataset.generated && dataset.test.length > 0) {
+            ctx.strokeStyle = '#ff9800';
+            ctx.lineWidth = 1.5;
+            ctx.fillStyle = 'rgba(255, 152, 0, 0.4)';
+            
             dataset.test.forEach((p) => {
                 const cx = toCanvasX(p.x);
                 const cy = toCanvasY(p.y);
                 
-                if (p.inTrainRange) {
-                    // In-range test points: orange diamonds (interpolation test)
-                    ctx.strokeStyle = '#ff9800';
-                    ctx.lineWidth = 2;
-                    ctx.fillStyle = 'rgba(255, 152, 0, 0.3)';
-                } else {
-                    // Out-of-range test points: red diamonds (extrapolation test)
-                    ctx.strokeStyle = '#dc3545';
-                    ctx.lineWidth = 2;
-                    ctx.fillStyle = 'rgba(220, 53, 69, 0.3)';
-                }
-                
-                // Draw diamond shape
+                // Draw triangle shape (pointing up)
                 ctx.beginPath();
-                ctx.moveTo(cx, cy - 5);
-                ctx.lineTo(cx + 4, cy);
-                ctx.lineTo(cx, cy + 5);
-                ctx.lineTo(cx - 4, cy);
+                ctx.moveTo(cx, cy - 5);      // top
+                ctx.lineTo(cx + 4.5, cy + 4); // bottom right
+                ctx.lineTo(cx - 4.5, cy + 4); // bottom left
                 ctx.closePath();
                 ctx.fill();
                 ctx.stroke();
@@ -4178,46 +4428,21 @@ function updateParameters() {
             ctx.fillText(`Training (${dataset.train.length})`, legendX + 12, legendY + 3);
             legendX += 75;
 
-            // Held-out examples (only if revealed)
-            if (revealOptions.showHeldOut) {
-                // In-range test points (interpolation)
-                const inRangeCount = dataset.test.filter(p => p.inTrainRange).length;
-                const outRangeCount = dataset.test.length - inRangeCount;
-                
-                if (inRangeCount > 0) {
+            // Held-out examples - always shown (yellow-orange triangle)
+            if (dataset.test.length > 0) {
                     ctx.strokeStyle = '#ff9800';
                     ctx.lineWidth = 1.5;
-                    ctx.fillStyle = 'rgba(255, 152, 0, 0.3)';
+                ctx.fillStyle = 'rgba(255, 152, 0, 0.4)';
                     ctx.beginPath();
-                    ctx.moveTo(legendX + 4, legendY - 4);
-                    ctx.lineTo(legendX + 8, legendY);
-                    ctx.lineTo(legendX + 4, legendY + 4);
-                    ctx.lineTo(legendX, legendY);
+                ctx.moveTo(legendX + 4, legendY - 4);      // top
+                ctx.lineTo(legendX + 8.5, legendY + 4);    // bottom right
+                ctx.lineTo(legendX - 0.5, legendY + 4);    // bottom left
                     ctx.closePath();
                     ctx.fill();
                     ctx.stroke();
                     ctx.fillStyle = '#333';
-                    ctx.fillText(`Held (${inRangeCount})`, legendX + 12, legendY + 3);
-                    legendX += 55;
-                }
-                
-                // Out-of-range test points (extrapolation)
-                if (outRangeCount > 0) {
-                    ctx.strokeStyle = '#dc3545';
-                    ctx.lineWidth = 1.5;
-                    ctx.fillStyle = 'rgba(220, 53, 69, 0.3)';
-                    ctx.beginPath();
-                    ctx.moveTo(legendX + 4, legendY - 4);
-                    ctx.lineTo(legendX + 8, legendY);
-                    ctx.lineTo(legendX + 4, legendY + 4);
-                    ctx.lineTo(legendX, legendY);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.stroke();
-                    ctx.fillStyle = '#333';
-                    ctx.fillText(`Extrap (${outRangeCount})`, legendX + 12, legendY + 3);
-                    legendX += 60;
-                }
+                ctx.fillText(`Held-Out (${dataset.test.length})`, legendX + 12, legendY + 3);
+                legendX += 80;
             }
             
             // Data recipe - green dashed (only if revealed)
@@ -4905,9 +5130,168 @@ function drawTrainingTrace() {
     let lossSurfaceWeightIndices = [0, 1];
     let lossSurfaceTrail = [];  // Trail of weight positions during training
     let lossSurfaceStartPosition = null;  // Store starting position separately
-    let lossSurfaceAutoUpdate = true;  // Auto-update every N steps
-    let lossSurfaceUpdateInterval = 50;  // Update every 50 steps
+    let lossSurfaceAutoUpdate = true;  // Auto-update drawing every N steps
+    let lossSurfaceUpdateInterval = 50;  // Update drawing every 50 steps
     let lossLandscapeAutoMode = true;  // Auto-select weights by default
+    
+    // Smooth zoom state
+    let lossSurfaceViewBounds = null;  // Current view bounds {minX, maxX, minY, maxY}
+    let lossSurfaceOriginalBounds = null;  // Original wide bounds (for zoom out)
+    let zoomBlendRate = 0.03;  // How fast to zoom (3% per frame)
+    
+    // Periodic re-probing state
+    let lastReprobeEpoch = 0;
+    let reprobeInterval = 10;  // Re-probe every N epochs
+    
+    // Re-probe grid points that are already BLUE (low loss)
+    // Only update blues to deeper blues - don't shift greens/reds (confusing)
+    function reprobeLossSurface() {
+        if (!lossSurfaceCache) return;
+        
+        const { grid, minX, maxX, minY, maxY, resolution, maxLoss } = lossSurfaceCache;
+        const idxX = lossSurfaceWeightIndices[0];
+        const idxY = lossSurfaceWeightIndices[1];
+        
+        // Threshold: only update cells that are already in the "blue" range
+        // Blue is roughly the lower 30% of the log scale
+        const blueThreshold = Math.pow(maxLoss, 0.3) * Math.pow(lossSurfaceCache.minLoss, 0.7);
+        
+        // Save current trained weights
+        const savedWX = getWeightByIndex(idxX);
+        const savedWY = getWeightByIndex(idxY);
+        
+        // Sample function for loss computation
+        const samples = [];
+        for (let i = 0; i < 20; i++) {
+            const x = config.xMin + (i + 0.5) * (config.xMax - config.xMin) / 20;
+            let y;
+            try { y = config.targetFunc(x); } catch { y = 0; }
+            samples.push({ x, y });
+        }
+        
+        let updatedCount = 0;
+        let newMin = lossSurfaceCache.minLoss;
+        
+        // Only check cells that are currently blue
+        for (let iy = 0; iy < resolution; iy++) {
+            const wy = minY + (iy / (resolution - 1)) * (maxY - minY);
+            for (let ix = 0; ix < resolution; ix++) {
+                // Skip cells that aren't already blue
+                if (grid[iy][ix] > blueThreshold) continue;
+                
+                const wx = minX + (ix / (resolution - 1)) * (maxX - minX);
+                
+                // Set w1, w2 to grid point
+                setWeightByIndex(idxX, wx);
+                setWeightByIndex(idxY, wy);
+                
+                // Compute loss with current trained N-2 weights
+                let loss = 0;
+                for (const sample of samples) {
+                    const fwd = forward(sample.x);
+                    const error = fwd.yhat - sample.y;
+                    loss += 0.5 * error * error;
+                }
+                loss /= samples.length;
+                
+                // Update if lower AND still blue (deeper blue, not jumping to green/red)
+                if (loss < grid[iy][ix] && loss <= blueThreshold) {
+                    grid[iy][ix] = loss;
+                    updatedCount++;
+                }
+                if (loss < newMin) newMin = loss;
+            }
+        }
+        
+        // Restore w1, w2
+        setWeightByIndex(idxX, savedWX);
+        setWeightByIndex(idxY, savedWY);
+        
+        if (newMin < lossSurfaceCache.minLoss) {
+            console.log(`Reprobe: min loss ${lossSurfaceCache.minLoss.toExponential(2)} → ${newMin.toExponential(2)}`);
+            lossSurfaceCache.minLoss = newMin;
+        }
+        if (updatedCount > 0) {
+            console.log(`Reprobe: ${updatedCount} blue cells deepened`);
+        }
+    }
+    
+    // Update zoom to follow trace
+    function updateLossSurfaceZoom() {
+        if (!lossSurfaceCache || !lossSurfaceViewBounds || !lossSurfaceOriginalBounds) return;
+        if (lossSurfaceTrail.length < 2) return;
+        
+        // Compute trace bounding box
+        const trailXs = lossSurfaceTrail.map(p => p.x);
+        const trailYs = lossSurfaceTrail.map(p => p.y);
+        const trailMinX = Math.min(...trailXs);
+        const trailMaxX = Math.max(...trailXs);
+        const trailMinY = Math.min(...trailYs);
+        const trailMaxY = Math.max(...trailYs);
+        
+        // Add margin (20% of trail size, minimum 1 unit)
+        const trailW = trailMaxX - trailMinX;
+        const trailH = trailMaxY - trailMinY;
+        const marginX = Math.max(trailW * 0.2, 1);
+        const marginY = Math.max(trailH * 0.2, 1);
+        
+        // Target bounds = trace bbox + margin
+        let targetMinX = trailMinX - marginX;
+        let targetMaxX = trailMaxX + marginX;
+        let targetMinY = trailMinY - marginY;
+        let targetMaxY = trailMaxY + marginY;
+        
+        // Ensure target doesn't exceed original bounds (can't zoom beyond computed surface)
+        targetMinX = Math.max(targetMinX, lossSurfaceOriginalBounds.minX);
+        targetMaxX = Math.min(targetMaxX, lossSurfaceOriginalBounds.maxX);
+        targetMinY = Math.max(targetMinY, lossSurfaceOriginalBounds.minY);
+        targetMaxY = Math.min(targetMaxY, lossSurfaceOriginalBounds.maxY);
+        
+        // Ensure minimum view size (don't zoom in too far)
+        const minViewSize = 2;
+        if (targetMaxX - targetMinX < minViewSize) {
+            const centerX = (targetMinX + targetMaxX) / 2;
+            targetMinX = centerX - minViewSize / 2;
+            targetMaxX = centerX + minViewSize / 2;
+        }
+        if (targetMaxY - targetMinY < minViewSize) {
+            const centerY = (targetMinY + targetMaxY) / 2;
+            targetMinY = centerY - minViewSize / 2;
+            targetMaxY = centerY + minViewSize / 2;
+        }
+        
+        // Check if current position is outside view - if so, need to zoom out
+        const currentX = getWeightByIndex(lossSurfaceWeightIndices[0]);
+        const currentY = getWeightByIndex(lossSurfaceWeightIndices[1]);
+        const viewMargin = 0.1;  // 10% margin before triggering zoom out
+        const viewW = lossSurfaceViewBounds.maxX - lossSurfaceViewBounds.minX;
+        const viewH = lossSurfaceViewBounds.maxY - lossSurfaceViewBounds.minY;
+        
+        if (currentX < lossSurfaceViewBounds.minX + viewW * viewMargin ||
+            currentX > lossSurfaceViewBounds.maxX - viewW * viewMargin ||
+            currentY < lossSurfaceViewBounds.minY + viewH * viewMargin ||
+            currentY > lossSurfaceViewBounds.maxY - viewH * viewMargin) {
+            // Current position near edge - expand target to include it with more margin
+            targetMinX = Math.min(targetMinX, currentX - 2);
+            targetMaxX = Math.max(targetMaxX, currentX + 2);
+            targetMinY = Math.min(targetMinY, currentY - 2);
+            targetMaxY = Math.max(targetMaxY, currentY + 2);
+            
+            // Clamp to original bounds
+            targetMinX = Math.max(targetMinX, lossSurfaceOriginalBounds.minX);
+            targetMaxX = Math.min(targetMaxX, lossSurfaceOriginalBounds.maxX);
+            targetMinY = Math.max(targetMinY, lossSurfaceOriginalBounds.minY);
+            targetMaxY = Math.min(targetMaxY, lossSurfaceOriginalBounds.maxY);
+        }
+        
+        // Smoothly blend current view toward target
+        lossSurfaceViewBounds.minX += (targetMinX - lossSurfaceViewBounds.minX) * zoomBlendRate;
+        lossSurfaceViewBounds.maxX += (targetMaxX - lossSurfaceViewBounds.maxX) * zoomBlendRate;
+        lossSurfaceViewBounds.minY += (targetMinY - lossSurfaceViewBounds.minY) * zoomBlendRate;
+        lossSurfaceViewBounds.maxY += (targetMaxY - lossSurfaceViewBounds.maxY) * zoomBlendRate;
+    }
+    // With percentile-based surface computation, calibration is no longer needed
+    // The surface shows "achievable" loss at each point, which is stable across training
     
     function populateWeightSelectors() {
         const selectX = document.getElementById('weightXSelect');
@@ -5091,8 +5475,45 @@ function drawTrainingTrace() {
         }
     }
     
+    // Abort flag for cancelling in-progress loss surface computation
+    let abortLossSurfaceComputation = false;
+    
+    // Debounced loss surface computation - delays expensive calculation
+    let lossSurfaceComputeTimer = null;
+    function scheduleLossSurfaceComputation(delay = 1000) {
+        // Signal any in-progress computation to abort
+        abortLossSurfaceComputation = true;
+        if (lossSurfaceComputeTimer) {
+            clearTimeout(lossSurfaceComputeTimer);
+        }
+        const scheduleStart = performance.now();
+        console.log(`Scheduling loss surface computation (${delay}ms delay)...`);
+        lossSurfaceComputeTimer = setTimeout(() => {
+            lossSurfaceComputeTimer = null;
+            console.log(`Computing loss surface (after ${(performance.now() - scheduleStart).toFixed(0)}ms wait)...`);
+            const t0 = performance.now();
+            computeLossSurface();
+            console.log(`  computeLossSurface: ${(performance.now() - t0).toFixed(0)}ms`);
+            const t1 = performance.now();
+            drawLossSurface();
+            console.log(`  drawLossSurface: ${(performance.now() - t1).toFixed(0)}ms`);
+            const t2 = performance.now();
+            updateLossScaleLegend();
+            console.log(`  updateLossScaleLegend: ${(performance.now() - t2).toFixed(0)}ms`);
+            console.log(`  Total scheduled work: ${(performance.now() - t0).toFixed(0)}ms`);
+        }, delay);
+    }
+    
     function computeLossSurface() {
-        const resolution = 60;  // 60x60 grid for finer detail
+        // Skip if no training data has been generated yet
+        if (!dataset.generated || dataset.train.length === 0) {
+            console.log('computeLossSurface: skipped (no training data yet)');
+            lossSurfaceCache = null;  // Clear any stale cache
+            return;
+        }
+        
+        // One-time computation at training start
+        const resolution = 45;  // ~2000 points (45x45), with non-uniform spacing
         const idxX = lossSurfaceWeightIndices[0];
         const idxY = lossSurfaceWeightIndices[1];
         
@@ -5100,41 +5521,15 @@ function drawTrainingTrace() {
         const savedWX = getWeightByIndex(idxX);
         const savedWY = getWeightByIndex(idxY);
         
-        // Determine range - include all trail points plus current position with padding
-        let minX = savedWX, maxX = savedWX;
-        let minY = savedWY, maxY = savedWY;
-        
-        // Include start position
-        if (lossSurfaceStartPosition) {
-            minX = Math.min(minX, lossSurfaceStartPosition.x);
-            maxX = Math.max(maxX, lossSurfaceStartPosition.x);
-            minY = Math.min(minY, lossSurfaceStartPosition.y);
-            maxY = Math.max(maxY, lossSurfaceStartPosition.y);
-        }
-        
-        // Include all trail points
-        for (const pt of lossSurfaceTrail) {
-            minX = Math.min(minX, pt.x);
-            maxX = Math.max(maxX, pt.x);
-            minY = Math.min(minY, pt.y);
-            maxY = Math.max(maxY, pt.y);
-        }
-        
-        // Add padding (20% on each side, minimum ±2 range)
-        const rangeX = maxX - minX;
-        const rangeY = maxY - minY;
-        const padX = Math.max(2, rangeX * 0.2);
-        const padY = Math.max(2, rangeY * 0.2);
-        minX -= padX;
-        maxX += padX;
-        minY -= padY;
-        maxY += padY;
+        // Grid bounds will be set after mini-training finds the low-loss region
+        // Placeholder values - will be updated
+        let minX, maxX, minY, maxY;
         
         // Always use evenly-spaced samples from the clean target function
         // This ensures the loss landscape is stable and shows the "true" loss surface
         // (using training data with noise would cause visual jumps)
         const samples = [];
-        const numSamples = 20;
+        const numSamples = 30;  // More samples for accurate loss estimation
         for (let i = 0; i < numSamples; i++) {
             const x = config.xMin + (i + 0.5) * (config.xMax - config.xMin) / numSamples;
             let y;
@@ -5142,119 +5537,248 @@ function drawTrainingTrace() {
             samples.push({ x, y });
         }
         
-        // Compute loss grid
+        // Save all weights for restoration
+        const savedWeights = JSON.parse(JSON.stringify(network.weights));
+        const savedBiases = JSON.parse(JSON.stringify(network.biases));
+        
+        // Get total weights count
+        let totalWeights = 0;
+        for (let l = 0; l < network.weights.length; l++) {
+            const layer = network.weights[l];
+            if (Array.isArray(layer[0])) {
+                totalWeights += layer.length * layer[0].length;
+            } else {
+                totalWeights += layer.length;
+            }
+        }
+        
+        // Multi-region training: 25 anchors × 1000 steps = 25k steps total
+        // This is fast regardless of model size, so no limit needed
+        const useGreedy = true;  // Always use multi-region training for meaningful loss maps
+        
+        console.log(`Computing loss surface: ${resolution}x${resolution} grid ${useGreedy ? 'with greedy optimization' : '(simple slice - network too large for greedy)'}`);
+        const computeStart = performance.now();
+        
+        // Clear abort flag at start of computation
+        abortLossSurfaceComputation = false;
+        
         const grid = [];
         let minLoss = Infinity, maxLoss = -Infinity;
+        let minLossX = 0, minLossY = 0;
         
-        for (let iy = 0; iy < resolution; iy++) {
-            const row = [];
-            const wy = minY + (iy / (resolution - 1)) * (maxY - minY);
+        // Mini-training approach: run a few epochs of actual training to warm up N-2 weights
+        // This is MUCH faster than greedy search AND gives more realistic loss surfaces
+        let warmedUpWeights = null;
+        let warmedUpBiases = null;
+        
+        // Will hold the trained position (where w1,w2 converge to = blue region)
+        let trainedW1 = 0, trainedW2 = 0;
+        let trainedLoss = Infinity;  // The actual achievable minimum loss
+        
+        // Multi-region mini-training: train at multiple (w1,w2) anchor points
+        // to build a globally meaningful loss map
+        const anchorLosses = [];  // Will store {w1, w2, loss} for each anchor
+        
+        // Set up grid bounds first (±6 range, fixed)
+        minX = -6; maxX = 6;
+        minY = -6; maxY = 6;
+        
+        // Pre-compute coordinate arrays (non-uniform, concentrated at center)
+        const coordsX = [];
+        const coordsY = [];
+        for (let i = 0; i < resolution; i++) {
+            const u = (i / (resolution - 1)) * 2 - 1;  // [-1, 1]
+            const coord = Math.sign(u) * Math.pow(Math.abs(u), 2) * 6;  // ±6, concentrated at center
+            coordsX.push(coord);
+            coordsY.push(coord);
+        }
+        
+        if (useGreedy) {
+            console.log('  Regional training: optimizing N-2 at each grid point...');
+            const miniTrainStart = performance.now();
             
-            for (let ix = 0; ix < resolution; ix++) {
-                const wx = minX + (ix / (resolution - 1)) * (maxX - minX);
-                
-                // Set weights
-                setWeightByIndex(idxX, wx);
-                setWeightByIndex(idxY, wy);
-                
-                // Compute average loss over samples
-                let totalLoss = 0;
-                for (const sample of samples) {
-                    const fwd = forward(sample.x);
-                    const error = fwd.yhat - sample.y;
-                    totalLoss += 0.5 * error * error;
+            const miniTrainData = (dataset.generated && dataset.train.length > 0) ? dataset.train : samples;
+            const miniLR = Math.min(0.1, 0.5 / Math.sqrt(totalWeights));
+            
+            // Steps per point - balance between quality and speed
+            const stepsPerPoint = Math.max(50, Math.floor(20000 / (resolution * resolution)));
+            console.log(`  Grid: ${resolution}x${resolution}, ${stepsPerPoint} steps/point`);
+            
+            // Create DETERMINISTIC initial weights for regional training
+            // This ensures the loss map is the same regardless of when it's computed
+            function initWeightsForGrid() {
+                // Use small deterministic values (like Xavier with fixed seed)
+                const H = network.hiddenSize;
+                const scale = 1 / Math.sqrt(H);
+                for (let l = 0; l < network.weights.length; l++) {
+                    const w = network.weights[l];
+                    if (Array.isArray(w[0])) {
+                        for (let i = 0; i < w.length; i++) {
+                            for (let j = 0; j < w[i].length; j++) {
+                                // Deterministic pattern based on position
+                                w[i][j] = scale * Math.sin((l * 1000 + i * 100 + j) * 0.1);
+                            }
+                        }
+                    } else {
+                        for (let i = 0; i < w.length; i++) {
+                            w[i] = scale * Math.sin((l * 1000 + i) * 0.1);
+                        }
+                    }
                 }
-                const avgLoss = totalLoss / samples.length;
-                
-                row.push(avgLoss);
-                if (avgLoss < minLoss) minLoss = avgLoss;
-                if (avgLoss > maxLoss) maxLoss = avgLoss;
+                for (let l = 0; l < network.biases.length; l++) {
+                    for (let i = 0; i < network.biases[l].length; i++) {
+                        network.biases[l][i] = 0;  // Start biases at zero
+                    }
+                }
             }
-            grid.push(row);
-        }
-        
-        // Restore weights
-        setWeightByIndex(idxX, savedWX);
-        setWeightByIndex(idxY, savedWY);
-        
-        lossSurfaceCache = {
-            grid, minLoss, maxLoss, minX, maxX, minY, maxY, resolution,
-            currentX: savedWX, currentY: savedWY
-        };
-        
-        // Calibrate color scale on first compute (before training starts)
-        if (!lossColorScale.calibrated) {
-            calibrateLossColorScale(grid, minLoss, maxLoss);
-        }
-    }
-    
-    // Calibrate loss color scale based on initial loss surface + random probes
-    function calibrateLossColorScale(grid, gridMinLoss, gridMaxLoss) {
-        console.log('Calibrating loss color scale...');
-        
-        // 1. Get range from the 2D grid we just computed (3600 points)
-        let surfaceMin = gridMinLoss;
-        let surfaceMax = gridMaxLoss;
-        
-        // 2. Do additional random weight probes to estimate global range
-        const numProbes = 50;
-        const probeLosses = [];
-        
-        // Save current weights
-        const savedWeights = network.weights.map(layer => layer.slice());
-        const savedBiases = network.biases.map(layer => layer.slice());
-        
-        // Use evenly-spaced samples from clean target function (consistent with computeLossSurface)
-        const samples = [];
-        const numSamples = 20;
-        for (let i = 0; i < numSamples; i++) {
-            const x = config.xMin + (i + 0.5) * (config.xMax - config.xMin) / numSamples;
-            let y;
-            try { y = config.targetFunc(x); } catch { y = 0; }
-            samples.push({ x, y });
-        }
-        
-        // Probe random weight configurations
-        for (let probe = 0; probe < numProbes; probe++) {
-            // Random weights in typical initialization range
-            initializeNetwork();  // This initializes with random weights
             
-            // Compute loss
-            let totalLoss = 0;
-            for (const sample of samples) {
-                const fwd = forward(sample.x);
-                const error = fwd.yhat - sample.y;
-                totalLoss += 0.5 * error * error;
+            // Build grid with regional training
+            for (let iy = 0; iy < resolution; iy++) {
+                const row = [];
+                const wy = coordsY[iy];
+                
+                for (let ix = 0; ix < resolution; ix++) {
+                    const wx = coordsX[ix];
+                    
+                    // Reset to DETERMINISTIC weights for each point
+                    initWeightsForGrid();
+                    
+                    // Fix w1,w2 at this grid point
+                    setWeightByIndex(idxX, wx);
+                    setWeightByIndex(idxY, wy);
+                    
+                    // Mini-train N-2 weights for this point
+                    for (let step = 0; step < stepsPerPoint; step++) {
+                        const sample = miniTrainData[step % miniTrainData.length];
+                        const fwd = forward(sample.x);
+                        if (!Number.isFinite(fwd.yhat)) break;
+                        
+                        backward(sample.x, sample.y, fwd);
+                        
+                        // Update only N-2 weights
+                        let wIdx = 0;
+                        for (let l = 0; l < network.weights.length; l++) {
+                            const w = network.weights[l];
+                            const gw = grads.weights[l];
+                            if (Array.isArray(w[0])) {
+                                for (let i = 0; i < w.length; i++) {
+                                    for (let j = 0; j < w[i].length; j++) {
+                                        if (wIdx !== idxX && wIdx !== idxY) {
+                                            const g = gw[i][j];
+                                            if (Number.isFinite(g)) {
+                                                w[i][j] -= miniLR * Math.max(-5, Math.min(5, g));
+                                            }
+                                        }
+                                        wIdx++;
+                                    }
+                                }
+                            } else {
+                                for (let i = 0; i < w.length; i++) {
+                                    if (wIdx !== idxX && wIdx !== idxY) {
+                                        const g = gw[i];
+                                        if (Number.isFinite(g)) {
+                                            w[i] -= miniLR * Math.max(-5, Math.min(5, g));
+                                        }
+                                    }
+                                    wIdx++;
+                                }
+                            }
+                        }
+                        for (let l = 0; l < network.biases.length; l++) {
+                            const b = network.biases[l];
+                            const gb = grads.biases[l];
+                            for (let i = 0; i < b.length; i++) {
+                                const g = gb[i];
+                                if (Number.isFinite(g)) {
+                                    b[i] -= miniLR * Math.max(-5, Math.min(5, g));
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Compute achievable loss at this point
+                    let loss = 0;
+                    for (const sample of samples) {
+                        const fwd = forward(sample.x);
+                        const err = fwd.yhat - sample.y;
+                        loss += 0.5 * err * err;
+                    }
+                    loss /= samples.length;
+                    
+                    row.push(loss);
+                    if (loss < minLoss) { minLoss = loss; minLossX = wx; minLossY = wy; }
+                    if (loss > maxLoss) maxLoss = loss;
+                }
+                grid.push(row);
             }
-            const avgLoss = totalLoss / numSamples;
-            probeLosses.push(avgLoss);
+            
+            trainedLoss = minLoss;
+            trainedW1 = minLossX;
+            trainedW2 = minLossY;
+            
+            console.log(`  Regional training done in ${((performance.now() - miniTrainStart)/1000).toFixed(2)}s`);
+            console.log(`  Best achievable: ${minLoss.toExponential(2)} at (${minLossX.toFixed(1)}, ${minLossY.toFixed(1)})`);
+            console.log(`  Worst: ${maxLoss.toExponential(2)}, ratio: ${(maxLoss/minLoss).toFixed(1)}x`);
         }
         
-        // Restore weights
+        // Grid was built in regional training block above
+        const computeEnd = performance.now();
+        console.log(`Loss surface computed in ${((computeEnd - computeStart)/1000).toFixed(2)}s`);
+        console.log(`  Grid min loss: ${minLoss.toExponential(2)} at (${minLossX.toFixed(2)}, ${minLossY.toFixed(2)})`);
+        console.log(`  Grid max loss: ${maxLoss.toExponential(2)}`);
+        console.log(`  Loss ratio: ${(maxLoss/minLoss).toFixed(1)}x`);
+        
+        // For non-greedy mode, use grid min as the "trained" loss
+        if (!useGreedy || !Number.isFinite(trainedLoss)) {
+            trainedLoss = minLoss;
+            trainedW1 = minLossX;
+            trainedW2 = minLossY;
+        }
+        
+        // Restore original random weights for actual training
         network.weights = savedWeights;
         network.biases = savedBiases;
         
-        // Combine grid and probe statistics
-        const allMin = Math.min(surfaceMin, Math.min(...probeLosses));
-        const allMax = Math.max(surfaceMax, Math.max(...probeLosses));
-        const probeMean = probeLosses.reduce((a, b) => a + b, 0) / probeLosses.length;
+        // Use trained loss as the true minimum (blue) - grid may not capture it exactly
+        const trueMinLoss = trainedLoss < minLoss ? trainedLoss : minLoss;
         
-        // 3. Estimate noise floor from config
-        const noiseFloor = config.noise * config.noise;
+        lossSurfaceCache = {
+            grid, minLoss, maxLoss, minX, maxX, minY, maxY, resolution,
+            coordsX, coordsY,  // Non-uniform coordinate arrays
+            currentX: savedWX, currentY: savedWY,
+            usedGreedy: useGreedy,
+            trainedLoss: useGreedy ? trainedLoss : null,  // The actual achievable minimum
+            trainedX: useGreedy ? trainedW1 : null,
+            trainedY: useGreedy ? trainedW2 : null
+        };
         
-        // 4. Set calibrated color scale
-        // Min: expect training to find something better than random, but not below noise
-        lossColorScale.minLoss = Math.max(noiseFloor / 2, allMin / 10);
-        // Max: the worst we saw in our samples
-        lossColorScale.maxLoss = allMax * 1.2;
-        lossColorScale.noiseFloor = noiseFloor;
-        lossColorScale.calibrated = true;
+        // Store original bounds for zoom reference
+        lossSurfaceOriginalBounds = { minX, maxX, minY, maxY };
+        // Preserve existing view bounds if they exist (for recomputation during training)
+        // Only initialize to original bounds on first computation
+        if (!lossSurfaceViewBounds) {
+            lossSurfaceViewBounds = { minX, maxX, minY, maxY };
+        }
         
-        console.log(`Loss color scale calibrated: ${lossColorScale.minLoss.toExponential(2)} to ${lossColorScale.maxLoss.toFixed(2)}`);
-        console.log(`  Grid range: ${surfaceMin.toExponential(2)} to ${surfaceMax.toFixed(2)}`);
-        console.log(`  Probe range: ${Math.min(...probeLosses).toExponential(2)} to ${Math.max(...probeLosses).toFixed(2)} (mean: ${probeMean.toFixed(3)})`);
-        console.log(`  Noise floor: ${noiseFloor.toExponential(2)}`);
+        // Set color scale: use ACTUAL grid min (blue) and max (red)
+        // This ensures we see the full color range in the initial view
+        if (!lossColorScale.calibrated) {
+            lossColorScale.minLoss = minLoss;  // Actual grid minimum = blue
+            lossColorScale.maxLoss = maxLoss;  // Actual grid maximum = red
+            lossColorScale.noiseFloor = config.noise * config.noise;
+            lossColorScale.calibrated = true;
+            console.log(`Color scale: blue=${minLoss.toExponential(2)}, red=${maxLoss.toExponential(2)}`);
+            console.log(`  Dynamic range: ${(maxLoss/minLoss).toFixed(1)}x`);
+        } else {
+            // Already calibrated - only extend blue end if we found lower loss
+            if (minLoss < lossColorScale.minLoss) {
+                console.log(`Extending blue end: ${lossColorScale.minLoss.toExponential(2)} → ${minLoss.toExponential(2)}`);
+                lossColorScale.minLoss = minLoss;
+            }
+            // Don't extend red end - that would make existing colors shift
+        }
     }
+    
     
     function drawLossSurface() {
         const canvas = document.getElementById('lossCanvas');
@@ -5290,46 +5814,104 @@ function drawTrainingTrace() {
             return;
         }
         
-        const { grid, minLoss, maxLoss, minX, maxX, minY, maxY, resolution } = lossSurfaceCache;
-        const cellW = plotW / resolution;
-        const cellH = plotH / resolution;
+        const { grid, minLoss, maxLoss, resolution, coordsX, coordsY } = lossSurfaceCache;
+        // Use view bounds for rendering (enables zoom), fall back to cache bounds
+        const viewMinX = lossSurfaceViewBounds ? lossSurfaceViewBounds.minX : lossSurfaceCache.minX;
+        const viewMaxX = lossSurfaceViewBounds ? lossSurfaceViewBounds.maxX : lossSurfaceCache.maxX;
+        const viewMinY = lossSurfaceViewBounds ? lossSurfaceViewBounds.minY : lossSurfaceCache.minY;
+        const viewMaxY = lossSurfaceViewBounds ? lossSurfaceViewBounds.maxY : lossSurfaceCache.maxY;
+        // Grid's original coordinate bounds (for mapping grid indices to weight values)
+        const gridMinX = lossSurfaceCache.minX;
+        const gridMaxX = lossSurfaceCache.maxX;
+        const gridMinY = lossSurfaceCache.minY;
+        const gridMaxY = lossSurfaceCache.maxY;
         
-        // Calibrated logarithmic color scale - set at start of training and locked
-        // Uses lossColorScale.minLoss (blue) to lossColorScale.maxLoss (red)
-        const calibratedMinLog = Math.log10(Math.max(1e-6, lossColorScale.minLoss));
-        const calibratedMaxLog = Math.log10(Math.max(lossColorScale.minLoss * 10, lossColorScale.maxLoss));
-        const calibratedLogRange = calibratedMaxLog - calibratedMinLog;
+        // Check if we have non-uniform coordinates
+        const hasNonUniform = coordsX && coordsY;
         
+        // Logarithmic color scale - maps ACTUAL grid min (blue) to max (red)
+        // This ensures we always see the full color range regardless of absolute loss values
+        const gridMin = lossSurfaceCache.minLoss;
+        const gridMax = lossSurfaceCache.maxLoss;
+        // Use actual grid range for color mapping
+        const colorMin = Math.max(1e-10, gridMin * 0.9);  // Slightly below grid min for headroom
+        const colorMax = gridMax * 1.1;  // Slightly above grid max
+        const colorMinLog = Math.log10(colorMin);
+        const colorMaxLog = Math.log10(Math.max(colorMin * 2, colorMax));
+        const colorLogRange = Math.max(0.1, colorMaxLog - colorMinLog);
+        
+        // Set up clipping region to keep drawing within plot area
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(paddingLeft, paddingTop, plotW, plotH);
+        ctx.clip();
+        
+        // Draw each grid cell, supporting non-uniform grid coordinates
         for (let iy = 0; iy < resolution; iy++) {
             for (let ix = 0; ix < resolution; ix++) {
+                // Get cell center and bounds - use non-uniform coords if available
+                let cellWx, cellWy, cellLeft, cellRight, cellBottom, cellTop;
+                
+                if (hasNonUniform) {
+                    cellWx = coordsX[ix];
+                    cellWy = coordsY[iy];
+                    // Cell bounds from adjacent coordinates (or extrapolate at edges)
+                    cellLeft = ix > 0 ? (coordsX[ix-1] + coordsX[ix]) / 2 : coordsX[ix] - (coordsX[ix+1] - coordsX[ix]) / 2;
+                    cellRight = ix < resolution-1 ? (coordsX[ix] + coordsX[ix+1]) / 2 : coordsX[ix] + (coordsX[ix] - coordsX[ix-1]) / 2;
+                    cellBottom = iy > 0 ? (coordsY[iy-1] + coordsY[iy]) / 2 : coordsY[iy] - (coordsY[iy+1] - coordsY[iy]) / 2;
+                    cellTop = iy < resolution-1 ? (coordsY[iy] + coordsY[iy+1]) / 2 : coordsY[iy] + (coordsY[iy] - coordsY[iy-1]) / 2;
+                } else {
+                    // Uniform grid fallback
+                    const cellSize = (gridMaxX - gridMinX) / resolution;
+                    cellWx = gridMinX + (ix + 0.5) * (gridMaxX - gridMinX) / resolution;
+                    cellWy = gridMinY + (iy + 0.5) * (gridMaxY - gridMinY) / resolution;
+                    cellLeft = cellWx - cellSize/2;
+                    cellRight = cellWx + cellSize/2;
+                    cellBottom = cellWy - cellSize/2;
+                    cellTop = cellWy + cellSize/2;
+                }
+                
+                // Skip if cell is completely outside current view
+                if (cellRight < viewMinX || cellLeft > viewMaxX ||
+                    cellTop < viewMinY || cellBottom > viewMaxY) {
+                    continue;
+                }
+                
                 const loss = grid[iy][ix];
                 
-                // Calibrated log scale normalization
-                const clampedLoss = Math.max(lossColorScale.minLoss, Math.min(lossColorScale.maxLoss, loss));
-                const logLoss = Math.log10(clampedLoss);
-                const normLoss = Math.max(0, Math.min(1, (logLoss - calibratedMinLog) / calibratedLogRange));
+                // Log scale normalization using actual grid range
+                const logLoss = Math.log10(Math.max(1e-10, loss));
+                const normLoss = (logLoss - colorMinLog) / colorLogRange;
+                // Clamp to [0, 1] but allow slight overflow for smoother edges
+                const clampedNorm = Math.max(0, Math.min(1, normLoss));
                 
-                // Smooth HSL-based gradient with more color resolution
-                // Hue: 240 (blue) → 180 (cyan) → 120 (green) → 60 (yellow) → 0 (red)
-                const hue = 240 * (1 - normLoss);  // Blue to red
-                const sat = 85 + 15 * Math.sin(normLoss * Math.PI);  // Slight saturation boost in middle
-                const light = 35 + 25 * (1 - Math.abs(normLoss - 0.5) * 2);  // Brighter in middle
+                // Smooth HSL-based gradient
+                // Hue: 240 (blue) → 0 (red) with full continuous range
+                const hue = 240 * (1 - clampedNorm);
+                const sat = 80 + 20 * Math.sin(clampedNorm * Math.PI);  // Boost in middle
+                const light = 30 + 30 * (1 - Math.pow(Math.abs(clampedNorm - 0.5) * 2, 0.7));  // Smoother falloff
                 
-                ctx.fillStyle = `hsl(${hue}, ${sat}%, ${light}%)`;
-                const px = paddingLeft + ix * cellW;
-                const py = paddingTop + (resolution - 1 - iy) * cellH;
-                ctx.fillRect(px, py, cellW + 1, cellH + 1);
+                ctx.fillStyle = `hsl(${hue.toFixed(2)}, ${sat.toFixed(1)}%, ${light.toFixed(1)}%)`;
+                // Position based on VIEW bounds, not grid bounds
+                const px = paddingLeft + ((cellLeft - viewMinX) / (viewMaxX - viewMinX)) * plotW;
+                const py = paddingTop + (1 - (cellTop - viewMinY) / (viewMaxY - viewMinY)) * plotH;
+                const drawW = ((cellRight - cellLeft) / (viewMaxX - viewMinX)) * plotW + 1;
+                const drawH = ((cellTop - cellBottom) / (viewMaxY - viewMinY)) * plotH + 1;
+                ctx.fillRect(px, py, drawW, drawH);
             }
         }
+        
+        // Restore context (removes clipping)
+        ctx.restore();
         
         // Draw border
         ctx.strokeStyle = '#333';
         ctx.lineWidth = 1;
         ctx.strokeRect(paddingLeft, paddingTop, plotW, plotH);
         
-        // Helper to convert weight values to canvas coordinates
-        const toCanvasX = (wx) => paddingLeft + ((wx - minX) / (maxX - minX)) * plotW;
-        const toCanvasY = (wy) => paddingTop + (1 - (wy - minY) / (maxY - minY)) * plotH;
+        // Helper to convert weight values to canvas coordinates (using VIEW bounds for zoom)
+        const toCanvasX = (wx) => paddingLeft + ((wx - viewMinX) / (viewMaxX - viewMinX)) * plotW;
+        const toCanvasY = (wy) => paddingTop + (1 - (wy - viewMinY) / (viewMaxY - viewMinY)) * plotH;
         
         // Check for comparison mode - only valid if network architecture, activation, and target are the same
         // (comparing optimizer or learning rate differences makes sense, but different architectures don't share a loss landscape)
@@ -5473,21 +6055,21 @@ function drawTrainingTrace() {
             ctx.stroke();
         }
         
-        // Axis labels
+        // Axis labels (use view bounds for zoom)
         ctx.fillStyle = '#333';
         ctx.font = '10px sans-serif';
         ctx.textAlign = 'center';
         
         // X axis labels - just below the plot area
         const xLabelY = h - paddingBottom + 15;
-        ctx.fillText(minX.toFixed(1), paddingLeft, xLabelY);
-        ctx.fillText(maxX.toFixed(1), w - paddingRight, xLabelY);
+        ctx.fillText(viewMinX.toFixed(1), paddingLeft, xLabelY);
+        ctx.fillText(viewMaxX.toFixed(1), w - paddingRight, xLabelY);
         ctx.fillText('w₁', (paddingLeft + w - paddingRight) / 2, xLabelY);
         
         // Y axis labels - just left of the plot area
         ctx.textAlign = 'right';
-        ctx.fillText(minY.toFixed(1), paddingLeft - 4, h - paddingBottom + 3);
-        ctx.fillText(maxY.toFixed(1), paddingLeft - 4, paddingTop + 3);
+        ctx.fillText(viewMinY.toFixed(1), paddingLeft - 4, h - paddingBottom + 3);
+        ctx.fillText(viewMaxY.toFixed(1), paddingLeft - 4, paddingTop + 3);
         
         // Y axis title
         ctx.save();
@@ -5594,6 +6176,7 @@ function drawTrainingTrace() {
             try { drawNetwork(); } catch(e) { console.error('drawNetwork error:', e); }
             try { drawFitPlot(); } catch(e) { console.error('drawFitPlot error:', e); }
             try { drawTrainingTrace(); } catch(e) { console.error('drawTrainingTrace error:', e); }
+            try { updateLossSurfaceZoom(); } catch(e) { console.error('updateLossSurfaceZoom error:', e); }
             try { drawLossSurface(); } catch(e) { console.error('drawLossSurface error:', e); }
             try { updateEquations(); } catch(e) { console.error('updateEquations error:', e); }
         } catch(e) {
@@ -5658,6 +6241,24 @@ function drawTrainingTrace() {
 
         // ===== UNIFIED SLIDERS =====
         
+        // Debounce timer for network config changes (avoid expensive recomputation on every slider tick)
+        let networkConfigDebounceTimer = null;
+        function debouncedResetModel(delay = 2000) {
+            if (networkConfigDebounceTimer) {
+                clearTimeout(networkConfigDebounceTimer);
+            }
+            networkConfigDebounceTimer = setTimeout(() => {
+                networkConfigDebounceTimer = null;
+                console.log('Debounced resetModel executing...');
+                try {
+                    resetModel();
+                    console.log('resetModel completed');
+                } catch(e) {
+                    console.error('resetModel error:', e);
+                }
+            }, delay);
+        }
+        
         // Helper: Update slider value label position
         function updateSliderValuePosition(slider, valueEl) {
             const min = parseFloat(slider.min);
@@ -5681,17 +6282,17 @@ function drawTrainingTrace() {
             console.log('Setting up layers slider, current network.numLayers:', network.numLayers);
             layersSlider.oninput = function() {
                 const newVal = parseInt(this.value, 10);
-                console.log('Layers slider changed to:', newVal, 'from network.numLayers:', network.numLayers);
+                console.log('Layers slider changed to:', newVal);
                 network.numLayers = newVal;
                 layersValue.textContent = newVal.toString();
                 updateSliderValuePosition(this, layersValue);
-                console.log('Calling resetModel for layers change...');
-                try {
-                    resetModel();
-                    console.log('resetModel completed, network.numLayers is now:', network.numLayers);
-                } catch(e) {
-                    console.error('resetModel error (layers):', e);
-                }
+                // Abort any in-progress computation and schedule new one
+                abortLossSurfaceComputation = true;
+                scheduleLossSurfaceComputation(500);  // Short debounce for sliders
+                // Immediately update network display
+                initializeNetwork();
+                populateWeightSelectors();
+                drawNetwork();
             };
             // Initialize slider to match network state
             layersSlider.value = network.numLayers;
@@ -5708,17 +6309,17 @@ function drawTrainingTrace() {
             console.log('Setting up width slider, current network.hiddenSize:', network.hiddenSize);
             widthSlider.oninput = function() {
                 const newVal = parseInt(this.value, 10);
-                console.log('Width slider changed to:', newVal, 'from network.hiddenSize:', network.hiddenSize);
+                console.log('Width slider changed to:', newVal);
                 network.hiddenSize = newVal;
                 widthValue.textContent = newVal.toString();
                 updateSliderValuePosition(this, widthValue);
-                console.log('Calling resetModel for width change...');
-                try {
-                    resetModel();
-                    console.log('resetModel completed, network.hiddenSize is now:', network.hiddenSize);
-                } catch(e) {
-                    console.error('resetModel error (width):', e);
-                }
+                // Abort any in-progress computation and schedule new one
+                abortLossSurfaceComputation = true;
+                scheduleLossSurfaceComputation(500);  // Short debounce for sliders
+                // Immediately update network display
+                initializeNetwork();
+                populateWeightSelectors();
+                drawNetwork();
             };
             // Initialize
             widthSlider.value = network.hiddenSize;
@@ -5875,14 +6476,31 @@ function drawTrainingTrace() {
         }
 
         const targetFuncInput = document.getElementById('targetFuncInput');
-        targetFuncInput.addEventListener('change', () => {
+        
+        // Helper to update loss surface when target function changes
+        function onTargetFuncChange() {
             compileTargetFunc();
+            
+            // Invalidate loss surface cache - new function means new landscape
+            lossSurfaceCache = null;
+            
+            // Reset color scale calibration so it recalibrates for new function
+            lossColorScale.calibrated = false;
+            
+            // Immediately recompute loss surface with new function
+            if (dataset.generated || network.weights.length > 0) {
+                computeLossSurface();
+                updateLossScaleLegend();
+            }
+            
             drawFitPlot();  // Update preview
-        });
+            drawLossSurface();  // Redraw with new colors
+        }
+        
+        targetFuncInput.addEventListener('change', onTargetFuncChange);
         targetFuncInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                compileTargetFunc();
-                drawFitPlot();
+                onTargetFuncChange();
             }
         });
         
@@ -5903,27 +6521,82 @@ function drawTrainingTrace() {
         const trainXMinInput = document.getElementById('trainXMinInput');
         const trainXMaxInput = document.getElementById('trainXMaxInput');
         
+        // Helper function: calculate 95% training range, rounded toward zero for symmetry
+        function calculateTrainingRange() {
+            const center = (config.dataXMin + config.dataXMax) / 2;
+            const halfRange = (config.dataXMax - config.dataXMin) / 2;
+            const trainHalfRange = halfRange * 0.95;
+            
+            // Round toward zero to nearest 0.1 for clean symmetric values
+            // E.g., for data range [-5, 5], train range becomes [-4.7, 4.7] not [-4.75, 4.75]
+            const roundTowardZero = (val) => {
+                const rounded = Math.round(val * 10) / 10;
+                // If rounding away from zero, round the other way
+                if (Math.abs(rounded) > Math.abs(val)) {
+                    return val > 0 ? Math.floor(val * 10) / 10 : Math.ceil(val * 10) / 10;
+                }
+                return rounded;
+            };
+            
+            config.trainXMin = roundTowardZero(center - trainHalfRange);
+            config.trainXMax = roundTowardZero(center + trainHalfRange);
+            
+            // Clamp to data range
+            config.trainXMin = Math.max(config.dataXMin, config.trainXMin);
+            config.trainXMax = Math.min(config.dataXMax, config.trainXMax);
+            
+            // Update hidden inputs
+            if (trainXMinInput) trainXMinInput.value = config.trainXMin;
+            if (trainXMaxInput) trainXMaxInput.value = config.trainXMax;
+            
+            // Update sliders if they exist
+            const trainMinSlider = document.getElementById('trainMinSlider');
+            const trainMaxSlider = document.getElementById('trainMaxSlider');
+            if (trainMinSlider) {
+                trainMinSlider.min = config.dataXMin.toString();
+                trainMinSlider.max = config.dataXMax.toString();
+                trainMinSlider.value = config.trainXMin.toString();
+            }
+            if (trainMaxSlider) {
+                trainMaxSlider.min = config.dataXMin.toString();
+                trainMaxSlider.max = config.dataXMax.toString();
+                trainMaxSlider.value = config.trainXMax.toString();
+            }
+            
+            // Update slider UI labels if function exists
+            if (typeof updateTrainRangeUI === 'function') {
+                updateTrainRangeUI();
+            }
+        }
+        
         if (dataXMinInput && dataXMaxInput) {
-            dataXMinInput.addEventListener('change', () => {
+            // Helper to update when data range changes
+            function onDataRangeChange() {
                 config.dataXMin = parseFloat(dataXMinInput.value);
-                config.xMin = config.dataXMin;
-                // Ensure train range is within data range
-                if (config.trainXMin < config.dataXMin) {
-                    config.trainXMin = config.dataXMin;
-                    trainXMinInput.value = config.trainXMin;
-                }
-                drawFitPlot();
-            });
-            dataXMaxInput.addEventListener('change', () => {
                 config.dataXMax = parseFloat(dataXMaxInput.value);
+                config.xMin = config.dataXMin;
                 config.xMax = config.dataXMax;
-                // Ensure train range is within data range
-                if (config.trainXMax > config.dataXMax) {
-                    config.trainXMax = config.dataXMax;
-                    trainXMaxInput.value = config.trainXMax;
+                
+                // Recalculate training range to 95% of new data range
+                calculateTrainingRange();
+                
+                // Invalidate loss surface - it samples across data range
+                lossSurfaceCache = null;
+                lossColorScale.calibrated = false;
+                
+                // Recompute if we have a network
+                if (network.weights.length > 0) {
+                    computeLossSurface();
+                    updateLossScaleLegend();
                 }
+                
                 drawFitPlot();
-            });
+                drawLossSurface();
+            }
+            
+            dataXMinInput.addEventListener('change', onDataRangeChange);
+            dataXMaxInput.addEventListener('change', onDataRangeChange);
+            
             config.dataXMin = parseFloat(dataXMinInput.value);
             config.dataXMax = parseFloat(dataXMaxInput.value);
             config.xMin = config.dataXMin;
@@ -5988,10 +6661,8 @@ function drawTrainingTrace() {
             generateDataBtn.addEventListener('click', () => {
                 compileTargetFunc();
                 
-                // Keep training range at config defaults (symmetric -2.8 to 2.8)
-                // Don't recalculate - just use what's already set in config
-                document.getElementById('trainXMinInput').value = config.trainXMin;
-                document.getElementById('trainXMaxInput').value = config.trainXMax;
+                // Calculate training range at 95% of data range (symmetric, rounded toward zero)
+                calculateTrainingRange();
                 
                 generateDataset();
                 resetModel();  // Initialize model for new data
@@ -6229,6 +6900,8 @@ function drawTrainingTrace() {
                 if (comparisonModeActive) {
                     compareBtn.style.cssText = 'font-size:11px; padding:4px 8px; margin-right:12px; background-color:#0056b3; color:white; border:1px solid #0056b3; cursor:pointer;';
                     compareBtn.textContent = '✓ Comparing A vs B';
+                    // Recompute loss surface to fit both trails
+                    computeLossSurface();  // Recompute to fit both trails
                 } else {
                     compareBtn.style.cssText = 'font-size:11px; padding:4px 8px; margin-right:12px; background-color:#007bff; color:white; border:1px solid #007bff; cursor:pointer;';
                     compareBtn.textContent = 'Compare A vs B';
@@ -6501,6 +7174,19 @@ function drawTrainingTrace() {
             console.log('LearnCurve: computing initial loss surface...');
             try {
                 autoSelectInterestingWeights();
+                
+                // Make w1 and w2 start with LARGER random values for more dramatic visualization
+                const largeInitScale = 4.0;  // ±4 instead of ±1
+                setWeightByIndex(lossSurfaceWeightIndices[0], (Math.random() - 0.5) * 2 * largeInitScale);
+                setWeightByIndex(lossSurfaceWeightIndices[1], (Math.random() - 0.5) * 2 * largeInitScale);
+                
+                // Record start position BEFORE computing surface
+                lossSurfaceStartPosition = {
+                    x: getWeightByIndex(lossSurfaceWeightIndices[0]),
+                    y: getWeightByIndex(lossSurfaceWeightIndices[1])
+                };
+                lossSurfaceTrail = [lossSurfaceStartPosition];
+                
                 computeLossSurface();
                 console.log('LearnCurve: loss surface computed, cache:', lossSurfaceCache ? 'ready' : 'null');
             } catch(e) {
