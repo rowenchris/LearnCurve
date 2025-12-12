@@ -29,7 +29,7 @@ LearnCurve guides you through the machine learning process:
 | **Network Design** | Animated diagram showing neurons, weights, and biases with operation counts |
 | **Examples vs Model** | Training points (blue) vs model prediction (blue curve), with optional held-out data and recipe overlay |
 | **Training Trace** | Error curves (training + test) with rolling average and ΔError indicator |
-| **Error Landscape** | 2D heatmap of achievable loss; watch gradient descent navigate from red to blue |
+| **Loss Landscape** | 2D heatmap showing loss surface with training path overlay |
 
 **Goal:** Train the network until the blue prediction curve matches the data!
 
@@ -55,8 +55,17 @@ LearnCurve guides you through the machine learning process:
 ### 📊 Visualization
 - **Examples vs Model**: Prediction curve with training points; reveal held-out test data and original recipe
 - **Training Trace**: Error over time with test error overlay and zoom control
-- **Error Landscape**: Shows "achievable loss" at each (w₁, w₂) position using regional training; watch the optimization path descend from red (high loss) toward blue (low loss)
+- **Loss Landscape**: 2D heatmap showing the loss surface as a function of two selected weights
 - **Equations Panel**: Forward and backward pass math explained
+
+### 🗺️ Loss Landscape Algorithm
+The loss landscape is computed using an **exploration-based algorithm**:
+- **150 training runs** from a 15×10 grid of starting positions
+- Each run trains for **600 steps** with all weights free to move
+- **5×5 patches** are probed around start and end positions
+- Results are **averaged** where runs overlap, reducing path-dependency noise
+- Final **60×40 display grid** (2,400 cells) captures real structure
+- Computes in **~2-3 seconds** with no intermediate UI updates
 
 ### 🔬 Evaluation & Comparison (Phase 3)
 - Evaluate model on held-out test data
@@ -150,7 +159,7 @@ Students learning machine learning who have:
 | 1 layer vs 4 layers | Depth vs training speed trade-off |
 | 3 neurons vs 16 neurons | Width vs expressiveness |
 | Restrict training range | See extrapolation failures |
-| Watch Error Landscape | See gradient descent descend from high loss (red) to low loss (blue) |
+| Watch Loss Landscape | See gradient descent navigate the loss surface |
 
 ---
 
@@ -172,16 +181,11 @@ python3 -m http.server 8000
 
 - **Pure HTML/CSS/JavaScript** – zero dependencies
 - **No build step** – single self-contained file
-- **~7000 lines** of code
+- **~8000 lines** of code
 - **Responsive design** – works on desktop (sidebar hidden on mobile)
 - **Gradient clipping** – numerically stable training
-
-### Error Landscape Algorithm
-The Error Landscape panel visualizes a 2D slice through the high-dimensional weight space:
-- **Regional Training**: For each point on the grid, the N-2 other weights are optimized while holding two selected weights (w₁, w₂) fixed
-- **Achievable Loss**: Each cell shows what loss is achievable at that (w₁, w₂) position if the other weights are well-optimized
-- **Deterministic**: Uses consistent initial weights so the map is reproducible
-- **Cached**: Computed once when training data is generated; reset only changes the starting position
+- **Smart auto-pause** – stops training when loss improvement drops below 1% over 1000 steps
+- **Optimized loss surface** – exploration algorithm with probe averaging for consistent visualization
 
 ---
 
